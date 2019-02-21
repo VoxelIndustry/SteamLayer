@@ -25,7 +25,7 @@ subprojects {
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.artifactory'
 
-    version = "0.1.0"
+    version = "0.3.2"
     group = "net.voxelindustry"
 
     compileJava.options.encoding = 'UTF-8'
@@ -72,17 +72,13 @@ subprojects {
     artifactoryPublish.dependsOn build
 
     minecraft {
-        version = "1.12.2-14.23.4.2758"
+        version = "1.12.2-14.23.5.2814"
         runDir = "run"
 
-        mappings = "snapshot_20171010"
+        mappings = "stable_39"
     }
 
     repositories {
-        maven { // Concrete
-            name = 'elytradev'
-            url = "http://repo.elytradev.com"
-        }
     }
 
     processResources {
@@ -99,7 +95,7 @@ subprojects {
     }
 
     dependencies {
-        compileOnly 'org.projectlombok:lombok:1.18.2'
+        compileOnly 'org.projectlombok:lombok:1.18.4'
 
         testCompile 'org.assertj:assertj-core-java8:1.0.0m1'
         testCompile 'junit:junit:4.12'
@@ -111,9 +107,6 @@ project('common') {
     archivesBaseName = "steamlayer-common"
 
     dependencies {
-        compile 'com.elytradev.concrete:concrete-common:0.5.40'
-        compile 'com.elytradev.concrete:concrete-reflect:0.5.40'
-        compile 'com.elytradev.concrete:concrete-network:0.5.40'
     }
 }
 
@@ -151,12 +144,21 @@ project('tile') {
     }
 }
 
+project('grid') {
+    archivesBaseName = "steamlayer-grid"
+
+    dependencies {
+        compile project(':tile')
+    }
+}
+
 project('core') {
     archivesBaseName = "steamlayer-core"
 
     dependencies {
         compile project(':container')
         compile project(':tile')
+        compile project(':grid')
     }
 }
 

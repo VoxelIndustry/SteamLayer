@@ -3,8 +3,10 @@ package net.voxelindustry.steamlayer.core;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
+import net.voxelindustry.steamlayer.grid.GridManager;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.*;
 import net.voxelindustry.steamlayer.tile.event.TileTickHandler;
@@ -34,5 +36,11 @@ public class SteamLayerCore
                 GenericPacket.class, 5, Side.SERVER);
 
         MinecraftForge.EVENT_BUS.register(new TileTickHandler());
+    }
+
+    @Mod.EventHandler
+    public void onServerStopping(FMLServerStoppingEvent e)
+    {
+        GridManager.onServerShutdown();
     }
 }

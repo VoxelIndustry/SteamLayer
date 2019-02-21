@@ -3,5 +3,6 @@ include 'container'
 include 'inventory'
 include 'network'
 include 'tile'
+include 'grid'
 
 include 'core'

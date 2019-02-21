@@ -52,8 +52,12 @@ public abstract class SyncableProperty<T extends Object>
 
         T supplied = this.supplier.get();
 
-        return this.stored == null && supplied != null || this.stored != null && supplied == null ||
-                this.stored != null && !this.areEquals(supplied);
+        if((this.stored == null ^ supplied == null))
+            return true;
+        if(this.stored == null)
+            return false;
+
+        return  !this.areEquals(supplied);
     }
 
     public void updateInternal()

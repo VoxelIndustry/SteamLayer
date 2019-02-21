@@ -46,7 +46,7 @@ public class ServerActionHolderPacket implements IMessage
     }
 
     @Override
-    public void fromBytes(ByteBuf buf)
+    public void toBytes(ByteBuf buf)
     {
         buf.writeShort(actionID);
         buf.writeInt(dimension);
@@ -58,7 +58,7 @@ public class ServerActionHolderPacket implements IMessage
     }
 
     @Override
-    public void toBytes(ByteBuf buf)
+    public void fromBytes(ByteBuf buf)
     {
         actionID = buf.readShort();
         dimension = buf.readInt();

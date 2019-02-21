@@ -30,7 +30,7 @@ public class NetworkHandler
             if (packet == null)
                 return;
 
-            Chunk chunk = tile.getWorld().getChunkFromBlockCoords(tile.getPos());
+            Chunk chunk = tile.getWorld().getChunk(tile.getPos());
             if (((WorldServer) tile.getWorld()).getPlayerChunkMap().contains(chunk.x, chunk.z))
             {
                 for (EntityPlayerMP player : tile.getWorld().getPlayers(EntityPlayerMP.class, entityPlayerMP -> true))

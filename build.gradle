@@ -25,7 +25,7 @@ subprojects {
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.artifactory'
 
-    version = "0.3.2"
+    version = "0.4.1"
     group = "net.voxelindustry"
 
     compileJava.options.encoding = 'UTF-8'

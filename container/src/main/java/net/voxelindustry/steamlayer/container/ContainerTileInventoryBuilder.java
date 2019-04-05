@@ -15,7 +15,7 @@ public class ContainerTileInventoryBuilder
     private final ContainerBuilder parent;
     private final int              rangeStart;
 
-    ContainerTileInventoryBuilder(final ContainerBuilder parent, final ItemStackHandler inventory)
+    ContainerTileInventoryBuilder(ContainerBuilder parent, ItemStackHandler inventory)
     {
         this.inventory = inventory;
         this.parent = parent;
@@ -173,11 +173,22 @@ public class ContainerTileInventoryBuilder
      *
      * @return the parent {@link ContainerBuilder} to resume the "Builder" pattern
      */
-    public ContainerBuilder addInventory()
+    public ContainerSyncBuilder sync()
+    {
+        this.setParentData();
+        return new ContainerSyncBuilder(this.parent);
+    }
+
+    public BuiltContainer create()
+    {
+        this.setParentData();
+        return this.parent.create();
+    }
+
+    private void setParentData()
     {
         if (this.inventory.getSlots() != 0)
             this.parent.tileInventoryRanges.add(Range.between(this.rangeStart, this.parent.slots.size() - 1));
         this.parent.inventories.add(this.inventory);
-        return this.parent;
     }
 }

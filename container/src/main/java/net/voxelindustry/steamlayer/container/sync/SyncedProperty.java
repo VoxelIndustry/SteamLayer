@@ -1,13 +1,13 @@
 package net.voxelindustry.steamlayer.container.sync;
 
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public abstract class SyncableProperty<T extends Object>
+public class SyncedProperty<T> implements SyncedValue
 {
     @Getter
     private final Supplier<T> supplier;
@@ -21,26 +21,25 @@ public abstract class SyncableProperty<T extends Object>
     private int syncRate;
     private int lastSync;
 
-    public SyncableProperty(Supplier<T> supplier, Consumer<T> consumer, int syncRate)
+    private SyncedWrapper<T> wrapper;
+
+    public SyncedProperty(Supplier<T> supplier, Consumer<T> consumer, SyncedWrapper<T> wrapper, int syncRate)
     {
         this.supplier = supplier;
         this.consumer = consumer;
+        this.wrapper = wrapper;
         this.stored = null;
 
         this.syncRate = syncRate;
         this.lastSync = 0;
     }
 
-    public SyncableProperty(Supplier<T> supplier, Consumer<T> consumer)
+    public SyncedProperty(Supplier<T> supplier, Consumer<T> consumer, SyncedWrapper<T> wrapper)
     {
-        this(supplier, consumer, 0);
+        this(supplier, consumer, wrapper, 0);
     }
 
-    public boolean areEquals(T other)
-    {
-        return this.stored.equals(other);
-    }
-
+    @Override
     public boolean needRefresh()
     {
         if (this.lastSync != this.syncRate)
@@ -52,30 +51,35 @@ public abstract class SyncableProperty<T extends Object>
 
         T supplied = this.supplier.get();
 
-        if((this.stored == null ^ supplied == null))
+        if ((this.stored == null ^ supplied == null))
             return true;
-        if(this.stored == null)
+        if (this.stored == null)
             return false;
 
-        return  !this.areEquals(supplied);
+        return !this.wrapper.areEquals(stored, supplied);
     }
 
+    @Override
     public void updateInternal()
     {
-        this.stored = this.copy(this.supplier.get());
+        this.stored = this.wrapper.copy(this.supplier.get());
     }
 
+    @Override
     public void update()
     {
         this.consumer.accept(this.stored);
     }
 
-    public abstract NBTTagCompound toNBT(NBTTagCompound tag);
-
-    public abstract void fromNBT(NBTTagCompound tag);
-
-    public T copy(T original)
+    @Override
+    public void write(ByteBuf buffer)
     {
-        return original;
+        this.wrapper.write(buffer, this.stored);
+    }
+
+    @Override
+    public void read(ByteBuf buffer)
+    {
+        this.stored = this.wrapper.read(buffer);
     }
 }

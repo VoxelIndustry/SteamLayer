@@ -1,5 +1,6 @@
 package net.voxelindustry.steamlayer.container;
 
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -8,22 +9,24 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.items.ItemStackHandler;
-import net.voxelindustry.steamlayer.common.container.ISyncableContainer;
-import net.voxelindustry.steamlayer.container.sync.SyncableProperty;
+import net.voxelindustry.steamlayer.common.container.ISyncedContainer;
+import net.voxelindustry.steamlayer.container.sync.ContainerSyncPacket;
+import net.voxelindustry.steamlayer.container.sync.ISyncCallback;
+import net.voxelindustry.steamlayer.container.sync.SyncedProperty;
+import net.voxelindustry.steamlayer.container.sync.SyncedValue;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
-import net.voxelindustry.steamlayer.network.packet.ContainerUpdatePacket;
-import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.utils.ItemUtils;
 import org.apache.commons.lang3.Range;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class BuiltContainer extends Container implements ISyncableContainer
+public class BuiltContainer extends Container implements ISyncedContainer
 {
     @Getter
     private final String name;
@@ -34,7 +37,10 @@ public class BuiltContainer extends Container implements ISyncableContainer
     private final List<Range<Integer>>    playerSlotRanges;
     private final List<Range<Integer>>    tileSlotRanges;
 
-    private List<SyncableProperty<?>>         syncablesValues;
+    private List<SyncedValue>               syncablesValues;
+    private Map<String, SyncedValue>        namedSyncables;
+    private Map<SyncedValue, ISyncCallback> syncCallbacks;
+
     private List<Consumer<InventoryCrafting>> craftEvents;
 
     private final List<ItemStackHandler> inventories;
@@ -60,12 +66,13 @@ public class BuiltContainer extends Container implements ISyncableContainer
         });
     }
 
-    public void setSyncables(List<SyncableProperty<?>> properties)
+    public void setSyncables(List<SyncedValue> properties, Map<String, SyncedValue> namedSyncables)
     {
         this.syncablesValues = properties;
+        this.namedSyncables = namedSyncables;
     }
 
-    public void addSyncable(SyncableProperty<?> property)
+    public void addSyncable(SyncedProperty<?> property)
     {
         this.syncablesValues.add(property);
     }
@@ -89,15 +96,25 @@ public class BuiltContainer extends Container implements ISyncableContainer
         this.craftEvents.remove(craftEvent);
     }
 
+    public void addSyncCallback(String name, ISyncCallback callback)
+    {
+        if (!this.namedSyncables.containsKey(name))
+            throw new RuntimeException("Cannot add callback to unknown SyncedProperty [" + name + "]");
+
+        if (this.syncCallbacks == null)
+            this.syncCallbacks = new HashMap<>();
+        this.syncCallbacks.put(this.namedSyncables.get(name), callback);
+    }
+
     public void addSlot(Slot slot)
     {
         this.addSlotToContainer(slot);
     }
 
     @Override
-    public boolean canInteractWith(EntityPlayer playerIn)
+    public boolean canInteractWith(EntityPlayer player)
     {
-        return this.canInteract.test(playerIn);
+        return this.canInteract.test(player);
     }
 
     @Override
@@ -112,27 +129,28 @@ public class BuiltContainer extends Container implements ISyncableContainer
     {
         super.detectAndSendChanges();
 
-        if (this.syncablesValues != null && !this.syncablesValues.isEmpty())
+        if (this.syncablesValues == null || this.syncablesValues.isEmpty())
+            return;
+
+        for (SyncedValue synced : this.syncablesValues)
         {
-            for (SyncableProperty<?> syncable : this.syncablesValues)
+            if (synced.needRefresh())
             {
-                if (syncable.needRefresh())
-                {
-                    syncable.updateInternal();
-                    SteamLayerPacketHandler.INSTANCE.sendTo(new ContainerUpdatePacket(this.windowId,
-                            this.syncablesValues.indexOf(syncable), syncable.toNBT(new NBTTagCompound())),
-                            (EntityPlayerMP) this.player);
-                }
+                synced.updateInternal();
+                new ContainerSyncPacket(this.windowId, this.syncablesValues.indexOf(synced), synced).sendTo((EntityPlayerMP) this.player);
             }
         }
     }
 
     @Override
-    public void updateProperty(int id, NBTTagCompound property)
+    public void updateProperty(int id, ByteBuf buffer)
     {
-        SyncableProperty<?> syncable = this.syncablesValues.get(id);
-        syncable.fromNBT(property);
-        syncable.update();
+        SyncedValue property = this.syncablesValues.get(id);
+        property.read(buffer);
+        property.update();
+
+        if (this.syncCallbacks != null && this.syncCallbacks.containsKey(property))
+            this.syncCallbacks.get(property).onSync(property);
     }
 
     @Override

@@ -2,21 +2,17 @@ package net.voxelindustry.steamlayer.container;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.InventoryCrafting;
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
-import net.voxelindustry.steamlayer.container.sync.DefaultSyncables;
-import net.voxelindustry.steamlayer.container.sync.SyncableProperty;
+import net.voxelindustry.steamlayer.container.sync.SyncedValue;
 import org.apache.commons.lang3.Range;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Use this builder to construct a {@link BuiltContainer} instance.
@@ -40,9 +36,10 @@ public class ContainerBuilder
     final List<ListenerSlot>   slots;
     final List<Range<Integer>> playerInventoryRanges, tileInventoryRanges;
 
-    List<SyncableProperty<?>> syncables;
-
     final List<Consumer<InventoryCrafting>> craftEvents;
+
+    List<SyncedValue>        syncs;
+    Map<String, SyncedValue> namedSyncs;
 
     List<ItemStackHandler> inventories;
 
@@ -67,8 +64,6 @@ public class ContainerBuilder
         this.slots = new ArrayList<>();
         this.playerInventoryRanges = new ArrayList<>();
         this.tileInventoryRanges = new ArrayList<>();
-
-        this.syncables = new ArrayList<>();
 
         this.craftEvents = new ArrayList<>();
 
@@ -99,136 +94,9 @@ public class ContainerBuilder
         return new ContainerPlayerInventoryBuilder(this, player, new PlayerInvWrapper(player.inventory));
     }
 
-    /**
-     * Begin the construction of a {@link ContainerTileInventoryBuilder} builder.
-     * <p>
-     * Multiple tiles can be linked to a same container with recall of
-     * this method after completing the previous nested builder.
-     *
-     * @param tile an IInventory representing a tile inventory
-     * @return a {@link ContainerTileInventoryBuilder} marked as child of this builder
-     */
-    public ContainerTileInventoryBuilder tile(ItemStackHandler tile)
+    public ContainerSyncBuilder sync()
     {
-        return new ContainerTileInventoryBuilder(this, tile);
-    }
-
-    /**
-     * Sync a Boolean value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncBooleanValue(Supplier<Boolean> supplier, Consumer<Boolean> setter)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableBoolean(supplier, setter));
-        return this;
-    }
-
-    /**
-     * Sync an Integer value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncIntegerValue(Supplier<Integer> supplier, Consumer<Integer> setter)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableInteger(supplier, setter));
-        return this;
-    }
-
-    /**
-     * Sync a Float value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncFloatValue(Supplier<Float> supplier, Consumer<Float> setter)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableFloat(supplier, setter));
-        return this;
-    }
-
-    /**
-     * Sync a String value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncStringValue(Supplier<String> supplier, Consumer<String> setter)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableString(supplier, setter));
-        return this;
-    }
-
-    /**
-     * Sync a {@link FluidStack} value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncFluidValue(Supplier<FluidStack> supplier,
-                                           Consumer<FluidStack> setter)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableFluid(supplier, setter));
-        return this;
-    }
-
-    /**
-     * Sync an {@link ItemStack} value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncItemValue(Supplier<ItemStack> supplier, Consumer<ItemStack> setter)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableItem(supplier, setter));
-        return this;
-    }
-
-    /**
-     * Sync an {@link IItemHandler} value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableInventory(supplier, setter));
-        return this;
-    }
-
-    /**
-     * Sync an {@link IItemHandler} value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @param syncRate the rate in ticks used to query and refresh the syncable
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter, int syncRate)
-    {
-        this.syncables.add(new DefaultSyncables.SyncableInventory(supplier, setter, syncRate));
-        return this;
-    }
-
-    /**
-     * Sync a generic syncable value between the server and the client
-     *
-     * @param syncable a custom syncable property
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerBuilder sync(SyncableProperty<?> syncable)
-    {
-        this.syncables.add(syncable);
-        return this;
+        return new ContainerSyncBuilder(this);
     }
 
     void addPlayerInventoryRange(Range<Integer> range)
@@ -251,10 +119,11 @@ public class ContainerBuilder
      */
     public BuiltContainer create()
     {
-        final BuiltContainer built = new BuiltContainer(this.name, this.player, this.inventories, this.canInteract,
+        BuiltContainer built = new BuiltContainer(this.name, this.player, this.inventories, this.canInteract,
                 this.playerInventoryRanges, this.tileInventoryRanges);
-        if (!this.syncables.isEmpty())
-            built.setSyncables(this.syncables);
+
+        if (this.syncs != null)
+            built.setSyncables(this.syncs, this.namedSyncs);
         if (!this.craftEvents.isEmpty())
             built.addCraftEvents(this.craftEvents);
 

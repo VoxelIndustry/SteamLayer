@@ -6,6 +6,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
+import net.voxelindustry.steamlayer.container.sync.ContainerSyncPacket;
 import net.voxelindustry.steamlayer.grid.GridManager;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.*;
@@ -17,9 +18,6 @@ public class SteamLayerCore
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent e)
     {
-        SteamLayerPacketHandler.INSTANCE.registerMessage(ContainerUpdatePacket.ContainerUpdatePacketHandler.class,
-                ContainerUpdatePacket.class, 0, Side.CLIENT);
-
         SteamLayerPacketHandler.INSTANCE.registerMessage(ClientActionHolderPacket.ClientActionHolderPacketHandler.class,
                 ClientActionHolderPacket.class, 1, Side.CLIENT);
 
@@ -34,6 +32,8 @@ public class SteamLayerCore
 
         SteamLayerPacketHandler.INSTANCE.registerMessage(GenericPacket.GenericServerPacketHandler.class,
                 GenericPacket.class, 5, Side.SERVER);
+
+        PacketHandler.getInstance().register(ContainerSyncPacket.class);
 
         MinecraftForge.EVENT_BUS.register(new TileTickHandler());
     }

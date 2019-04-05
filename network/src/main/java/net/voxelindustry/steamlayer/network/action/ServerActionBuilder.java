@@ -80,6 +80,8 @@ public class ServerActionBuilder
 
     public void send()
     {
+        if (this.packet == null)
+            throw new RuntimeException("Action packet is null! Did you use setTile(TileEntity) before sending?");
         this.packet.setActionPayload(payload);
         SteamLayerPacketHandler.INSTANCE.sendToServer(packet);
     }

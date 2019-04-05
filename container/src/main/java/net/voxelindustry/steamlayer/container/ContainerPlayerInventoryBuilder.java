@@ -2,6 +2,7 @@ package net.voxelindustry.steamlayer.container;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
@@ -98,11 +99,31 @@ public class ContainerPlayerInventoryBuilder
      * Close this builder and add the slot list to the current {@link BuiltContainer} construction.
      * <p>
      * A special case has been implemented with armor slots, they are considered as a tile slot range. Allowing
-     * shift-insert from a inventory inventory.
+     * shift-insert from the main inventory of the player.
+     * <p>
+     * Begin the construction of a {@link ContainerTileInventoryBuilder} builder.
+     * <p>
+     * Multiple tiles can be linked to a same container with recall of
+     * this method after completing the previous nested builder.
      *
-     * @return the parent {@link ContainerBuilder} to resume the "Builder" pattern
+     * @param tile an IInventory representing a tile inventory
+     * @return the tile builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerBuilder addInventory()
+    public ContainerTileInventoryBuilder tile(ItemStackHandler tile)
+    {
+        this.emptyTile();
+        return new ContainerTileInventoryBuilder(this.parent, tile);
+    }
+
+    /**
+     * Close this builder and add the slot list to the current {@link BuiltContainer} construction.
+     * <p>
+     * A special case has been implemented with armor slots, they are considered as a tile slot range. Allowing
+     * shift-insert from the main inventory of the player.
+     *
+     * @return the parent builder {@link ContainerBuilder} to resume the "Builder" pattern
+     */
+    public ContainerBuilder emptyTile()
     {
         if (this.hotbar != null)
             this.parent.addPlayerInventoryRange(this.hotbar);
@@ -110,8 +131,18 @@ public class ContainerPlayerInventoryBuilder
             this.parent.addPlayerInventoryRange(this.main);
         if (this.armor != null)
             this.parent.addTileInventoryRange(this.armor);
-
         return this.parent;
+    }
+
+    /**
+     * Close this builder and add the slot list to the current {@link BuiltContainer} construction.
+     *
+     * @return the parent {@link ContainerBuilder} to resume the "Builder" pattern
+     */
+    public ContainerSyncBuilder sync()
+    {
+        this.emptyTile();
+        return new ContainerSyncBuilder(this.parent);
     }
 
     public static class ContainerPlayerArmorInventoryBuilder
@@ -128,7 +159,6 @@ public class ContainerPlayerInventoryBuilder
         private ContainerPlayerArmorInventoryBuilder armor(int index, int xStart, int yStart,
                                                            EntityEquipmentSlot slotType)
         {
-
             this.parent.parent.slots.add(new FilteredSlot(this.parent.inventory, index, xStart, yStart)
                     .setFilter(stack -> stack.getItem().isValidArmor(stack, slotType, parent.player)));
             return this;

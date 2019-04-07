@@ -3,10 +3,7 @@ package net.voxelindustry.steamlayer.container;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.IItemHandler;
-import net.voxelindustry.steamlayer.container.sync.SyncedArrayProperty;
-import net.voxelindustry.steamlayer.container.sync.SyncedProperty;
-import net.voxelindustry.steamlayer.container.sync.SyncedValue;
-import net.voxelindustry.steamlayer.container.sync.SyncedWrappers;
+import net.voxelindustry.steamlayer.container.sync.*;
 import org.apache.commons.lang3.Range;
 
 import java.util.ArrayList;
@@ -191,6 +188,24 @@ public class ContainerSyncBuilder
     }
 
     /**
+     * Sync a generic list between the server and the client
+     *
+     * @param supplier     a supplier giving the value from the server
+     * @param elementClass the Class instance of the list elements
+     * @param range        to which the list will be synced
+     * @param name         unique name identifier for this Synced
+     * @param <T>          generic type of the list element
+     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
+     */
+    public <T> ContainerSyncBuilder syncList(Supplier<List<T>> supplier, Class<T> elementClass, Range<Integer> range,
+                                             String name)
+    {
+        this.registerSynced(new SyncedListProperty<>(supplier, SyncedWrappers.instance().get(elementClass), range),
+                name);
+        return this;
+    }
+
+    /**
      * Sync a Boolean value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
@@ -320,6 +335,35 @@ public class ContainerSyncBuilder
     public <T> ContainerSyncBuilder syncArray(Supplier<T[]> supplier, Class<T> elementClass)
     {
         this.syncArray(supplier, elementClass, null, null);
+        return this;
+    }
+
+    /**
+     * Sync a generic list between the server and the client
+     *
+     * @param supplier     a supplier giving the value from the server
+     * @param elementClass the Class instance of the list elements
+     * @param range        to which the array will be synced
+     * @param <T>          generic type of the list element
+     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
+     */
+    public <T> ContainerSyncBuilder syncList(Supplier<List<T>> supplier, Class<T> elementClass, Range<Integer> range)
+    {
+        this.syncList(supplier, elementClass, range, null);
+        return this;
+    }
+
+    /**
+     * Sync a generic list between the server and the client
+     *
+     * @param supplier     a supplier giving the value from the server
+     * @param elementClass the Class instance of the list elements
+     * @param <T>          generic type of the list element
+     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
+     */
+    public <T> ContainerSyncBuilder syncList(Supplier<List<T>> supplier, Class<T> elementClass)
+    {
+        this.syncList(supplier, elementClass, null, null);
         return this;
     }
 

@@ -5,6 +5,7 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.IItemHandler;
 import net.voxelindustry.steamlayer.container.sync.*;
 import org.apache.commons.lang3.Range;
+import sun.misc.SharedSecrets;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -206,6 +207,24 @@ public class ContainerSyncBuilder
     }
 
     /**
+     * Sync an enum between the server and the client
+     *
+     * @param supplier  a supplier giving the value from the server
+     * @param consumer  a consumer used to set the value of the client
+     * @param enumClass the Class instance of the enum
+     * @param name      unique name identifier for this Synced
+     * @param <E>       generic type of the enum
+     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
+     */
+    public <E extends Enum<E>> ContainerSyncBuilder syncEnum(Supplier<E> supplier, Consumer<E> consumer,
+                                                             Class<E> enumClass, String name)
+    {
+        this.syncInteger(() -> supplier.get().ordinal(), ordinal -> consumer.accept(SharedSecrets.getJavaLangAccess()
+                .getEnumConstantsShared(enumClass)[ordinal]), name);
+        return this;
+    }
+
+    /**
      * Sync a Boolean value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
@@ -364,6 +383,22 @@ public class ContainerSyncBuilder
     public <T> ContainerSyncBuilder syncList(Supplier<List<T>> supplier, Class<T> elementClass)
     {
         this.syncList(supplier, elementClass, null, null);
+        return this;
+    }
+
+    /**
+     * Sync an enum between the server and the client
+     *
+     * @param supplier  a supplier giving the value from the server
+     * @param consumer  a consumer used to set the value of the client
+     * @param enumClass the Class instance of the enum
+     * @param <E>       generic type of the enum
+     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
+     */
+    public <E extends Enum<E>> ContainerSyncBuilder syncEnum(Supplier<E> supplier, Consumer<E> consumer,
+                                                             Class<E> enumClass)
+    {
+        this.syncEnum(supplier, consumer, enumClass);
         return this;
     }
 

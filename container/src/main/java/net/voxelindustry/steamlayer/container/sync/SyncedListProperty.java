@@ -115,6 +115,8 @@ public class SyncedListProperty<T> implements SyncedValue
         }
         else
         {
+            supplied.clear();
+
             for (int index = 0; index < this.stored.size(); index++)
             {
                 if (supplied.size() <= index)

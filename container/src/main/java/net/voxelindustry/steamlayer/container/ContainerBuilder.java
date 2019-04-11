@@ -38,6 +38,9 @@ public class ContainerBuilder
 
     final List<Consumer<InventoryCrafting>> craftEvents;
 
+    private ContainerEvent       closeEvent;
+    private List<ContainerEvent> tickEvents;
+
     List<SyncedValue>        syncs;
     Map<String, SyncedValue> namedSyncs;
 
@@ -66,6 +69,7 @@ public class ContainerBuilder
         this.tileInventoryRanges = new ArrayList<>();
 
         this.craftEvents = new ArrayList<>();
+        this.tickEvents = new ArrayList<>();
 
         this.inventories = new ArrayList<>();
     }
@@ -99,6 +103,18 @@ public class ContainerBuilder
         return new ContainerSyncBuilder(this);
     }
 
+    public ContainerBuilder onClose(ContainerEvent event)
+    {
+        this.closeEvent = event;
+        return this;
+    }
+
+    public ContainerBuilder onTick(ContainerEvent event)
+    {
+        this.tickEvents.add(event);
+        return this;
+    }
+
     void addPlayerInventoryRange(Range<Integer> range)
     {
         this.playerInventoryRanges.add(range);
@@ -121,6 +137,9 @@ public class ContainerBuilder
     {
         BuiltContainer built = new BuiltContainer(this.name, this.player, this.inventories, this.canInteract,
                 this.playerInventoryRanges, this.tileInventoryRanges);
+
+        built.setCloseEvent(closeEvent);
+        built.setTickEvents(tickEvents);
 
         if (this.syncs != null)
             built.setSyncables(this.syncs, this.namedSyncs);

@@ -2,6 +2,7 @@ package net.voxelindustry.steamlayer.container;
 
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.Container;
@@ -44,6 +45,11 @@ public class BuiltContainer extends Container implements ISyncedContainer
     private List<Consumer<InventoryCrafting>> craftEvents;
 
     private final List<ItemStackHandler> inventories;
+
+    @Setter
+    private ContainerEvent       closeEvent;
+    @Setter
+    private List<ContainerEvent> tickEvents;
 
     BuiltContainer(String name, EntityPlayer player, List<ItemStackHandler> inventories,
                    Predicate<EntityPlayer> canInteract, List<Range<Integer>> playerSlotRange,
@@ -128,6 +134,9 @@ public class BuiltContainer extends Container implements ISyncedContainer
     public void detectAndSendChanges()
     {
         super.detectAndSendChanges();
+
+        if (!this.tickEvents.isEmpty())
+            this.tickEvents.forEach(event -> event.apply(this, this.player, false));
 
         if (this.syncablesValues == null || this.syncablesValues.isEmpty())
             return;
@@ -270,6 +279,10 @@ public class BuiltContainer extends Container implements ISyncedContainer
     public void onContainerClosed(EntityPlayer player)
     {
         super.onContainerClosed(player);
+
+        if (this.closeEvent != null)
+            this.closeEvent.apply(this, player, player.world.isRemote);
+
         this.inventories.forEach(inventory ->
         {
             if (inventory instanceof InventoryHandler)

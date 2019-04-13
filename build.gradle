@@ -141,6 +141,15 @@ project('tile') {
     dependencies {
         compile project(':inventory')
         compile project(':network')
+        compile 'org.hjson:hjson:3.0.0'
+    }
+}
+
+project('multiblock') {
+    archivesBaseName = "steamlayer-multiblock"
+
+    dependencies {
+        compile project(':tile')
     }
 }
 
@@ -159,6 +168,7 @@ project('core') {
         compile project(':container')
         compile project(':tile')
         compile project(':grid')
+        compile project(':multiblock')
     }
 }
 

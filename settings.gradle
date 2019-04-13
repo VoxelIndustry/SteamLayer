@@ -4,5 +4,6 @@ include 'inventory'
 include 'network'
 include 'tile'
 include 'grid'
+include 'multiblock'
 
 include 'core'

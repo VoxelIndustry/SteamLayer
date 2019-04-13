@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 @Getter
@@ -20,7 +20,7 @@ public class TileDescriptor
     {
         this.name = name;
 
-        this.components = new HashMap<>();
+        this.components = new IdentityHashMap<>();
     }
 
     public boolean has(Class<?> componentType)

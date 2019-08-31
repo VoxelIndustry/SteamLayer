@@ -1,5 +1,6 @@
 package net.voxelindustry.steamlayer.container;
 
+import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,6 +51,8 @@ public class BuiltContainer extends Container implements ISyncedContainer
     private ContainerEvent       closeEvent;
     @Setter
     private List<ContainerEvent> tickEvents;
+
+    private List<Slot> cachedInventorySlots;
 
     BuiltContainer(String name, EntityPlayer player, List<ItemStackHandler> inventories,
                    Predicate<EntityPlayer> canInteract, List<Range<Integer>> playerSlotRange,
@@ -288,5 +291,17 @@ public class BuiltContainer extends Container implements ISyncedContainer
             if (inventory instanceof InventoryHandler)
                 ((InventoryHandler) inventory).closeInventory(player);
         });
+    }
+
+    public void hideAllSlots()
+    {
+        this.cachedInventorySlots = Lists.newArrayList(this.inventorySlots);
+        this.inventorySlots.clear();
+    }
+
+    public void showAllSlots()
+    {
+        this.inventorySlots.addAll(this.cachedInventorySlots);
+        this.cachedInventorySlots.clear();
     }
 }

@@ -3,7 +3,12 @@ package net.voxelindustry.steamlayer.container;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.IItemHandler;
-import net.voxelindustry.steamlayer.container.sync.*;
+import net.voxelindustry.steamlayer.container.sync.SyncedArrayProperty;
+import net.voxelindustry.steamlayer.container.sync.SyncedEnumListProperty;
+import net.voxelindustry.steamlayer.container.sync.SyncedListProperty;
+import net.voxelindustry.steamlayer.container.sync.SyncedProperty;
+import net.voxelindustry.steamlayer.container.sync.SyncedValue;
+import net.voxelindustry.steamlayer.container.sync.SyncedWrappers;
 import org.apache.commons.lang3.Range;
 import sun.misc.SharedSecrets;
 
@@ -201,6 +206,9 @@ public class ContainerSyncBuilder
     public <T> ContainerSyncBuilder syncList(Supplier<List<T>> supplier, Class<T> elementClass, Range<Integer> range,
                                              String name)
     {
+        if (elementClass.isEnum())
+            throw new RuntimeException("Enum must be synced with either syncEnum or syncEnumList!");
+
         this.registerSynced(new SyncedListProperty<>(supplier, SyncedWrappers.instance().get(elementClass), range),
                 name);
         return this;
@@ -221,6 +229,22 @@ public class ContainerSyncBuilder
     {
         this.syncInteger(() -> supplier.get().ordinal(), ordinal -> consumer.accept(SharedSecrets.getJavaLangAccess()
                 .getEnumConstantsShared(enumClass)[ordinal]), name);
+        return this;
+    }
+
+    /**
+     * Sync a list of enum values between the server and the client
+     *
+     * @param supplier  a supplier giving the value from the server
+     * @param enumClass the Class instance of the enum values
+     * @param name      unique name identifier for this Synced
+     * @param <E>       generic type of the enum
+     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
+     */
+    public <E extends Enum<E>> ContainerSyncBuilder syncEnumList(Supplier<List<E>> supplier, Class<E> enumClass,
+                                                                 Range<Integer> range, String name)
+    {
+        this.registerSynced(new SyncedEnumListProperty<>(supplier, enumClass, range), name);
         return this;
     }
 

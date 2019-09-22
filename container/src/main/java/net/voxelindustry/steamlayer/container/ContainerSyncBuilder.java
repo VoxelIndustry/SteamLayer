@@ -165,11 +165,11 @@ public class ContainerSyncBuilder
     /**
      * Sync a generic value between the server and the client
      *
-     * @param synced a custom synced property
+     * @param synced a custom synced value
      * @param name   unique name identifier for this Synced
      * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
      */
-    public ContainerSyncBuilder syncAny(SyncedProperty<?> synced, String name)
+    public ContainerSyncBuilder syncAny(SyncedValue synced, String name)
     {
         this.registerSynced(synced, name);
         return this;
@@ -429,10 +429,10 @@ public class ContainerSyncBuilder
     /**
      * Sync a generic synced value between the server and the client
      *
-     * @param synced a custom synced property
+     * @param synced a custom synced value
      * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
      */
-    public ContainerSyncBuilder syncAny(SyncedProperty<?> synced)
+    public ContainerSyncBuilder syncAny(SyncedValue synced)
     {
         this.syncAny(synced, null);
         return this;

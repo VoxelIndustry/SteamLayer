@@ -12,16 +12,16 @@ buildscript {
         }
     }
     dependencies {
-        classpath('net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT')
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
     }
 }
 
 plugins {
-  id "com.jfrog.artifactory" version "4.7.5"
+    id "com.jfrog.artifactory" version "4.7.5"
 }
 
 subprojects {
-    apply plugin: 'net.minecraftforge.gradle.forge'
+    apply plugin: 'net.minecraftforge.gradle'
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.artifactory'
 
@@ -44,7 +44,7 @@ subprojects {
                 maven = true
             }
             defaults {
-                publications ('mavenJava')
+                publications('mavenJava')
             }
         }
     }
@@ -58,48 +58,99 @@ subprojects {
         archives sourcesJar
     }
 
+    def reobfFile = file("$buildDir/reobfJar/output.jar")
+    def reobfArtifact = artifacts.add('default', reobfFile) {
+        type 'jar'
+        builtBy 'reobfJar'
+    }
+
     publishing {
         publications {
             mavenJava(MavenPublication) {
                 from components.java
 
                 artifactId archivesBaseName
+                artifact reobfArtifact
                 artifact source: sourcesJar, classifier: 'sources', extension: 'jar'
+
+                // Allows the maven pom file to be modified.
+                pom.withXml {
+                    // Go through all the dependencies.
+                    asNode().dependencies.dependency.each { dep ->
+
+                        // Check if the dependency has been mapped with MCP
+                        if (dep.version.last().value().last().contains('_mapped_snapshot_') || dep.version.last().value().last().contains('_mapped_stable_')) {
+
+                            // Remove the MCP mapped artifact from the dependency list.
+                            println 'Surpressing MCP mapped artifact ' + dep.artifactId.last().value().last() + ' from maven dependencies.'
+                            assert dep.parent().remove(dep)
+                        }
+                    }
+                }
             }
         }
     }
 
     artifactoryPublish.dependsOn build
 
-    minecraft {
-        version = "1.12.2-14.23.5.2814"
-        runDir = "run"
-
-        mappings = "stable_39"
-    }
-
     repositories {
     }
 
-    processResources {
-        inputs.property "version", project.version
-        inputs.property "mcversion", project.minecraft.version
-
-        from(sourceSets.main.resources.srcDirs) {
-            include 'mcmod.info'
-            expand 'version': project.version, 'mcversion': project.minecraft.version
-        }
-        from(sourceSets.main.resources.srcDirs) {
-            exclude 'mcmod.info'
-        }
-    }
-
     dependencies {
-        compileOnly 'org.projectlombok:lombok:1.18.6'
+        minecraft "net.minecraftforge:forge:${project.forge_version}"
+
+        compileOnly 'org.projectlombok:lombok:1.18.10'
 
         testCompile 'org.assertj:assertj-core-java8:1.0.0m1'
         testCompile 'junit:junit:4.12'
         testCompile 'org.mockito:mockito-core:2.8.47'
+    }
+
+    minecraft {
+        mappings channel: 'snapshot', version: '20190719-1.14.3'
+
+        runs {
+            client {
+                workingDirectory project.file('run')
+
+                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+                property 'forge.logging.console.level', 'debug'
+
+                mods {
+                    steamlayer {
+                        source sourceSets.main
+                    }
+                }
+            }
+
+            server {
+                workingDirectory project.file('run')
+
+                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+                property 'forge.logging.console.level', 'debug'
+
+                mods {
+                    steamlayer {
+                        source sourceSets.main
+                    }
+                }
+            }
+
+            data {
+                workingDirectory project.file('run')
+
+                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+                property 'forge.logging.console.level', 'debug'
+
+                args '--mod', 'steamlayer', '--mod', '--output', file('src/generated/resources/')
+
+                mods {
+                    steamlayer {
+                        source sourceSets.main
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -169,6 +220,20 @@ project('core') {
         compile project(':tile')
         compile project(':grid')
         compile project(':multiblock')
+    }
+
+    jar {
+        manifest {
+            attributes([
+                    "Specification-Title"     : "steamlayer-core",
+                    "Specification-Vendor"    : "steamlayer-core",
+                    "Specification-Version"   : "1",
+                    "Implementation-Title"    : project.name,
+                    "Implementation-Version"  : "${version}",
+                    "Implementation-Vendor"   : "voxelindustry",
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            ])
+        }
     }
 }
 

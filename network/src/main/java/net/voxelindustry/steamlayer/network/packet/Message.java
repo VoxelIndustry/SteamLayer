@@ -1,12 +1,15 @@
 package net.voxelindustry.steamlayer.network.packet;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.dimension.DimensionType;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
+
+import static net.minecraftforge.fml.network.PacketDistributor.*;
 
 public abstract class Message
 {
@@ -14,32 +17,37 @@ public abstract class Message
 
     public abstract void write(ByteBuf buf);
 
-    public abstract void handle(EntityPlayer player);
+    public abstract void handle(PlayerEntity player);
 
-    public void sendTo(EntityPlayerMP player)
+    public void sendTo(ServerPlayerEntity player)
     {
-        SteamLayerPacketHandler.INSTANCE.sendTo(new GenericPacket(this), player);
+        SteamLayerPacketHandler.getHandler().send(PLAYER.with(() -> player), new GenericPacket(this));
     }
 
     public void sendToServer()
     {
-        SteamLayerPacketHandler.INSTANCE.sendToServer(new GenericPacket(this));
+        SteamLayerPacketHandler.getHandler().sendToServer(new GenericPacket(this));
     }
 
     public void sendToAll()
     {
-        SteamLayerPacketHandler.INSTANCE.sendToAll(new GenericPacket(this));
+        SteamLayerPacketHandler.getHandler().send(ALL.noArg(), new GenericPacket(this));
     }
 
-    public void sendToDimension(int dim)
+    public void sendToDimension(DimensionType dimensionType)
     {
-        SteamLayerPacketHandler.INSTANCE.sendToDimension(new GenericPacket(this), dim);
+        SteamLayerPacketHandler.getHandler().send(DIMENSION.with(() -> dimensionType), new GenericPacket(this));
+    }
+
+    public void sendToWatchingChunk(Chunk chunk)
+    {
+        SteamLayerPacketHandler.getHandler().send(TRACKING_CHUNK.with(() -> chunk), new GenericPacket(this));
     }
 
     public void sendToAllAround(World world, BlockPos pos, int range)
     {
-        SteamLayerPacketHandler.INSTANCE.sendToAllAround(new GenericPacket(this),
-                new NetworkRegistry.TargetPoint(world.provider.getDimension(), pos.getX(), pos.getY(), pos.getZ(),
-                        range));
+        SteamLayerPacketHandler.getHandler().send(NEAR
+                        .with(() -> new TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, world.getDimension().getType())),
+                new GenericPacket(this));
     }
 }

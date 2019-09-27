@@ -1,29 +1,30 @@
 package net.voxelindustry.steamlayer.network.action;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fml.network.PacketDistributor;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.ClientActionHolderPacket;
 
 public class ClientActionBuilder
 {
-    private TileEntity     sender;
-    private EntityPlayer   player;
-    private NBTTagCompound payload;
-    private int            replyID;
+    private TileEntity   sender;
+    private PlayerEntity player;
+    private CompoundNBT  payload;
+    private int          replyID;
 
     public ClientActionBuilder(int replyID, TileEntity sender)
     {
         this.sender = sender;
-        this.payload = new NBTTagCompound();
+        payload = new CompoundNBT();
         this.replyID = replyID;
     }
 
-    public ClientActionBuilder toPlayer(EntityPlayer player)
+    public ClientActionBuilder toPlayer(PlayerEntity player)
     {
         this.player = player;
         return this;
@@ -31,55 +32,54 @@ public class ClientActionBuilder
 
     public ClientActionBuilder withInt(String key, Integer value)
     {
-        this.payload.setInteger(key, value);
+        payload.putInt(key, value);
         return this;
     }
 
     public ClientActionBuilder withLong(String key, Long value)
     {
-        this.payload.setLong(key, value);
+        payload.putLong(key, value);
         return this;
     }
 
     public ClientActionBuilder withString(String key, String value)
     {
-        this.payload.setString(key, value);
+        payload.putString(key, value);
         return this;
     }
 
     public ClientActionBuilder withFloat(String key, Float value)
     {
-        this.payload.setFloat(key, value);
+        payload.putFloat(key, value);
         return this;
     }
 
     public ClientActionBuilder withDouble(String key, Double value)
     {
-        this.payload.setDouble(key, value);
+        payload.putDouble(key, value);
         return this;
     }
 
     public ClientActionBuilder withBoolean(String key, Boolean value)
     {
-        this.payload.setBoolean(key, value);
+        payload.putBoolean(key, value);
         return this;
     }
 
     public ClientActionBuilder withItemStack(String key, ItemStack value)
     {
-        this.payload.setTag(key, value.writeToNBT(new NBTTagCompound()));
+        payload.put(key, value.write(new CompoundNBT()));
         return this;
     }
 
     public ClientActionBuilder withFluidStack(String key, FluidStack value)
     {
-        this.payload.setTag(key, value.writeToNBT(new NBTTagCompound()));
+        payload.put(key, value.writeToNBT(new CompoundNBT()));
         return this;
     }
 
     public void send()
     {
-        SteamLayerPacketHandler.INSTANCE.sendTo(new ClientActionHolderPacket(this.replyID, this.payload),
-                (EntityPlayerMP) this.player);
+        SteamLayerPacketHandler.getHandler().send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new ClientActionHolderPacket(replyID, payload));
     }
 }

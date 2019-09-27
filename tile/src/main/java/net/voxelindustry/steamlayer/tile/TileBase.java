@@ -1,11 +1,12 @@
 package net.voxelindustry.steamlayer.tile;
 
 import lombok.Getter;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraft.tileentity.TileEntityType;
+import net.minecraftforge.fml.common.thread.EffectiveSide;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
@@ -17,72 +18,78 @@ public class TileBase extends TileEntity implements ITileInfoProvider
     @Getter
     private boolean isSyncQueued;
 
-    @Override
-    public SPacketUpdateTileEntity getUpdatePacket()
+    public TileBase(TileEntityType<?> type)
     {
-        final NBTTagCompound nbtTag = new NBTTagCompound();
-        this.writeToNBT(nbtTag);
-        return new SPacketUpdateTileEntity(this.pos, 1, nbtTag);
+        super(type);
     }
 
     @Override
-    public void onDataPacket(final NetworkManager net, final SPacketUpdateTileEntity packet)
+    public SUpdateTileEntityPacket getUpdatePacket()
     {
-        this.readFromNBT(packet.getNbtCompound());
+        CompoundNBT nbtTag = new CompoundNBT();
+        write(nbtTag);
+        return new SUpdateTileEntityPacket(pos, 1, nbtTag);
+    }
+
+    @Override
+    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket packet)
+    {
+        read(packet.getNbtCompound());
     }
 
     public void askServerSync()
     {
-        SteamLayerPacketHandler.INSTANCE.sendToServer(new TileSyncRequestPacket(this.world.provider.getDimension(),
-                this.getPos()));
+        SteamLayerPacketHandler.getHandler().sendToServer(new TileSyncRequestPacket(
+                world.getDimension().getType().getId(),
+                getPos()));
     }
 
     public void forceSync()
     {
-        if (this.world != null)
+        if (world != null)
         {
             NetworkHandler.sendTileToRange(this);
-            this.isSyncQueued = false;
+            isSyncQueued = false;
         }
     }
 
     public void sync()
     {
-        if (this.world != null)
+        if (world != null)
         {
-            if (!this.isSyncLocked())
+            if (!isSyncLocked())
                 NetworkHandler.sendTileToRange(this);
             else
-                this.isSyncQueued = true;
+                isSyncQueued = true;
         }
     }
 
     public void syncLock()
     {
-        this.isSyncLocked = true;
+        isSyncLocked = true;
     }
 
     public void releaseSyncLock(boolean flushSync)
     {
-        this.isSyncLocked = false;
+        isSyncLocked = false;
 
-        if (flushSync && this.isSyncQueued)
-            this.sync();
-        this.isSyncQueued = false;
+        if (flushSync && isSyncQueued)
+            sync();
+        isSyncQueued = false;
     }
 
     public boolean isServer()
     {
-        if (this.world != null)
-            return !this.world.isRemote;
-        return FMLCommonHandler.instance().getEffectiveSide().isServer();
+        if (world != null)
+            return !world.isRemote;
+        return EffectiveSide.get().isServer();
     }
 
     public boolean isClient()
     {
-        if (this.world != null)
-            return this.world.isRemote;
-        return FMLCommonHandler.instance().getEffectiveSide().isClient();
+        if (world != null)
+            return world.isRemote;
+        return EffectiveSide.get().isClient();
     }
 
     @Override

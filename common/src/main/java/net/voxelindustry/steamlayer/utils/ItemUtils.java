@@ -1,36 +1,21 @@
 package net.voxelindustry.steamlayer.utils;
 
-import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.util.NonNullList;
-import net.minecraftforge.oredict.OreDictionary;
 
 public class ItemUtils
 {
     public static boolean deepEquals(ItemStack a, ItemStack b)
     {
-        if (a.getItem() != b.getItem() || !ItemStack.areItemStackTagsEqual(a, b))
-            return false;
-        if (a.getHasSubtypes())
-        {
-            if (ItemUtils.isWildcard(a.getItemDamage()) || ItemUtils.isWildcard(b.getItemDamage()))
-                return true;
-            if (a.getItemDamage() != b.getItemDamage())
-                return false;
-        }
-        return true;
+        return ItemStack.areItemStacksEqual(a, b);
     }
 
     public static boolean deepEqualsWithAmount(ItemStack a, ItemStack b)
     {
         return a.getCount() == b.getCount() && deepEquals(a, b);
-    }
-
-    public static boolean isWildcard(int damage)
-    {
-        return damage == -1 || damage == OreDictionary.WILDCARD_VALUE;
     }
 
     public static String getPrettyStackName(ItemStack stack)
@@ -58,7 +43,7 @@ public class ItemUtils
             }
             return 0;
         }
-        if ((ItemUtils.deepEquals(dest, from) || OreDictionary.itemMatches(dest, from, true)))
+        if ((ItemUtils.deepEquals(dest, from)))
         {
             int merged = Math.min(dest.getMaxStackSize() - dest.getCount(), from.getCount());
             if (doMerge)
@@ -71,7 +56,7 @@ public class ItemUtils
         return from.getCount();
     }
 
-    public static boolean hasPlayerEnough(InventoryPlayer player, ItemStack stack, boolean deepEquals)
+    public static boolean hasPlayerEnough(PlayerInventory player, ItemStack stack, boolean deepEquals)
     {
         int needed = stack.getCount();
         for (int i = 0; i < player.getSizeInventory(); ++i)
@@ -89,40 +74,42 @@ public class ItemUtils
         return false;
     }
 
-    public static int drainPlayer(InventoryPlayer player, ItemStack stack)
+    public static int drainPlayer(PlayerInventory player, ItemStack stack)
     {
-        return player.clearMatchingItems(stack.getItem(), stack.getItemDamage(), stack.getCount(),
-                stack.getTagCompound());
+        return player.clearMatchingItems(candidate -> deepEquals(candidate, stack), stack.getCount());
     }
 
-    public static NBTTagCompound saveAllItems(NBTTagCompound tag, NonNullList<ItemStack> list)
+    public static CompoundNBT saveAllItems(CompoundNBT tag, NonNullList<ItemStack> list)
     {
-        NBTTagList nbttaglist = new NBTTagList();
+        if (list.size() > Byte.MAX_VALUE)
+            throw new RuntimeException("Cannot save more than " + Byte.MAX_VALUE + " entries! size=" + list.size());
+
+        ListNBT nbttaglist = new ListNBT();
 
         for (int i = 0; i < list.size(); ++i)
         {
             ItemStack itemstack = list.get(i);
 
-            NBTTagCompound nbttagcompound = new NBTTagCompound();
-            nbttagcompound.setByte("Slot", (byte) i);
-            itemstack.writeToNBT(nbttagcompound);
-            nbttaglist.appendTag(nbttagcompound);
+            CompoundNBT nbttagcompound = new CompoundNBT();
+            nbttagcompound.putByte("Slot", (byte) i);
+            itemstack.write(nbttagcompound);
+            nbttaglist.add(nbttagcompound);
         }
-        tag.setTag("Items", nbttaglist);
+        tag.put("Items", nbttaglist);
         return tag;
     }
 
-    public static void loadAllItems(NBTTagCompound tag, NonNullList<ItemStack> list)
+    public static void loadAllItems(CompoundNBT tag, NonNullList<ItemStack> list)
     {
-        NBTTagList nbttaglist = tag.getTagList("Items", 10);
+        ListNBT nbttaglist = tag.getList("Items", 10);
 
-        for (int i = 0; i < nbttaglist.tagCount(); ++i)
+        for (int i = 0; i < nbttaglist.size(); ++i)
         {
-            NBTTagCompound nbttagcompound = nbttaglist.getCompoundTagAt(i);
+            CompoundNBT nbttagcompound = nbttaglist.getCompound(i);
             int j = nbttagcompound.getByte("Slot") & 255;
 
             if (j >= 0 && j < list.size())
-                list.set(j, new ItemStack(nbttagcompound));
+                list.set(j, ItemStack.read(nbttagcompound));
         }
     }
 }

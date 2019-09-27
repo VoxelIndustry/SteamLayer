@@ -1,7 +1,8 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.container.ContainerType;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
@@ -28,15 +29,15 @@ import java.util.function.Predicate;
  */
 public class ContainerBuilder
 {
-    private final String name;
+    private final ContainerType<BuiltContainer> type;
 
-    private final EntityPlayer            player;
-    private       Predicate<EntityPlayer> canInteract = player -> true;
+    private final PlayerEntity            player;
+    private       Predicate<PlayerEntity> canInteract = player -> true;
 
     final List<ListenerSlot>   slots;
     final List<Range<Integer>> playerInventoryRanges, tileInventoryRanges;
 
-    final List<Consumer<InventoryCrafting>> craftEvents;
+    final List<Consumer<CraftingInventory>> craftEvents;
 
     private ContainerEvent       closeEvent;
     private List<ContainerEvent> tickEvents;
@@ -55,13 +56,12 @@ public class ContainerBuilder
      * <p>
      * This builder contains several sub builders to configure specific aspects of the Container logic.
      *
-     * @param name   an unique name to be used as an identifier of the produced Container.
+     * @param type   the ContainerType corresponding to the produced Container to be used as an identifier.
      * @param player the player instance to which the Container is to be attached.
      */
-    public ContainerBuilder(String name, EntityPlayer player)
+    public ContainerBuilder(ContainerType<BuiltContainer> type, PlayerEntity player)
     {
-        this.name = name;
-
+        this.type = type;
         this.player = player;
 
         this.slots = new ArrayList<>();
@@ -78,10 +78,10 @@ public class ContainerBuilder
      * Use this method to configure a custom interact predicate.
      * The vanilla behavior is to check the distance between the opened tile and the player.
      *
-     * @param canInteract predicate consuming an {@link EntityPlayer} instance provided by the {@link BuiltContainer}
+     * @param canInteract predicate consuming an {@link PlayerEntity} instance provided by the {@link BuiltContainer}
      * @return a reference to this {@code ContainerBuilder} to resume the "Builder" pattern
      */
-    public ContainerBuilder interact(Predicate<EntityPlayer> canInteract)
+    public ContainerBuilder interact(Predicate<PlayerEntity> canInteract)
     {
         this.canInteract = canInteract;
         return this;
@@ -93,7 +93,7 @@ public class ContainerBuilder
      * @param player the inventory of the player to base this container on.
      * @return a {@link ContainerPlayerInventoryBuilder} marked as child of this builder
      */
-    public ContainerPlayerInventoryBuilder player(EntityPlayer player)
+    public ContainerPlayerInventoryBuilder player(PlayerEntity player)
     {
         return new ContainerPlayerInventoryBuilder(this, player, new PlayerInvWrapper(player.inventory));
     }
@@ -133,10 +133,16 @@ public class ContainerBuilder
      *
      * @return an instance of {@link BuiltContainer} configured accordingly to this builder
      */
-    public BuiltContainer create()
+    public BuiltContainer create(int windowId)
     {
-        BuiltContainer built = new BuiltContainer(this.name, this.player, this.inventories, this.canInteract,
-                this.playerInventoryRanges, this.tileInventoryRanges);
+        BuiltContainer built = new BuiltContainer(
+                this.type,
+                windowId,
+                this.player,
+                this.inventories,
+                this.canInteract,
+                this.playerInventoryRanges,
+                this.tileInventoryRanges);
 
         built.setCloseEvent(closeEvent);
         built.setTickEvents(tickEvents);

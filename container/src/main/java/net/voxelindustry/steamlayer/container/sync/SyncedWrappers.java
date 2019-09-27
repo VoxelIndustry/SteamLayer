@@ -2,11 +2,11 @@ package net.voxelindustry.steamlayer.container.sync;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
+import net.voxelindustry.steamlayer.network.ByteBufHelper;
 import net.voxelindustry.steamlayer.utils.ItemUtils;
 
 import java.util.IdentityHashMap;
@@ -94,13 +94,13 @@ public class SyncedWrappers
             @Override
             public void write(ByteBuf buffer, String value)
             {
-                ByteBufUtils.writeUTF8String(buffer, value);
+                ByteBufHelper.writeString(buffer, value);
             }
 
             @Override
             public String read(ByteBuf buffer)
             {
-                return ByteBufUtils.readUTF8String(buffer);
+                return ByteBufHelper.readString(buffer);
             }
         });
 
@@ -109,20 +109,19 @@ public class SyncedWrappers
             @Override
             public void write(ByteBuf buffer, FluidStack value)
             {
-                ByteBufUtils.writeUTF8String(buffer, value.getFluid().getName());
-                buffer.writeInt(value.amount);
+                value.writeToPacket(new PacketBuffer(buffer));
             }
 
             @Override
             public FluidStack read(ByteBuf buffer)
             {
-                return FluidRegistry.getFluidStack(ByteBufUtils.readUTF8String(buffer), buffer.readInt());
+                return FluidStack.readFromPacket(new PacketBuffer(buffer));
             }
 
             @Override
             public boolean areEquals(FluidStack first, FluidStack second)
             {
-                return super.areEquals(first, second) && first.amount == second.amount;
+                return super.areEquals(first, second) && first.getAmount() == second.getAmount();
             }
 
             @Override
@@ -137,13 +136,13 @@ public class SyncedWrappers
             @Override
             public void write(ByteBuf buffer, ItemStack value)
             {
-                ByteBufUtils.writeItemStack(buffer, value);
+                ByteBufHelper.writeItemStack(buffer, value);
             }
 
             @Override
             public ItemStack read(ByteBuf buffer)
             {
-                return ByteBufUtils.readItemStack(buffer);
+                return ByteBufHelper.readItemStack(buffer);
             }
 
             @Override
@@ -167,7 +166,7 @@ public class SyncedWrappers
                 buffer.writeInt(value.getSlots());
 
                 for (int slot = 0; slot < value.getSlots(); slot++)
-                    ByteBufUtils.writeItemStack(buffer, value.getStackInSlot(slot));
+                    ByteBufHelper.writeItemStack(buffer, value.getStackInSlot(slot));
             }
 
             @Override
@@ -176,7 +175,7 @@ public class SyncedWrappers
                 ItemStackHandler inventory = new ItemStackHandler(buffer.readInt());
 
                 for (int slot = 0; slot < inventory.getSlots(); slot++)
-                    inventory.setStackInSlot(slot, ByteBufUtils.readItemStack(buffer));
+                    inventory.setStackInSlot(slot, ByteBufHelper.readItemStack(buffer));
                 return inventory;
             }
 

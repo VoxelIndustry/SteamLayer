@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 
 public interface IContainerProvider
 {
-    BuiltContainer createContainer(EntityPlayer player);
+    BuiltContainer createContainer(PlayerEntity player);
 }

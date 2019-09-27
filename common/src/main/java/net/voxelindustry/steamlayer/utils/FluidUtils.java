@@ -1,72 +1,81 @@
 package net.voxelindustry.steamlayer.utils;
 
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.*;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidUtil;
+import net.minecraftforge.fluids.IFluidTank;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.function.Predicate;
+
+import static net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+import static net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE;
 
 public class FluidUtils
 {
     public static final Predicate<FluidStack> WATER_FILTER = stack ->
-            stack != null && stack.getFluid() != null && stack.getFluid().equals(FluidRegistry.WATER);
+            stack != null && stack.getFluid() != null && stack.getFluid().equals(Fluids.WATER);
 
-    public static boolean drainPlayerHand(IFluidHandler fluidHandler, EntityPlayer player)
+    public static boolean drainPlayerHand(IFluidHandler fluidHandler, PlayerEntity player)
     {
         ItemStack input = player.getHeldItemMainhand();
         ItemStack output;
 
-        IFluidHandlerItem inputFluidHandler = FluidUtils.getFluidHandler(input);
+        LazyOptional<IFluidHandlerItem> lazyHandler = FluidUtils.getFluidHandler(input);
 
-        if (fluidHandler != null && inputFluidHandler != null
-                && inputFluidHandler.getTankProperties()[0].getContents() != null)
+        if (fluidHandler == null || !lazyHandler.isPresent())
+            return false;
+
+        IFluidHandlerItem handler = lazyHandler.orElse(null);
+
+        if (handler.getFluidInTank(0).isEmpty())
+            return false;
+
+        int simulated = fluidHandler.fill(handler.drain(Integer.MAX_VALUE, SIMULATE), SIMULATE);
+        if (simulated > 0)
         {
-
-            int simulated = fluidHandler.fill(inputFluidHandler.drain(Integer.MAX_VALUE, false), false);
-            if (simulated > 0)
+            fluidHandler.fill(handler.drain(simulated, EXECUTE), EXECUTE);
+            if ((handler.getFluidInTank(0).isEmpty() || handler.getFluidInTank(0).getAmount() == 0) && !player.isCreative())
             {
-                fluidHandler.fill(inputFluidHandler.drain(simulated, true), true);
-                if ((inputFluidHandler.getTankProperties()[0].getContents() == null
-                        || inputFluidHandler.getTankProperties()[0].getContents().amount == 0) && !player.isCreative())
+                output = handler.getContainer();
+                if (input.getCount() == 1)
+                    player.inventory.setInventorySlotContents(player.inventory.currentItem, output);
+                else
                 {
-                    output = inputFluidHandler.getContainer();
-                    if (input.getCount() == 1)
-                        player.inventory.setInventorySlotContents(player.inventory.currentItem, output);
-                    else
-                    {
-                        player.inventory.decrStackSize(player.inventory.currentItem, 1);
-                        if (!player.inventory.addItemStackToInventory(output))
-                            player.entityDropItem(output, 0);
-                    }
+                    player.inventory.decrStackSize(player.inventory.currentItem, 1);
+                    if (!player.inventory.addItemStackToInventory(output))
+                        player.entityDropItem(output, 0);
                 }
-                return true;
             }
+            return true;
         }
         return false;
     }
 
-    public static boolean fillPlayerHand(IFluidHandler fluidHandler, EntityPlayer player)
+    public static boolean fillPlayerHand(IFluidHandler fluidHandler, PlayerEntity player)
     {
         ItemStack input = player.getHeldItemMainhand();
         ItemStack output;
 
-        IFluidHandlerItem inputFluidHandler = FluidUtils.getFluidHandler(input);
+        LazyOptional<IFluidHandlerItem> lazyHandler = FluidUtils.getFluidHandler(input);
 
-        if (fluidHandler != null && inputFluidHandler != null
-                && fluidHandler.getTankProperties()[0].getContents() != null)
+        if (fluidHandler != null && lazyHandler.isPresent() && !fluidHandler.getFluidInTank(0).isEmpty())
         {
+            IFluidHandlerItem handler = lazyHandler.orElse(null);
 
-            int simulated = inputFluidHandler.fill(fluidHandler.drain(Integer.MAX_VALUE, false), false);
+            int simulated = handler.fill(fluidHandler.drain(Integer.MAX_VALUE, SIMULATE), SIMULATE);
             if (simulated > 0)
             {
-                inputFluidHandler.fill(fluidHandler.drain(simulated, true), true);
+                handler.fill(fluidHandler.drain(simulated, EXECUTE), EXECUTE);
 
-                output = inputFluidHandler.getContainer();
+                output = handler.getContainer();
                 if (input.getCount() == 1)
                 {
                     if (!player.isCreative())
@@ -94,58 +103,42 @@ public class FluidUtils
         ItemStack input = inv.getStackInSlot(inputSlot);
         ItemStack output = inv.getStackInSlot(outputSlot);
 
-        IFluidHandlerItem inputFluidHandler = FluidUtils.getFluidHandler(input);
+        LazyOptional<IFluidHandlerItem> lazyHandler = FluidUtils.getFluidHandler(input);
 
-        if (inputFluidHandler != null)
+        if (!lazyHandler.isPresent())
+            return false;
+
+        IFluidHandlerItem handler = lazyHandler.orElse(null);
+
+        if (FluidUtil.tryFluidTransfer(fluidHandler, handler,
+                handler.getTankCapacity(0), false).isEmpty())
+            return false;
+
+        FluidStack drained = FluidUtil.tryFluidTransfer(fluidHandler, handler,
+                handler.getTankCapacity(0), true);
+
+        if (!drained.isEmpty() && handler.getContainer() != ItemStack.EMPTY)
         {
-            /*
-             * Making a simulation to check if the fluid can be drained into the
-             * fluidhandler.
-             */
-            if (FluidUtil.tryFluidTransfer(fluidHandler, inputFluidHandler,
-                    inputFluidHandler.getTankProperties()[0].getCapacity(), false) != null)
+            if (output == ItemStack.EMPTY)
             {
-                // Changes are really applied and the fluid is drained.
-                FluidStack drained = FluidUtil.tryFluidTransfer(fluidHandler, inputFluidHandler,
-                        inputFluidHandler.getTankProperties()[0].getCapacity(), true);
-
-                /*
-                 * If the drained container doesn't disappear we need to update
-                 * the inventory accordingly.
-                 */
-                if (drained != null && inputFluidHandler.getContainer() != ItemStack.EMPTY)
-                    if (output == ItemStack.EMPTY)
-                    {
-                        inv.setInventorySlotContents(outputSlot, inputFluidHandler.getContainer());
-                        inv.decrStackSize(inputSlot, 1);
-                    }
-                    else
-                    {
-                        /*
-                         * When output is not EMPTY, it is needed to check if
-                         * the two stacks can be merged together, there was no
-                         * simple way to make that check before.
-                         */
-                        if (ItemUtils.deepEquals(output, inputFluidHandler.getContainer()))
-                        {
-                            inv.getStackInSlot(outputSlot).setCount(inv.getStackInSlot(outputSlot).getCount() + 1);
-                            inv.decrStackSize(inputSlot, 1);
-                        }
-                        else
-                        {
-                            /*
-                             * Due to the late check of stacks merge we need to
-                             * reverse any changes made to the FluidHandlers
-                             * when the merge fail.
-                             */
-                            FluidUtil.tryFluidTransfer(inputFluidHandler, fluidHandler, drained.amount, true);
-                            return false;
-                        }
-                    }
-                return true;
+                inv.setInventorySlotContents(outputSlot, handler.getContainer());
+                inv.decrStackSize(inputSlot, 1);
+            }
+            else
+            {
+                if (ItemUtils.deepEquals(output, handler.getContainer()))
+                {
+                    inv.getStackInSlot(outputSlot).setCount(inv.getStackInSlot(outputSlot).getCount() + 1);
+                    inv.decrStackSize(inputSlot, 1);
+                }
+                else
+                {
+                    FluidUtil.tryFluidTransfer(handler, fluidHandler, drained.getAmount(), true);
+                    return false;
+                }
             }
         }
-        return false;
+        return true;
     }
 
     public static boolean fillContainers(IFluidHandler fluidHandler, IInventory inv, int inputSlot,
@@ -156,7 +149,7 @@ public class FluidUtils
 
         if (input != ItemStack.EMPTY)
         {
-            IFluidHandlerItem inputFluidHandler = FluidUtils.getFluidHandler(input);
+            LazyOptional<IFluidHandlerItem> lazyHandler = FluidUtils.getFluidHandler(input);
 
             /*
              * The copy is needed to get the filled container without altering
@@ -169,23 +162,24 @@ public class FluidUtils
              * It's necessary to check before any alterations that the resulting
              * ItemStack can be placed into the outputSlot.
              */
-            if (inputFluidHandler != null && (output == ItemStack.EMPTY || output.getCount() < output.getMaxStackSize()
+            if (lazyHandler.isPresent() && (output == ItemStack.EMPTY || output.getCount() < output.getMaxStackSize()
                     && ItemUtils.deepEquals(FluidUtils.getFilledContainer(fluidToFill, containerCopy), output)))
             {
+                IFluidHandlerItem handler = lazyHandler.orElse(null);
                 /*
                  * Making a simulation to check if the fluid can be transfered
                  * into the fluidhandler.
                  */
-                if (FluidUtil.tryFluidTransfer(inputFluidHandler, fluidHandler,
-                        inputFluidHandler.getTankProperties()[0].getCapacity(), false) != null)
+                if (!FluidUtil.tryFluidTransfer(handler, fluidHandler,
+                        handler.getTankCapacity(0), false).isEmpty())
                 {
                     // Changes are really applied and the fluid is transfered.
-                    FluidUtil.tryFluidTransfer(inputFluidHandler, fluidHandler,
-                            inputFluidHandler.getTankProperties()[0].getCapacity(), true);
+                    FluidUtil.tryFluidTransfer(handler, fluidHandler,
+                            handler.getTankCapacity(0), true);
 
                     // The inventory is modified and stacks are merged.
                     if (output == ItemStack.EMPTY)
-                        inv.setInventorySlotContents(outputSlot, inputFluidHandler.getContainer());
+                        inv.setInventorySlotContents(outputSlot, handler.getContainer());
                     else
                         inv.getStackInSlot(outputSlot).setCount(inv.getStackInSlot(outputSlot).getCount() + 1);
                     inv.decrStackSize(inputSlot, 1);
@@ -196,8 +190,8 @@ public class FluidUtils
         return false;
     }
 
-    @Nullable
-    public static IFluidHandlerItem getFluidHandler(ItemStack container)
+    @Nonnull
+    public static LazyOptional<IFluidHandlerItem> getFluidHandler(ItemStack container)
     {
         ItemStack copy = container.copy();
         copy.setCount(1);
@@ -209,8 +203,9 @@ public class FluidUtils
     {
         if (fluid == null || empty == ItemStack.EMPTY)
             return ItemStack.EMPTY;
-        IFluidHandlerItem fluidHandler = FluidUtil.getFluidHandler(empty);
-        fluidHandler.fill(new FluidStack(fluid, fluidHandler.getTankProperties()[0].getCapacity()), true);
+
+        FluidUtil.getFluidHandler(empty)
+                .ifPresent(handler -> handler.fill(new FluidStack(fluid, handler.getTankCapacity(0)), EXECUTE));
         return empty;
     }
 

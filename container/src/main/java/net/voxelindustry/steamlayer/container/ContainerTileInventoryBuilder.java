@@ -1,10 +1,14 @@
 package net.voxelindustry.steamlayer.container;
 
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.items.ItemStackHandler;
-import net.voxelindustry.steamlayer.container.slot.*;
+import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
+import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
+import net.voxelindustry.steamlayer.container.slot.SlotDisplay;
+import net.voxelindustry.steamlayer.container.slot.SlotFuel;
+import net.voxelindustry.steamlayer.container.slot.SlotOutput;
 import org.apache.commons.lang3.Range;
 
 import java.util.function.Predicate;
@@ -19,7 +23,7 @@ public class ContainerTileInventoryBuilder
     {
         this.inventory = inventory;
         this.parent = parent;
-        this.rangeStart = parent.slots.size();
+        rangeStart = parent.slots.size();
     }
 
     /**
@@ -29,19 +33,19 @@ public class ContainerTileInventoryBuilder
      * @param x          the horizontal position at which the line begins
      * @param y          the vertical position at which the line begins
      * @param quantity   the number of slot to be added
-     * @param axis       the {@link EnumFacing.Axis} to follow
+     * @param axis       the {@link Direction.Axis} to follow
      * @param filter     the {@link ItemStack} predicate to use for filtering logic
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
     public ContainerTileInventoryBuilder filterSlotLine(int indexStart, int x, int y, int quantity,
-                                                        EnumFacing.Axis axis, Predicate<ItemStack> filter)
+                                                        Direction.Axis axis, Predicate<ItemStack> filter)
     {
         for (int i = 0; i < quantity; i++)
         {
             if (axis.isHorizontal())
-                this.filterSlot(indexStart + i, x + (i * 18), y, filter);
+                filterSlot(indexStart + i, x + (i * 18), y, filter);
             else
-                this.filterSlot(indexStart + i, x, y + (i * 18), filter);
+                filterSlot(indexStart + i, x, y + (i * 18), filter);
         }
         return this;
     }
@@ -53,17 +57,17 @@ public class ContainerTileInventoryBuilder
      * @param x          the horizontal position at which the line begins
      * @param y          the vertical position at which the line begins
      * @param quantity   the number of slot to be added
-     * @param axis       the {@link EnumFacing.Axis} to follow
+     * @param axis       the {@link Direction.Axis} to follow
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder slotLine(int indexStart, int x, int y, int quantity, EnumFacing.Axis axis)
+    public ContainerTileInventoryBuilder slotLine(int indexStart, int x, int y, int quantity, Direction.Axis axis)
     {
         for (int i = 0; i < quantity; i++)
         {
             if (axis.isHorizontal())
-                this.slot(indexStart + i, x + (i * 18), y);
+                slot(indexStart + i, x + (i * 18), y);
             else
-                this.slot(indexStart + i, x, y + (i * 18));
+                slot(indexStart + i, x, y + (i * 18));
         }
         return this;
     }
@@ -76,9 +80,9 @@ public class ContainerTileInventoryBuilder
      * @param y     the vertical position at which the slot is placed
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder slot(final int index, final int x, final int y)
+    public ContainerTileInventoryBuilder slot(int index, int x, int y)
     {
-        this.parent.slots.add(new ListenerSlot(this.inventory, index, x, y));
+        parent.slots.add(new ListenerSlot(inventory, index, x, y));
         return this;
     }
 
@@ -91,9 +95,9 @@ public class ContainerTileInventoryBuilder
      * @param y     the vertical position at which the slot is placed
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder outputSlot(final int index, final int x, final int y)
+    public ContainerTileInventoryBuilder outputSlot(int index, int x, int y)
     {
-        this.parent.slots.add(new SlotOutput(this.inventory, index, x, y));
+        parent.slots.add(new SlotOutput(inventory, index, x, y));
         return this;
     }
 
@@ -108,10 +112,10 @@ public class ContainerTileInventoryBuilder
      * @param filter a predicate using the current {@link ItemStack} queried for the filter logic
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder filterSlot(final int index, final int x, final int y,
-                                                    final Predicate<ItemStack> filter)
+    public ContainerTileInventoryBuilder filterSlot(int index, int x, int y,
+                                                    Predicate<ItemStack> filter)
     {
-        this.parent.slots.add(new FilteredSlot(this.inventory, index, x, y).setFilter(filter));
+        parent.slots.add(new FilteredSlot(inventory, index, x, y).setFilter(filter));
         return this;
     }
 
@@ -119,25 +123,24 @@ public class ContainerTileInventoryBuilder
      * Add a fluid-containers-only slot to the slot list of the current {@code IInventory}
      * <p>
      * The builtin filter will only allow {@link ItemStack} having the {@code CapabilityFluidHandler
-     * .FLUID_HANDLER_ITEM_CAPABILITY} with {@code EnumFacing.UP}
+     * .FLUID_HANDLER_ITEM_CAPABILITY} with {@code Direction.UP}
      *
      * @param index the index this slot will use to communicate with the inventory.
      * @param x     the horizontal position at which the slot is placed
      * @param y     the vertical position at which the slot is placed
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    @SuppressWarnings("null")
-    public ContainerTileInventoryBuilder fluidSlot(final int index, final int x, final int y)
+    public ContainerTileInventoryBuilder fluidSlot(int index, int x, int y)
     {
-        this.parent.slots.add(new FilteredSlot(this.inventory, index, x, y).setFilter(
-                stack -> stack.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, EnumFacing.UP)));
+        parent.slots.add(new FilteredSlot(inventory, index, x, y).setFilter(
+                stack -> stack.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, Direction.UP).isPresent()));
         return this;
     }
 
     /**
      * Add a fuel-only slot to the slot list of the current {@code IInventory}
      * <p>
-     * The builtin filter will query {@link net.minecraft.tileentity.TileEntityFurnace#isItemFuel(ItemStack)} with
+     * The builtin filter will query {@link net.minecraft.tileentity.FurnaceTileEntity#isFuel(ItemStack)} (ItemStack)} with
      * the exception of allowing buckets for vanilla behavior compatibility.
      *
      * @param index the index this slot will use to communicate with the inventory.
@@ -145,9 +148,9 @@ public class ContainerTileInventoryBuilder
      * @param y     the vertical position at which the slot is placed
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder fuelSlot(final int index, final int x, final int y)
+    public ContainerTileInventoryBuilder fuelSlot(int index, int x, int y)
     {
-        this.parent.slots.add(new SlotFuel(this.inventory, index, x, y));
+        parent.slots.add(new SlotFuel(inventory, index, x, y));
         return this;
     }
 
@@ -162,9 +165,9 @@ public class ContainerTileInventoryBuilder
      * @param y     the vertical position at which the slot is placed
      * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder displaySlot(final int index, final int x, final int y)
+    public ContainerTileInventoryBuilder displaySlot(int index, int x, int y)
     {
-        this.parent.slots.add(new SlotDisplay(this.inventory, index, x, y));
+        parent.slots.add(new SlotDisplay(inventory, index, x, y));
         return this;
     }
 
@@ -175,20 +178,20 @@ public class ContainerTileInventoryBuilder
      */
     public ContainerSyncBuilder sync()
     {
-        this.setParentData();
-        return new ContainerSyncBuilder(this.parent);
+        setParentData();
+        return new ContainerSyncBuilder(parent);
     }
 
-    public BuiltContainer create()
+    public BuiltContainer create(int windowId)
     {
-        this.setParentData();
-        return this.parent.create();
+        setParentData();
+        return parent.create(windowId);
     }
 
     private void setParentData()
     {
-        if (this.inventory.getSlots() != 0)
-            this.parent.tileInventoryRanges.add(Range.between(this.rangeStart, this.parent.slots.size() - 1));
-        this.parent.inventories.add(this.inventory);
+        if (inventory.getSlots() != 0)
+            parent.tileInventoryRanges.add(Range.between(rangeStart, parent.slots.size() - 1));
+        parent.inventories.add(inventory);
     }
 }

@@ -7,7 +7,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.items.ItemStackHandler;
@@ -29,9 +29,9 @@ public class InventoryHandler extends ItemStackHandler
     private Int2ObjectMap<Predicate<ItemStack>> slotFilters;
 
     @Setter
-    private Consumer<EntityPlayer> onOpen;
+    private Consumer<PlayerEntity> onOpen;
     @Setter
-    private Consumer<EntityPlayer> onClose;
+    private Consumer<PlayerEntity> onClose;
 
     @Getter
     @Setter
@@ -133,13 +133,13 @@ public class InventoryHandler extends ItemStackHandler
             this.addSlotFilter(slot, filter);
     }
 
-    public void openInventory(EntityPlayer player)
+    public void openInventory(PlayerEntity player)
     {
         if (this.onOpen != null)
             this.onOpen.accept(player);
     }
 
-    public void closeInventory(EntityPlayer player)
+    public void closeInventory(PlayerEntity player)
     {
         if (this.onClose != null)
             this.onClose.accept(player);

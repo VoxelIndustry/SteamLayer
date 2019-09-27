@@ -1,18 +1,18 @@
 package net.voxelindustry.steamlayer.grid;
 
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.EnumMap;
 
 public interface ITileCable<T extends CableGrid> extends ITileNode<T>
 {
-    EnumMap<EnumFacing, ITileCable<T>> getConnectionsMap();
+    EnumMap<Direction, ITileCable<T>> getConnectionsMap();
 
     default void adjacentConnect()
     {
-        for (final EnumFacing facing : EnumFacing.VALUES)
+        for (final Direction facing : Direction.values())
         {
             final TileEntity adjacent = this.getBlockWorld().getTileEntity(this.getAdjacentPos(facing));
             if (adjacent instanceof ITileCable && this.canConnect(facing, (ITileCable<?>) adjacent)
@@ -26,34 +26,34 @@ public interface ITileCable<T extends CableGrid> extends ITileNode<T>
         this.updateState();
     }
 
-    boolean canConnect(EnumFacing facing, ITileNode<?> to);
+    boolean canConnect(Direction facing, ITileNode<?> to);
 
-    default BlockPos getAdjacentPos(final EnumFacing facing)
+    default BlockPos getAdjacentPos(final Direction facing)
     {
         return this.getBlockPos().offset(facing);
     }
 
     default int[] getConnections()
     {
-        return this.getConnectionsMap().keySet().stream().mapToInt(EnumFacing::ordinal).toArray();
+        return this.getConnectionsMap().keySet().stream().mapToInt(Direction::ordinal).toArray();
     }
 
     default ITileCable<T> getConnected(int edge)
     {
-        return this.getConnected(EnumFacing.VALUES[edge]);
+        return this.getConnected(Direction.values()[edge]);
     }
 
-    default ITileCable<T> getConnected(EnumFacing facing)
+    default ITileCable<T> getConnected(Direction facing)
     {
         return this.getConnectionsMap().get(facing);
     }
 
-    default void connect(EnumFacing facing, ITileCable<T> to)
+    default void connect(Direction facing, ITileCable<T> to)
     {
         this.getConnectionsMap().put(facing, to);
     }
 
-    default void disconnect(EnumFacing facing)
+    default void disconnect(Direction facing)
     {
         this.getConnectionsMap().remove(facing);
         this.updateState();
@@ -62,18 +62,18 @@ public interface ITileCable<T extends CableGrid> extends ITileNode<T>
     @Override
     default void disconnect(int edge)
     {
-        this.disconnect(EnumFacing.VALUES[edge]);
+        this.disconnect(Direction.values()[edge]);
     }
 
     @Override
     default int invertEdge(int edge)
     {
-        return EnumFacing.VALUES[edge].getOpposite().ordinal();
+        return Direction.values()[edge].getOpposite().ordinal();
     }
 
     @Override
     default boolean canConnect(int edge, ITileNode<?> to)
     {
-        return this.canConnect(EnumFacing.VALUES[edge], to);
+        return this.canConnect(Direction.values()[edge], to);
     }
 }

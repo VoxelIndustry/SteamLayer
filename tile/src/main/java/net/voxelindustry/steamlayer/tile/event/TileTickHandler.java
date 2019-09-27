@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.tile.event;
 
 import com.google.common.collect.Queues;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.voxelindustry.steamlayer.tile.ILoadable;
 
 import java.util.Queue;

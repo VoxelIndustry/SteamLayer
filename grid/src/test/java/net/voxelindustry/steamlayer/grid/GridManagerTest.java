@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,7 +15,7 @@ import static org.mockito.Mockito.*;
 public class GridManagerTest
 {
     private GridManager instance;
-    
+
     @Before
     public void setupTest()
     {
@@ -100,8 +100,8 @@ public class GridManagerTest
 
         instance.getGrid(0).addCable(upperCable);
         instance.getGrid(0).removeCable(cable);
-        when(cable.getConnections()).thenReturn(new int[]{EnumFacing.UP.ordinal()});
-        when(cable.getConnected(EnumFacing.UP.ordinal())).thenReturn(upperCable);
+        when(cable.getConnections()).thenReturn(new int[]{Direction.UP.ordinal()});
+        when(cable.getConnected(Direction.UP.ordinal())).thenReturn(upperCable);
         when(upperCable.getGrid()).thenReturn(0);
 
         instance.connectCable(cable);
@@ -117,9 +117,9 @@ public class GridManagerTest
         ITileCable left = spy(ITileCableTestImpl.class);
         ITileCable right = spy(ITileCableTestImpl.class);
 
-        when(center.getConnections()).thenReturn(new int[]{EnumFacing.WEST.ordinal(), EnumFacing.EAST.ordinal()});
-        when(center.getConnected(EnumFacing.WEST)).thenReturn(left);
-        when(center.getConnected(EnumFacing.EAST)).thenReturn(right);
+        when(center.getConnections()).thenReturn(new int[]{Direction.WEST.ordinal(), Direction.EAST.ordinal()});
+        when(center.getConnected(Direction.WEST)).thenReturn(left);
+        when(center.getConnected(Direction.EAST)).thenReturn(right);
 
         CableGrid leftGrid = new CableGrid(0)
         {
@@ -188,13 +188,13 @@ public class GridManagerTest
         cable.setGrid(0);
         neighbor.setGrid(0);
 
-        when(cable.getConnections()).thenReturn(new int[]{EnumFacing.UP.ordinal()});
-        when(cable.getConnected(EnumFacing.UP)).thenReturn(neighbor);
+        when(cable.getConnections()).thenReturn(new int[]{Direction.UP.ordinal()});
+        when(cable.getConnected(Direction.UP)).thenReturn(neighbor);
 
         instance.disconnectCable(cable);
 
         assertThat(instance.cableGrids).hasSize(1);
-        verify(neighbor, times(1)).disconnect(EnumFacing.DOWN.ordinal());
+        verify(neighbor, times(1)).disconnect(Direction.DOWN.ordinal());
     }
 
     @Test
@@ -205,12 +205,12 @@ public class GridManagerTest
         ITileCable right = spy(ITileCableTestImpl.class);
         ITileCable rightDangling = spy(ITileCableTestImpl.class);
 
-        center.connect(EnumFacing.WEST, left);
-        center.connect(EnumFacing.EAST, right);
+        center.connect(Direction.WEST, left);
+        center.connect(Direction.EAST, right);
 
-        left.connect(EnumFacing.EAST, center);
-        right.connect(EnumFacing.WEST, center);
-        right.connect(EnumFacing.UP, rightDangling);
+        left.connect(Direction.EAST, center);
+        right.connect(Direction.WEST, center);
+        right.connect(Direction.UP, rightDangling);
 
         CableGrid grid = new CableGridTestImpl(0);
 
@@ -245,25 +245,25 @@ public class GridManagerTest
         ITileCable southeast = new ITileCableTestImpl();
         ITileCable southwest = new ITileCableTestImpl();
 
-        north.connect(EnumFacing.EAST, northeast);
-        north.connect(EnumFacing.WEST, northwest);
-        northeast.connect(EnumFacing.WEST, north);
-        northwest.connect(EnumFacing.EAST, north);
+        north.connect(Direction.EAST, northeast);
+        north.connect(Direction.WEST, northwest);
+        northeast.connect(Direction.WEST, north);
+        northwest.connect(Direction.EAST, north);
 
-        south.connect(EnumFacing.EAST, southeast);
-        south.connect(EnumFacing.WEST, southwest);
-        southeast.connect(EnumFacing.WEST, south);
-        southwest.connect(EnumFacing.EAST, south);
+        south.connect(Direction.EAST, southeast);
+        south.connect(Direction.WEST, southwest);
+        southeast.connect(Direction.WEST, south);
+        southwest.connect(Direction.EAST, south);
 
-        east.connect(EnumFacing.NORTH, northeast);
-        east.connect(EnumFacing.SOUTH, southeast);
-        northeast.connect(EnumFacing.SOUTH, east);
-        southeast.connect(EnumFacing.NORTH, east);
+        east.connect(Direction.NORTH, northeast);
+        east.connect(Direction.SOUTH, southeast);
+        northeast.connect(Direction.SOUTH, east);
+        southeast.connect(Direction.NORTH, east);
 
-        west.connect(EnumFacing.NORTH, northwest);
-        west.connect(EnumFacing.SOUTH, southwest);
-        northwest.connect(EnumFacing.SOUTH, west);
-        southwest.connect(EnumFacing.NORTH, west);
+        west.connect(Direction.NORTH, northwest);
+        west.connect(Direction.SOUTH, southwest);
+        northwest.connect(Direction.SOUTH, west);
+        southwest.connect(Direction.NORTH, west);
 
         CableGrid grid = new CableGridTestImpl(0);
 

@@ -1,44 +1,36 @@
 package net.voxelindustry.steamlayer.core;
 
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
 import net.voxelindustry.steamlayer.container.sync.ContainerSyncPacket;
 import net.voxelindustry.steamlayer.grid.GridManager;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
-import net.voxelindustry.steamlayer.network.packet.*;
+import net.voxelindustry.steamlayer.network.packet.PacketHandler;
 import net.voxelindustry.steamlayer.tile.event.TileTickHandler;
 
-@Mod(modid = SteamLayerConstants.MODID, name = SteamLayerConstants.MODNAME, version = SteamLayerConstants.VERSION)
+@Mod(SteamLayerConstants.MODID)
 public class SteamLayerCore
 {
-    @Mod.EventHandler
-    public void preInit(FMLPreInitializationEvent e)
+    public SteamLayerCore()
     {
-        SteamLayerPacketHandler.INSTANCE.registerMessage(ClientActionHolderPacket.ClientActionHolderPacketHandler.class,
-                ClientActionHolderPacket.class, 1, Side.CLIENT);
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::commonSetup);
+    }
 
-        SteamLayerPacketHandler.INSTANCE.registerMessage(ServerActionHolderPacket.ServerActionHolderPacketHandler.class,
-                ServerActionHolderPacket.class, 2, Side.SERVER);
-
-        SteamLayerPacketHandler.INSTANCE.registerMessage(TileSyncRequestPacket.TileSyncRequestPacketHandler.class,
-                TileSyncRequestPacket.class, 3, Side.SERVER);
-
-        SteamLayerPacketHandler.INSTANCE.registerMessage(GenericPacket.GenericClientPacketHandler.class,
-                GenericPacket.class, 4, Side.CLIENT);
-
-        SteamLayerPacketHandler.INSTANCE.registerMessage(GenericPacket.GenericServerPacketHandler.class,
-                GenericPacket.class, 5, Side.SERVER);
-
+    private void commonSetup(FMLCommonSetupEvent e)
+    {
+        SteamLayerPacketHandler.register();
         PacketHandler.getInstance().register(ContainerSyncPacket.class);
 
         MinecraftForge.EVENT_BUS.register(new TileTickHandler());
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
     }
 
-    @Mod.EventHandler
+    @SubscribeEvent
     public void onServerStopping(FMLServerStoppingEvent e)
     {
         GridManager.onServerShutdown();

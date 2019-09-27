@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -9,9 +9,9 @@ import java.util.EnumMap;
 public class ITileCableTestImpl implements ITileCable
 {
     private static final GridManager GRID_MANAGER = GridManager.createGetInstance("steamlayer:test");
-    private int grid = -1;
+    private              int         grid         = -1;
 
-    private EnumMap<EnumFacing, ITileCable> connecteds = new EnumMap<>(EnumFacing.class);
+    private EnumMap<Direction, ITileCable> connecteds = new EnumMap<>(Direction.class);
 
     @Override
     public BlockPos getBlockPos()
@@ -22,43 +22,43 @@ public class ITileCableTestImpl implements ITileCable
     @Override
     public int[] getConnections()
     {
-        return this.connecteds.keySet().stream().mapToInt(EnumFacing::ordinal).toArray();
+        return connecteds.keySet().stream().mapToInt(Direction::ordinal).toArray();
     }
 
     @Override
-    public ITileCable<?> getConnected(EnumFacing facing)
+    public ITileCable<?> getConnected(Direction facing)
     {
-        return this.connecteds.get(facing);
+        return connecteds.get(facing);
     }
 
     @Override
     public int getGrid()
     {
-        return this.grid;
+        return grid;
     }
 
     @Override
     public void setGrid(int gridIdentifier)
     {
-        this.grid = gridIdentifier;
+        grid = gridIdentifier;
     }
 
     @Override
-    public boolean canConnect(EnumFacing facing, ITileNode to)
+    public boolean canConnect(Direction facing, ITileNode to)
     {
         return true;
     }
 
     @Override
-    public void connect(EnumFacing facing, ITileCable to)
+    public void connect(Direction facing, ITileCable to)
     {
-        this.connecteds.put(facing, to);
+        connecteds.put(facing, to);
     }
 
     @Override
-    public void disconnect(EnumFacing facing)
+    public void disconnect(Direction facing)
     {
-        this.connecteds.remove(facing);
+        connecteds.remove(facing);
     }
 
     @Override
@@ -80,9 +80,9 @@ public class ITileCableTestImpl implements ITileCable
     }
 
     @Override
-    public EnumMap<EnumFacing, ITileCable> getConnectionsMap()
+    public EnumMap<Direction, ITileCable> getConnectionsMap()
     {
-        return this.connecteds;
+        return connecteds;
     }
 
     @Override

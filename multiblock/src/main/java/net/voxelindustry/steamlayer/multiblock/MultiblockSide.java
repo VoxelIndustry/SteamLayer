@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 
 @Getter
@@ -14,5 +14,5 @@ import net.minecraft.util.math.BlockPos;
 public class MultiblockSide
 {
     private final BlockPos   pos;
-    private final EnumFacing facing;
+    private final Direction facing;
 }

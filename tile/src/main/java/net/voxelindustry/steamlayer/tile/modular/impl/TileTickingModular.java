@@ -1,6 +1,7 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
-import net.minecraft.util.ITickable;
+import net.minecraft.tileentity.ITickableTileEntity;
+import net.minecraft.tileentity.TileEntityType;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
 import net.voxelindustry.steamlayer.tile.modular.ITickableModule;
 import net.voxelindustry.steamlayer.tile.modular.TileModule;
@@ -8,22 +9,22 @@ import net.voxelindustry.steamlayer.tile.modular.TileModule;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TileTickingModular extends TileModular implements ITickable
+public class TileTickingModular extends TileModular implements ITickableTileEntity
 {
     private List<ITickableModule> tickeds;
 
-    public TileTickingModular(String modid, TileDescriptor descriptor)
+    public TileTickingModular(String modid, TileEntityType<? extends TileTickingModular> type, TileDescriptor descriptor)
     {
-        super(modid, descriptor);
+        super(modid, type, descriptor);
     }
 
-    public TileTickingModular()
+    public TileTickingModular(TileEntityType<? extends TileTickingModular> type)
     {
-        this(null, null);
+        this(null, type, null);
     }
 
     @Override
-    public void update()
+    public void tick()
     {
         if (this.getDescriptor() != null)
         {

@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
@@ -10,14 +10,14 @@ import org.apache.commons.lang3.Range;
 
 public class ContainerPlayerInventoryBuilder
 {
-    private final EntityPlayer     player;
+    private final PlayerEntity     player;
     private final PlayerInvWrapper inventory;
     private final ContainerBuilder parent;
     private       Range<Integer>   main;
     private       Range<Integer>   hotbar;
     private       Range<Integer>   armor;
 
-    ContainerPlayerInventoryBuilder(ContainerBuilder parent, EntityPlayer player, PlayerInvWrapper inventory)
+    ContainerPlayerInventoryBuilder(ContainerBuilder parent, PlayerEntity player, PlayerInvWrapper inventory)
     {
         this.inventory = inventory;
         this.player = player;
@@ -157,31 +157,31 @@ public class ContainerPlayerInventoryBuilder
         }
 
         private ContainerPlayerArmorInventoryBuilder armor(int index, int xStart, int yStart,
-                                                           EntityEquipmentSlot slotType)
+                                                           EquipmentSlotType slotType)
         {
             this.parent.parent.slots.add(new FilteredSlot(this.parent.inventory, index, xStart, yStart)
-                    .setFilter(stack -> stack.getItem().isValidArmor(stack, slotType, parent.player)));
+                    .setFilter(stack -> stack.getItem().canEquip(stack, slotType, parent.player)));
             return this;
         }
 
         public ContainerPlayerArmorInventoryBuilder helmet(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 2, xStart, yStart, EntityEquipmentSlot.HEAD);
+            return this.armor(this.parent.inventory.getSlots() - 2, xStart, yStart, EquipmentSlotType.HEAD);
         }
 
         public ContainerPlayerArmorInventoryBuilder chestplate(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 3, xStart, yStart, EntityEquipmentSlot.CHEST);
+            return this.armor(this.parent.inventory.getSlots() - 3, xStart, yStart, EquipmentSlotType.CHEST);
         }
 
         public ContainerPlayerArmorInventoryBuilder leggings(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 4, xStart, yStart, EntityEquipmentSlot.LEGS);
+            return this.armor(this.parent.inventory.getSlots() - 4, xStart, yStart, EquipmentSlotType.LEGS);
         }
 
         public ContainerPlayerArmorInventoryBuilder boots(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 5, xStart, yStart, EntityEquipmentSlot.FEET);
+            return this.armor(this.parent.inventory.getSlots() - 5, xStart, yStart, EquipmentSlotType.FEET);
         }
 
         public ContainerPlayerArmorInventoryBuilder complete(int xStart, int yStart)

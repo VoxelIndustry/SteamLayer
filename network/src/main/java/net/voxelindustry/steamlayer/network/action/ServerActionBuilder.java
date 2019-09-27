@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.network.action;
 
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.fluids.FluidStack;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
@@ -12,77 +12,76 @@ public class ServerActionBuilder
     private String actionKey;
 
     private TileEntity               tile;
-    private NBTTagCompound           payload;
+    private CompoundNBT              payload;
     private ServerActionHolderPacket packet;
-
 
     public ServerActionBuilder(String actionKey)
     {
         this.actionKey = actionKey;
-        this.payload = new NBTTagCompound();
+        payload = new CompoundNBT();
     }
 
     public ServerActionBuilder toTile(TileEntity tile)
     {
         this.tile = tile;
-        this.packet = new ServerActionHolderPacket(this.tile, this.actionKey);
+        packet = new ServerActionHolderPacket(this.tile, actionKey);
         return this;
     }
 
     public ServerActionBuilder withInt(String key, Integer value)
     {
-        this.payload.setInteger(key, value);
+        payload.putInt(key, value);
         return this;
     }
 
     public ServerActionBuilder withString(String key, String value)
     {
-        this.payload.setString(key, value);
+        payload.putString(key, value);
         return this;
     }
 
     public ServerActionBuilder withFloat(String key, Float value)
     {
-        this.payload.setFloat(key, value);
+        payload.putFloat(key, value);
         return this;
     }
 
     public ServerActionBuilder withDouble(String key, Double value)
     {
-        this.payload.setDouble(key, value);
+        payload.putDouble(key, value);
         return this;
     }
 
     public ServerActionBuilder withBoolean(String key, Boolean value)
     {
-        this.payload.setBoolean(key, value);
+        payload.putBoolean(key, value);
         return this;
     }
 
     public ServerActionBuilder withItemStack(String key, ItemStack value)
     {
-        this.payload.setTag(key, value.writeToNBT(new NBTTagCompound()));
+        payload.put(key, value.write(new CompoundNBT()));
         return this;
     }
 
     public ServerActionBuilder withFluidStack(String key, FluidStack value)
     {
-        this.payload.setTag(key, value.writeToNBT(new NBTTagCompound()));
+        payload.put(key, value.writeToNBT(new CompoundNBT()));
         return this;
     }
 
     public ServerActionBuilder then(IActionCallback callback)
     {
-        ActionManager.getInstance().addCallback(this.packet.getActionID(), callback);
-        this.packet.setExpectAnswer(true);
+        ActionManager.getInstance().addCallback(packet.getActionID(), callback);
+        packet.setExpectAnswer(true);
         return this;
     }
 
     public void send()
     {
-        if (this.packet == null)
+        if (packet == null)
             throw new RuntimeException("Action packet is null! Did you use setTile(TileEntity) before sending?");
-        this.packet.setActionPayload(payload);
-        SteamLayerPacketHandler.INSTANCE.sendToServer(packet);
+        packet.setActionPayload(payload);
+        SteamLayerPacketHandler.getHandler().sendToServer(packet);
     }
 }

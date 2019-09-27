@@ -1,12 +1,12 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
 import lombok.Getter;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.steamlayer.tile.descriptor.ModularTiles;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Optional;
 
 public class TileModular extends TileBase implements IModularTile
 {
@@ -32,8 +31,10 @@ public class TileModular extends TileBase implements IModularTile
 
     private boolean hasCapabilityModule = false;
 
-    public TileModular(String modid, TileDescriptor descriptor)
+    public TileModular(String modid, TileEntityType<? extends TileModular> type, TileDescriptor descriptor)
     {
+        super(type);
+
         this.descriptor = descriptor;
         this.modid = modid;
 
@@ -42,15 +43,15 @@ public class TileModular extends TileBase implements IModularTile
             this.reloadModules();
     }
 
-    public TileModular()
+    public TileModular(TileEntityType<? extends TileModular> type)
     {
-        this(null, null);
+        this(null, type, null);
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound tag)
+    public void read(CompoundNBT tag)
     {
-        super.readFromNBT(tag);
+        super.read(tag);
 
         this.modid = tag.getString("modid");
         TileDescriptor previous = this.descriptor;
@@ -62,56 +63,42 @@ public class TileModular extends TileBase implements IModularTile
         modules.values().forEach(module ->
         {
             if (module instanceof ISerializableModule)
-                ((ISerializableModule) module).fromNBT(tag.getCompoundTag(module.getName()));
+                ((ISerializableModule) module).fromNBT(tag.getCompound(module.getName()));
         });
     }
 
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound tag)
+    public CompoundNBT write(CompoundNBT tag)
     {
         if (this.descriptor != null)
-            tag.setString("machineDescriptor", this.descriptor.getName());
+            tag.putString("machineDescriptor", this.descriptor.getName());
 
-        tag.setString("modid", this.modid);
+        tag.putString("modid", this.modid);
         modules.values().forEach(module ->
         {
             if (module instanceof ISerializableModule)
-                tag.setTag(module.getName(), ((ISerializableModule) module).toNBT(new NBTTagCompound()));
+                tag.put(module.getName(), ((ISerializableModule) module).toNBT(new CompoundNBT()));
         });
-        return super.writeToNBT(tag);
+        return super.write(tag);
     }
 
+    @Nonnull
     @Override
-    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing)
+    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> capability, @Nullable Direction facing)
     {
-        return this.hasCapability(capability, BlockPos.ORIGIN, facing) || super.hasCapability(capability, facing);
+        return this.getCapability(capability, BlockPos.ZERO, facing);
     }
 
-    @Nullable
-    @Override
-    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing)
-    {
-        return this.getCapability(capability, BlockPos.ORIGIN, facing);
-    }
-
-    public boolean hasCapability(Capability<?> capability, BlockPos from, @Nullable EnumFacing facing)
-    {
-        return (this.hasCapabilityModule && this.modules.values().stream()
-                .filter(module -> module instanceof ICapabilityModule)
-                .anyMatch(module -> ((ICapabilityModule) module).hasCapability(capability, from, facing)));
-    }
-
-    @Nullable
-    public <T> T getCapability(Capability<T> capability, BlockPos from, @Nullable EnumFacing facing)
+    @Nonnull
+    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> capability, BlockPos from, @Nullable Direction facing)
     {
         if (this.hasCapabilityModule && this.getDescriptor() != null)
         {
-            Optional<T> result =
+            return LazyOptional.of(() ->
                     this.getModules().stream().filter(ICapabilityModule.class::isInstance)
                             .map(module -> ((ICapabilityModule) module).getCapability(capability, from, facing))
-                            .filter(Objects::nonNull).findFirst();
-            if (result.isPresent())
-                return result.get();
+                            .filter(Objects::nonNull)
+                            .findFirst().orElse(null));
         }
         return super.getCapability(capability, facing);
     }
@@ -133,13 +120,6 @@ public class TileModular extends TileBase implements IModularTile
     public <T extends TileModule> boolean hasModule(Class<T> moduleClass)
     {
         return this.modules.containsKey(moduleClass);
-    }
-
-    @Nullable
-    @Override
-    public ITextComponent getDisplayName()
-    {
-        return new TextComponentTranslation("gui." + this.descriptor.getName() + ".name");
     }
 
     protected void addModule(TileModule module)

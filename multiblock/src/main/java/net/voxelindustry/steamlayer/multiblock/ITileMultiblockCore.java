@@ -11,26 +11,31 @@ import javax.annotation.Nullable;
 
 public interface ITileMultiblockCore extends ITileMultiblock
 {
+    @Override
     void breakCore();
 
     @Nullable
     <T> LazyOptional<T> getCapability(Capability<T> capability, BlockPos from, @Nullable Direction facing);
 
+    @Override
     default ITileMultiblockCore getCore()
     {
         return this;
     }
 
+    @Override
     default BlockPos getCoreOffset()
     {
         return BlockPos.ZERO;
     }
 
+    @Override
     default boolean isCore()
     {
         return true;
     }
 
+    @Override
     default boolean isCorePresent()
     {
         return true;

@@ -6,8 +6,8 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.network.ByteBufHelper;
-import net.voxelindustry.steamlayer.utils.ItemUtils;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -27,9 +27,9 @@ public class SyncedWrappers
 
     private SyncedWrappers()
     {
-        this.wrappers = new IdentityHashMap<>();
+        wrappers = new IdentityHashMap<>();
 
-        this.wrappers.put(Integer.class, new SyncedWrapper<Integer>()
+        wrappers.put(Integer.class, new SyncedWrapper<Integer>()
         {
             @Override
             public void write(ByteBuf buffer, Integer value)
@@ -44,7 +44,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(Float.class, new SyncedWrapper<Float>()
+        wrappers.put(Float.class, new SyncedWrapper<Float>()
         {
             @Override
             public void write(ByteBuf buffer, Float value)
@@ -59,7 +59,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(Boolean.class, new SyncedWrapper<Boolean>()
+        wrappers.put(Boolean.class, new SyncedWrapper<Boolean>()
         {
             @Override
             public void write(ByteBuf buffer, Boolean value)
@@ -74,7 +74,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(Long.class, new SyncedWrapper<Long>()
+        wrappers.put(Long.class, new SyncedWrapper<Long>()
         {
             @Override
             public void write(ByteBuf buffer, Long value)
@@ -89,7 +89,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(String.class, new SyncedWrapper<String>()
+        wrappers.put(String.class, new SyncedWrapper<String>()
         {
             @Override
             public void write(ByteBuf buffer, String value)
@@ -104,7 +104,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(FluidStack.class, new SyncedWrapper<FluidStack>()
+        wrappers.put(FluidStack.class, new SyncedWrapper<FluidStack>()
         {
             @Override
             public void write(ByteBuf buffer, FluidStack value)
@@ -131,7 +131,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(ItemStack.class, new SyncedWrapper<ItemStack>()
+        wrappers.put(ItemStack.class, new SyncedWrapper<ItemStack>()
         {
             @Override
             public void write(ByteBuf buffer, ItemStack value)
@@ -158,7 +158,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(IItemHandler.class, new SyncedWrapper<IItemHandler>()
+        wrappers.put(IItemHandler.class, new SyncedWrapper<IItemHandler>()
         {
             @Override
             public void write(ByteBuf buffer, IItemHandler value)
@@ -204,14 +204,13 @@ public class SyncedWrappers
         });
     }
 
-    @SuppressWarnings("unchecked")
     public <T> SyncedWrapper<T> get(Class<T> typeClass)
     {
-        return (SyncedWrapper<T>) this.wrappers.get(typeClass);
+        return (SyncedWrapper<T>) wrappers.get(typeClass);
     }
 
     public <T> void registerWrapper(SyncedWrapper<T> wrapper, Class<T> typeClass)
     {
-        this.wrappers.put(typeClass, wrapper);
+        wrappers.put(typeClass, wrapper);
     }
 }

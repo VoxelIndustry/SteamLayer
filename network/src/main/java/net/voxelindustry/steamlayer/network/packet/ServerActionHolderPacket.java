@@ -9,7 +9,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.server.ServerLifecycleHooks;
 import net.voxelindustry.steamlayer.network.ByteBufHelper;
 import net.voxelindustry.steamlayer.network.action.ActionSender;
@@ -70,7 +70,7 @@ public class ServerActionHolderPacket
         ByteBufHelper.writeTag(buffer, packet.actionPayload);
     }
 
-    public static void handle(ServerActionHolderPacket packet, Supplier<Context> contextSupplier)
+    public static void handle(ServerActionHolderPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
         contextSupplier.get().enqueueWork(() ->
         {
@@ -90,5 +90,6 @@ public class ServerActionHolderPacket
                 }
             }
         });
+        contextSupplier.get().setPacketHandled(true);
     }
 }

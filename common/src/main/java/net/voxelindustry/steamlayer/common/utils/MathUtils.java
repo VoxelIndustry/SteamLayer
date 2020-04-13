@@ -1,4 +1,4 @@
-package net.voxelindustry.steamlayer.utils;
+package net.voxelindustry.steamlayer.common.utils;
 
 import java.util.Random;
 
@@ -7,7 +7,7 @@ public class MathUtils
     /**
      * Return a random int between the specified minimum and maximum values
      * (inclusives)
-     * 
+     *
      * @param min
      * @param max
      */

@@ -1,4 +1,4 @@
-package net.voxelindustry.steamlayer.utils;
+package net.voxelindustry.steamlayer.common.utils;
 
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -10,12 +10,12 @@ public class ItemUtils
 {
     public static boolean deepEquals(ItemStack a, ItemStack b)
     {
-        return ItemStack.areItemStacksEqual(a, b);
+        return a.isItemEqual(b) && ItemStack.areItemStackTagsEqual(a, b);
     }
 
     public static boolean deepEqualsWithAmount(ItemStack a, ItemStack b)
     {
-        return a.getCount() == b.getCount() && deepEquals(a, b);
+        return ItemStack.areItemStacksEqual(a, b);
     }
 
     public static String getPrettyStackName(ItemStack stack)

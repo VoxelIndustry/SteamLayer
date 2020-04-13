@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraftforge.fml.network.NetworkEvent;
 import net.voxelindustry.steamlayer.network.ByteBufHelper;
 import net.voxelindustry.steamlayer.network.action.ActionManager;
 
@@ -22,7 +22,7 @@ public class ClientActionHolderPacket
 
     public ClientActionHolderPacket(int replyID, CompoundNBT payload)
     {
-        this.actionPayload = payload;
+        actionPayload = payload;
         this.replyID = replyID;
     }
 
@@ -41,8 +41,9 @@ public class ClientActionHolderPacket
         ByteBufHelper.writeTag(buffer, packet.actionPayload);
     }
 
-    public static void handle(ClientActionHolderPacket packet, Supplier<Context> contextSupplier)
+    public static void handle(ClientActionHolderPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
         contextSupplier.get().enqueueWork(() -> ActionManager.getInstance().triggerCallback(packet.replyID, packet.actionPayload));
+        contextSupplier.get().setPacketHandled(true);
     }
 }

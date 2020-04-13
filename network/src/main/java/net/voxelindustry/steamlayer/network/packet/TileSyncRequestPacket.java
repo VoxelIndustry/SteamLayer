@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraftforge.fml.network.NetworkEvent;
 import net.voxelindustry.steamlayer.network.ByteBufHelper;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
 
@@ -32,9 +32,9 @@ public class TileSyncRequestPacket
         ByteBufHelper.writePos(buffer, packet.pos);
     }
 
-    public static void handle(TileSyncRequestPacket packet, Supplier<Context> contextSupplier)
+    public static void handle(TileSyncRequestPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
-        Context context = contextSupplier.get();
+        NetworkEvent.Context context = contextSupplier.get();
 
         context.enqueueWork(() ->
         {
@@ -44,5 +44,6 @@ public class TileSyncRequestPacket
                 NetworkHandler.sendTileToPlayer(context.getSender().getEntityWorld().getTileEntity(packet.pos),
                         context.getSender());
         });
+        context.setPacketHandled(true);
     }
 }

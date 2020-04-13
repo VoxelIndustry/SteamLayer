@@ -3,6 +3,7 @@ package net.voxelindustry.steamlayer.container;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.container.ContainerType;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
@@ -46,6 +47,7 @@ public class ContainerBuilder
     Map<String, SyncedValue> namedSyncs;
 
     List<ItemStackHandler> inventories;
+    TileEntity             mainTile;
 
     /**
      * Creates a ContainerBuilder instance to produce a BuiltContainer
@@ -64,14 +66,14 @@ public class ContainerBuilder
         this.type = type;
         this.player = player;
 
-        this.slots = new ArrayList<>();
-        this.playerInventoryRanges = new ArrayList<>();
-        this.tileInventoryRanges = new ArrayList<>();
+        slots = new ArrayList<>();
+        playerInventoryRanges = new ArrayList<>();
+        tileInventoryRanges = new ArrayList<>();
 
-        this.craftEvents = new ArrayList<>();
-        this.tickEvents = new ArrayList<>();
+        craftEvents = new ArrayList<>();
+        tickEvents = new ArrayList<>();
 
-        this.inventories = new ArrayList<>();
+        inventories = new ArrayList<>();
     }
 
     /**
@@ -105,24 +107,24 @@ public class ContainerBuilder
 
     public ContainerBuilder onClose(ContainerEvent event)
     {
-        this.closeEvent = event;
+        closeEvent = event;
         return this;
     }
 
     public ContainerBuilder onTick(ContainerEvent event)
     {
-        this.tickEvents.add(event);
+        tickEvents.add(event);
         return this;
     }
 
     void addPlayerInventoryRange(Range<Integer> range)
     {
-        this.playerInventoryRanges.add(range);
+        playerInventoryRanges.add(range);
     }
 
     void addTileInventoryRange(Range<Integer> range)
     {
-        this.tileInventoryRanges.add(range);
+        tileInventoryRanges.add(range);
     }
 
     /**
@@ -136,25 +138,26 @@ public class ContainerBuilder
     public BuiltContainer create(int windowId)
     {
         BuiltContainer built = new BuiltContainer(
-                this.type,
+                type,
                 windowId,
-                this.player,
-                this.inventories,
-                this.canInteract,
-                this.playerInventoryRanges,
-                this.tileInventoryRanges);
+                player,
+                inventories,
+                canInteract,
+                playerInventoryRanges,
+                tileInventoryRanges);
+        built.setMainTile(mainTile);
 
         built.setCloseEvent(closeEvent);
         built.setTickEvents(tickEvents);
 
-        if (this.syncs != null)
-            built.setSyncables(this.syncs, this.namedSyncs);
-        if (!this.craftEvents.isEmpty())
-            built.addCraftEvents(this.craftEvents);
+        if (syncs != null)
+            built.setSyncables(syncs, namedSyncs);
+        if (!craftEvents.isEmpty())
+            built.addCraftEvents(craftEvents);
 
-        this.slots.forEach(built::addSlot);
+        slots.forEach(built::addSlot);
 
-        this.slots.clear();
+        slots.clear();
         return built;
     }
 }

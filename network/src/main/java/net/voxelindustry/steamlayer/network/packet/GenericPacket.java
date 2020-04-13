@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.NoArgsConstructor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
@@ -17,7 +17,7 @@ public class GenericPacket
     public GenericPacket(Message message)
     {
         this.message = message;
-        this.packetID = PacketHandler.getInstance().getID(message.getClass());
+        packetID = PacketHandler.getInstance().getID(message.getClass());
     }
 
     public static GenericPacket decode(ByteBuf buffer)
@@ -44,13 +44,15 @@ public class GenericPacket
         packet.message.write(buffer);
     }
 
-    public static void handle(GenericPacket packet, Supplier<Context> contextSupplier)
+    public static void handle(GenericPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
-        Context context = contextSupplier.get();
+        NetworkEvent.Context context = contextSupplier.get();
 
         if (context.getDirection().getReceptionSide().isClient())
             context.enqueueWork(() -> packet.message.handle(Minecraft.getInstance().player));
         else
             context.enqueueWork(() -> packet.message.handle(context.getSender()));
+
+        context.setPacketHandled(true);
     }
 }

@@ -21,9 +21,8 @@ plugins {
 }
 
 subprojects {
-    apply plugin: 'net.minecraftforge.gradle'
     apply plugin: 'maven-publish'
-    apply plugin: 'com.jfrog.artifactory'
+    apply plugin: 'net.minecraftforge.gradle'
 
     version = project.steamlayer_version
     group = "net.voxelindustry"
@@ -34,64 +33,11 @@ subprojects {
         sourceCompatibility = targetCompatibility = "1.8"
     }
 
-    artifactory {
-        contextUrl = "${artifactory_contextUrl}"
-        publish {
-            repository {
-                repoKey = 'voxelindustry'
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-                maven = true
-            }
-            defaults {
-                publications('mavenJava')
-            }
-        }
-    }
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    artifacts {
-        archives sourcesJar
-    }
-
     def reobfFile = file("$buildDir/reobfJar/output.jar")
     def reobfArtifact = artifacts.add('default', reobfFile) {
         type 'jar'
         builtBy 'reobfJar'
     }
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-
-                artifactId archivesBaseName
-                artifact reobfArtifact
-                artifact source: sourcesJar, classifier: 'sources', extension: 'jar'
-
-                // Allows the maven pom file to be modified.
-                pom.withXml {
-                    // Go through all the dependencies.
-                    asNode().dependencies.dependency.each { dep ->
-
-                        // Check if the dependency has been mapped with MCP
-                        if (dep.version.last().value().last().contains('_mapped_snapshot_') || dep.version.last().value().last().contains('_mapped_stable_')) {
-
-                            // Remove the MCP mapped artifact from the dependency list.
-                            println 'Surpressing MCP mapped artifact ' + dep.artifactId.last().value().last() + ' from maven dependencies.'
-                            assert dep.parent().remove(dep)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    artifactoryPublish.dependsOn build
 
     repositories {
     }
@@ -212,7 +158,17 @@ project('grid') {
     }
 }
 
+project('recipe') {
+    archivesBaseName = "steamlayer-recipe"
+
+    dependencies {
+        compile project(':common')
+    }
+}
+
 project('core') {
+    apply plugin: 'com.jfrog.artifactory'
+
     archivesBaseName = "steamlayer-core"
 
     dependencies {
@@ -220,9 +176,66 @@ project('core') {
         compile project(':tile')
         compile project(':grid')
         compile project(':multiblock')
+        compile project(':recipe')
     }
 
-    jar {
+    artifactory {
+        contextUrl = "${artifactory_contextUrl}"
+        publish {
+            repository {
+                repoKey = 'voxelindustry'
+                username = "${artifactory_user}"
+                password = "${artifactory_password}"
+                maven = true
+            }
+            defaults {
+                publications('mavenJava')
+            }
+        }
+    }
+
+    task siblingBuild {
+        dependsOn(":common:build")
+        dependsOn(":container:build")
+        dependsOn(":grid:build")
+        dependsOn(":inventory:build")
+        dependsOn(":multiblock:build")
+        dependsOn(":network:build")
+        dependsOn(":recipe:build")
+        dependsOn(":tile:build")
+        dependsOn(":core:jar")
+    }
+
+    task allJar(type: Jar, dependsOn: siblingBuild) {
+        baseName = 'allJar'
+        from project(':common').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':container').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':grid').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':inventory').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':multiblock').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':network').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':recipe').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':tile').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+        from project(':core').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }
+
         manifest {
             attributes([
                     "Specification-Title"     : "steamlayer-core",
@@ -235,6 +248,40 @@ project('core') {
             ])
         }
     }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives allJar
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                artifactId archivesBaseName
+                version "${project.steamlayer_version}"
+                groupId "net.voxelindustry"
+
+                artifact source: allJar, extension: 'jar'
+                artifact source: sourcesJar, classifier: 'sources', extension: 'jar'
+
+                // Allows the maven pom file to be modified.
+                pom.withXml {
+                    // Go through all the dependencies.
+                    asNode().dependencies.dependency.each { dep ->
+                        println 'Deleting artifact ' + dep.artifactId.last().value().last() + ' from maven dependencies.'
+                        assert dep.parent().remove(dep)
+                    }
+                }
+            }
+        }
+    }
+
+    artifactoryPublish.dependsOn build
 }
 
 subprojects.each { subproject -> evaluationDependsOn(subproject.path) }

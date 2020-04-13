@@ -2,6 +2,7 @@ package net.voxelindustry.steamlayer.container;
 
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -11,14 +12,15 @@ import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.items.ItemStackHandler;
 import net.voxelindustry.steamlayer.common.container.ISyncedContainer;
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.container.sync.ContainerSyncPacket;
 import net.voxelindustry.steamlayer.container.sync.ISyncCallback;
 import net.voxelindustry.steamlayer.container.sync.SyncedProperty;
 import net.voxelindustry.steamlayer.container.sync.SyncedValue;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
-import net.voxelindustry.steamlayer.utils.ItemUtils;
 import org.apache.commons.lang3.Range;
 
 import java.util.ArrayList;
@@ -51,6 +53,10 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
     private List<Slot> cachedInventorySlots;
 
+    @Getter
+    @Setter
+    private TileEntity mainTile;
+
     BuiltContainer(ContainerType<BuiltContainer> type,
                    int windowId,
                    PlayerEntity player,
@@ -65,8 +71,8 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
         this.canInteract = canInteract;
 
-        this.playerSlotRanges = playerSlotRange;
-        this.tileSlotRanges = tileSlotRange;
+        playerSlotRanges = playerSlotRange;
+        tileSlotRanges = tileSlotRange;
 
         this.inventories = inventories;
 
@@ -79,13 +85,13 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
     public void setSyncables(List<SyncedValue> properties, Map<String, SyncedValue> namedSyncables)
     {
-        this.syncablesValues = properties;
+        syncablesValues = properties;
         this.namedSyncables = namedSyncables;
     }
 
     public void addSyncable(SyncedProperty<?> property)
     {
-        this.syncablesValues.add(property);
+        syncablesValues.add(property);
     }
 
     public void addCraftEvents(List<Consumer<CraftingInventory>> craftEvents)
@@ -95,26 +101,26 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
     public void addCraftEvent(Consumer<CraftingInventory> craftEvent)
     {
-        if (this.craftEvents == null)
-            this.craftEvents = new ArrayList<>();
-        this.craftEvents.add(craftEvent);
+        if (craftEvents == null)
+            craftEvents = new ArrayList<>();
+        craftEvents.add(craftEvent);
     }
 
     public void removeCraftEvent(Consumer<CraftingInventory> craftEvent)
     {
-        if (this.craftEvents == null)
-            this.craftEvents = new ArrayList<>();
-        this.craftEvents.remove(craftEvent);
+        if (craftEvents == null)
+            craftEvents = new ArrayList<>();
+        craftEvents.remove(craftEvent);
     }
 
     public void addSyncCallback(String name, ISyncCallback callback)
     {
-        if (!this.namedSyncables.containsKey(name))
+        if (!namedSyncables.containsKey(name))
             throw new RuntimeException("Cannot add callback to unknown SyncedProperty [" + name + "]");
 
-        if (this.syncCallbacks == null)
-            this.syncCallbacks = new HashMap<>();
-        this.syncCallbacks.put(this.namedSyncables.get(name), callback);
+        if (syncCallbacks == null)
+            syncCallbacks = new HashMap<>();
+        syncCallbacks.put(namedSyncables.get(name), callback);
     }
 
     @Override
@@ -123,17 +129,17 @@ public class BuiltContainer extends Container implements ISyncedContainer
         return super.addSlot(slot);
     }
 
-        @Override
+    @Override
     public boolean canInteractWith(PlayerEntity player)
     {
-        return this.canInteract.test(player);
+        return canInteract.test(player);
     }
 
     @Override
     public final void onCraftMatrixChanged(IInventory inv)
     {
-        if (this.craftEvents != null && !this.craftEvents.isEmpty())
-            this.craftEvents.forEach(consumer -> consumer.accept((CraftingInventory) inv));
+        if (craftEvents != null && !craftEvents.isEmpty())
+            craftEvents.forEach(consumer -> consumer.accept((CraftingInventory) inv));
     }
 
     @Override
@@ -141,18 +147,18 @@ public class BuiltContainer extends Container implements ISyncedContainer
     {
         super.detectAndSendChanges();
 
-        if (!this.tickEvents.isEmpty())
-            this.tickEvents.forEach(event -> event.apply(this, this.player, false));
+        if (!tickEvents.isEmpty())
+            tickEvents.forEach(event -> event.apply(this, player, false));
 
-        if (this.syncablesValues == null || this.syncablesValues.isEmpty())
+        if (syncablesValues == null || syncablesValues.isEmpty())
             return;
 
-        for (SyncedValue synced : this.syncablesValues)
+        for (SyncedValue synced : syncablesValues)
         {
             if (synced.needRefresh())
             {
                 synced.updateInternal();
-                new ContainerSyncPacket(this.windowId, this.syncablesValues.indexOf(synced), synced).sendTo((ServerPlayerEntity) this.player);
+                new ContainerSyncPacket(windowId, syncablesValues.indexOf(synced), synced).sendTo((ServerPlayerEntity) player);
             }
         }
     }
@@ -160,12 +166,12 @@ public class BuiltContainer extends Container implements ISyncedContainer
     @Override
     public void updateProperty(int id, ByteBuf buffer)
     {
-        SyncedValue property = this.syncablesValues.get(id);
+        SyncedValue property = syncablesValues.get(id);
         property.read(buffer);
         property.update();
 
-        if (this.syncCallbacks != null && this.syncCallbacks.containsKey(property))
-            this.syncCallbacks.get(property).onSync(property);
+        if (syncCallbacks != null && syncCallbacks.containsKey(property))
+            syncCallbacks.get(property).onSync(property);
     }
 
     @Override
@@ -174,7 +180,7 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
         ItemStack originalStack = ItemStack.EMPTY;
 
-        Slot slot = this.inventorySlots.get(index);
+        Slot slot = inventorySlots.get(index);
 
         if (slot != null && slot.getHasStack())
         {
@@ -184,20 +190,20 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
             boolean shifted = false;
 
-            for (Range<Integer> range : this.playerSlotRanges)
+            for (Range<Integer> range : playerSlotRanges)
                 if (range.contains(index))
                 {
 
-                    if (this.shiftToTile(stackInSlot))
+                    if (shiftToTile(stackInSlot))
                         shifted = true;
                     break;
                 }
 
             if (!shifted)
-                for (Range<Integer> range : this.tileSlotRanges)
+                for (Range<Integer> range : tileSlotRanges)
                     if (range.contains(index))
                     {
-                        if (this.shiftToPlayer(stackInSlot))
+                        if (shiftToPlayer(stackInSlot))
                             shifted = true;
                         break;
                     }
@@ -220,7 +226,7 @@ public class BuiltContainer extends Container implements ISyncedContainer
         {
             for (int slotIndex = start; stackToShift.getCount() > 0 && slotIndex < end; slotIndex++)
             {
-                Slot slot = this.inventorySlots.get(slotIndex);
+                Slot slot = inventorySlots.get(slotIndex);
                 ItemStack stackInSlot = slot.getStack();
                 if (!stackInSlot.isEmpty() && ItemUtils.deepEquals(stackInSlot, stackToShift)
                         && slot.isItemValid(stackToShift))
@@ -248,7 +254,7 @@ public class BuiltContainer extends Container implements ISyncedContainer
         {
             for (int slotIndex = start; stackToShift.getCount() > 0 && slotIndex < end; slotIndex++)
             {
-                Slot slot = this.inventorySlots.get(slotIndex);
+                Slot slot = inventorySlots.get(slotIndex);
                 ItemStack stackInSlot = slot.getStack();
                 if (stackInSlot.isEmpty() && slot.isItemValid(stackToShift))
                 {
@@ -267,16 +273,16 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
     private boolean shiftToTile(ItemStack stackToShift)
     {
-        for (Range<Integer> range : this.tileSlotRanges)
-            if (this.shiftItemStack(stackToShift, range.getMinimum(), range.getMaximum() + 1))
+        for (Range<Integer> range : tileSlotRanges)
+            if (shiftItemStack(stackToShift, range.getMinimum(), range.getMaximum() + 1))
                 return true;
         return false;
     }
 
     private boolean shiftToPlayer(ItemStack stackToShift)
     {
-        for (Range<Integer> range : this.playerSlotRanges)
-            if (this.shiftItemStack(stackToShift, range.getMinimum(), range.getMaximum() + 1))
+        for (Range<Integer> range : playerSlotRanges)
+            if (shiftItemStack(stackToShift, range.getMinimum(), range.getMaximum() + 1))
                 return true;
         return false;
     }
@@ -286,10 +292,10 @@ public class BuiltContainer extends Container implements ISyncedContainer
     {
         super.onContainerClosed(player);
 
-        if (this.closeEvent != null)
-            this.closeEvent.apply(this, player, player.world.isRemote);
+        if (closeEvent != null)
+            closeEvent.apply(this, player, player.world.isRemote);
 
-        this.inventories.forEach(inventory ->
+        inventories.forEach(inventory ->
         {
             if (inventory instanceof InventoryHandler)
                 ((InventoryHandler) inventory).closeInventory(player);
@@ -298,13 +304,13 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
     public void hideAllSlots()
     {
-        this.cachedInventorySlots = Lists.newArrayList(this.inventorySlots);
-        this.inventorySlots.clear();
+        cachedInventorySlots = Lists.newArrayList(inventorySlots);
+        inventorySlots.clear();
     }
 
     public void showAllSlots()
     {
-        this.inventorySlots.addAll(this.cachedInventorySlots);
-        this.cachedInventorySlots.clear();
+        inventorySlots.addAll(cachedInventorySlots);
+        cachedInventorySlots.clear();
     }
 }

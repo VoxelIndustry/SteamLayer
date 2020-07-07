@@ -10,59 +10,67 @@ public interface ITileCable<T extends CableGrid> extends ITileNode<T>
 {
     EnumMap<Direction, ITileCable<T>> getConnectionsMap();
 
+    @Override
     default void adjacentConnect()
     {
-        for (final Direction facing : Direction.values())
+        for (Direction facing : Direction.values())
         {
-            final TileEntity adjacent = this.getBlockWorld().getTileEntity(this.getAdjacentPos(facing));
-            if (adjacent instanceof ITileCable && this.canConnect(facing, (ITileCable<?>) adjacent)
+            TileEntity adjacent = getBlockWorld().getTileEntity(getAdjacentPos(facing));
+            if (adjacent instanceof ITileCable && canConnect(facing, (ITileCable<?>) adjacent)
                     && ((ITileCable<?>) adjacent).canConnect(facing.getOpposite(), this))
             {
-                this.connect(facing, (ITileCable<T>) adjacent);
+                connect(facing, (ITileCable<T>) adjacent);
                 ((ITileCable<T>) adjacent).connect(facing.getOpposite(), this);
                 ((ITileCable<T>) adjacent).updateState();
             }
         }
-        this.updateState();
+        updateState();
     }
 
     boolean canConnect(Direction facing, ITileNode<?> to);
 
-    default BlockPos getAdjacentPos(final Direction facing)
+    default BlockPos getAdjacentPos(Direction facing)
     {
-        return this.getBlockPos().offset(facing);
+        return getBlockPos().offset(facing);
     }
 
+    @Override
     default int[] getConnections()
     {
-        return this.getConnectionsMap().keySet().stream().mapToInt(Direction::ordinal).toArray();
+        return getConnectionsMap().keySet().stream().mapToInt(Direction::ordinal).toArray();
     }
 
+    @Override
     default ITileCable<T> getConnected(int edge)
     {
-        return this.getConnected(Direction.values()[edge]);
+        return getConnected(Direction.values()[edge]);
     }
 
     default ITileCable<T> getConnected(Direction facing)
     {
-        return this.getConnectionsMap().get(facing);
+        return getConnectionsMap().get(facing);
     }
 
     default void connect(Direction facing, ITileCable<T> to)
     {
-        this.getConnectionsMap().put(facing, to);
+        getConnectionsMap().put(facing, to);
     }
 
     default void disconnect(Direction facing)
     {
-        this.getConnectionsMap().remove(facing);
-        this.updateState();
+        getConnectionsMap().remove(facing);
+        updateState();
+    }
+
+    default void disconnectSelf()
+    {
+        getGridManager().disconnectCable(this);
     }
 
     @Override
     default void disconnect(int edge)
     {
-        this.disconnect(Direction.values()[edge]);
+        disconnect(Direction.values()[edge]);
     }
 
     @Override
@@ -74,6 +82,6 @@ public interface ITileCable<T extends CableGrid> extends ITileNode<T>
     @Override
     default boolean canConnect(int edge, ITileNode<?> to)
     {
-        return this.canConnect(Direction.values()[edge], to);
+        return canConnect(Direction.values()[edge], to);
     }
 }

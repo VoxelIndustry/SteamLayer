@@ -4,6 +4,7 @@ import net.minecraft.util.Direction;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized.Parameters;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
@@ -20,7 +21,7 @@ public class GridManagerTest
     public void setupTest()
     {
         instance = GridManager.createGetInstance("steamlayer:test");
-        instance.cableGrids.clear();
+        instance.gridsByIdentifier.clear();
     }
 
     @Test
@@ -59,23 +60,24 @@ public class GridManagerTest
         ITileCable cable = mock(ITileCable.class);
         grid.addCable(cable);
 
-        assertThat(instance.cableGrids).containsValue(grid);
+        assertThat(instance.gridsByIdentifier).containsValue(grid);
 
         grid.removeCable(cable);
-        instance.tickGrids();
+        instance.tickGrids(0);
 
-        assertThat(instance.cableGrids).doesNotContainValue(grid);
+        assertThat(instance.gridsByIdentifier).doesNotContainValue(grid);
     }
 
     @Test
     public void testGridTick()
     {
-        CableGrid grid = mock(CableGrid.class);
+        CableGrid grid = mock(CableGrid.class, withSettings().extraInterfaces(ITickingGrid.class));
         when(grid.getIdentifier()).thenReturn(0);
+        when(((ITickingGrid) grid).getTickRate()).thenReturn(20);
 
         instance.addGrid(grid);
-        instance.tickGrids();
-        verify(grid, times(1)).tick();
+        instance.tickGrids(0);
+        verify(((ITickingGrid) grid), times(1)).tick(0);
     }
 
     @Test
@@ -96,7 +98,7 @@ public class GridManagerTest
         });
 
         instance.connectCable(cable);
-        assertThat(instance.cableGrids).hasSize(1);
+        assertThat(instance.gridsByIdentifier).hasSize(1);
 
         instance.getGrid(0).addCable(upperCable);
         instance.getGrid(0).removeCable(cable);
@@ -149,7 +151,7 @@ public class GridManagerTest
 
         instance.connectCable(center);
 
-        assertThat(instance.cableGrids).hasSize(1);
+        assertThat(instance.gridsByIdentifier).hasSize(1);
         assertThat(left.getGrid()).isEqualTo(center.getGrid());
         assertThat(right.getGrid()).isEqualTo(center.getGrid());
     }
@@ -170,7 +172,7 @@ public class GridManagerTest
 
         instance.disconnectCable(cable);
 
-        assertThat(instance.cableGrids).isEmpty();
+        assertThat(instance.gridsByIdentifier).isEmpty();
 
         ITileCable neighbor = spy(ITileCableTestImpl.class);
 
@@ -193,7 +195,7 @@ public class GridManagerTest
 
         instance.disconnectCable(cable);
 
-        assertThat(instance.cableGrids).hasSize(1);
+        assertThat(instance.gridsByIdentifier).hasSize(1);
         verify(neighbor, times(1)).disconnect(Direction.DOWN.ordinal());
     }
 
@@ -227,7 +229,7 @@ public class GridManagerTest
 
         instance.disconnectCable(center);
 
-        assertThat(instance.cableGrids).hasSize(2);
+        assertThat(instance.gridsByIdentifier).hasSize(2);
         assertThat(left.getGrid()).isNotEqualTo(right.getGrid());
         assertThat(right.getGrid()).isEqualTo(rightDangling.getGrid());
     }
@@ -273,12 +275,29 @@ public class GridManagerTest
 
         instance.disconnectCable(north);
 
-        assertThat(instance.cableGrids).hasSize(1);
+        assertThat(instance.gridsByIdentifier).hasSize(1);
         assertThat(grid.getCables()).hasSize(7);
         assertThat(south.getGrid()).isEqualTo(east.getGrid());
         assertThat(east.getGrid()).isEqualTo(west.getGrid());
         assertThat(west.getGrid()).isEqualTo(northwest.getGrid());
         assertThat(northwest.getGrid()).isEqualTo(southwest.getGrid());
         assertThat(southwest.getGrid()).isEqualTo(southeast.getGrid());
+    }
+
+    @Test
+    @Parameters
+    public void testGridTickRates()
+    {
+        CableGrid grid = mock(CableGrid.class, withSettings().extraInterfaces(ITickingGrid.class));
+        when(grid.getIdentifier()).thenReturn(0);
+        when(((ITickingGrid) grid).getTickRate()).thenReturn(20);
+
+        instance.addGrid(grid);
+
+        for (int i = 0; i < 20; i++)
+        {
+            instance.tickGrids(i);
+        }
+        verify(((ITickingGrid) grid), times(20)).tick(anyInt());
     }
 }

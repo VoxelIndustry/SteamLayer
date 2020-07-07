@@ -5,6 +5,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.util.NonNullList;
+import org.apache.commons.lang3.StringUtils;
 
 public class ItemUtils
 {
@@ -18,9 +19,16 @@ public class ItemUtils
         return ItemStack.areItemStacksEqual(a, b);
     }
 
+    public static ItemStack copyWithSize(ItemStack stack, int amount)
+    {
+        ItemStack result = stack.copy();
+        result.setCount(1);
+        return result;
+    }
+
     public static String getPrettyStackName(ItemStack stack)
     {
-        return stack.getCount() + " " + stack.getDisplayName();
+        return stack.getCount() + " " + StringUtils.capitalize(stack.getItem().toString());
     }
 
     public static boolean canMergeStacks(ItemStack stack1, ItemStack stack2)

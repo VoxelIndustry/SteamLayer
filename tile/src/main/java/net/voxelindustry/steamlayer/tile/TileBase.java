@@ -11,7 +11,7 @@ import net.voxelindustry.steamlayer.network.NetworkHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
 
-public class TileBase extends TileEntity implements ITileInfoProvider
+public class TileBase extends TileEntity implements ITileInfoProvider, ISyncTile
 {
     @Getter
     private boolean isSyncLocked;
@@ -37,6 +37,7 @@ public class TileBase extends TileEntity implements ITileInfoProvider
         read(packet.getNbtCompound());
     }
 
+    @Override
     public void askServerSync()
     {
         SteamLayerPacketHandler.getHandler().sendToServer(new TileSyncRequestPacket(
@@ -44,6 +45,7 @@ public class TileBase extends TileEntity implements ITileInfoProvider
                 getPos()));
     }
 
+    @Override
     public void forceSync()
     {
         if (world != null)
@@ -53,6 +55,7 @@ public class TileBase extends TileEntity implements ITileInfoProvider
         }
     }
 
+    @Override
     public void sync()
     {
         if (world != null)
@@ -64,6 +67,7 @@ public class TileBase extends TileEntity implements ITileInfoProvider
         }
     }
 
+    @Override
     public void syncLock()
     {
         isSyncLocked = true;

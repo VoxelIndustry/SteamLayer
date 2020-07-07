@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.tile.modular.impl;
 
 import lombok.Getter;
 import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.items.wrapper.CombinedInvWrapper;
@@ -40,15 +40,15 @@ public class InventoryModule extends TileModule implements ISerializableModule
     }
 
     @Override
-    public void fromNBT(NBTTagCompound tag)
+    public void fromNBT(CompoundNBT tag)
     {
-        this.inventories.forEach((name, inv) -> inv.deserializeNBT(tag.getCompoundTag("Inv" + name)));
+        this.inventories.forEach((name, inv) -> inv.deserializeNBT(tag.getCompound("Inv" + name)));
     }
 
     @Override
-    public NBTTagCompound toNBT(NBTTagCompound tag)
+    public CompoundNBT toNBT(CompoundNBT tag)
     {
-        this.inventories.forEach((name, inv) -> tag.setTag("Inv" + name, inv.serializeNBT()));
+        this.inventories.forEach((name, inv) -> tag.put("Inv" + name, inv.serializeNBT()));
         return tag;
     }
 

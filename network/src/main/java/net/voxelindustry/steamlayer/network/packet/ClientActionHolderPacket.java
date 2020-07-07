@@ -3,55 +3,47 @@ package net.voxelindustry.steamlayer.network.packet;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.voxelindustry.steamlayer.network.ByteBufHelper;
 import net.voxelindustry.steamlayer.network.action.ActionManager;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 @NoArgsConstructor
 @Getter
-public class ClientActionHolderPacket implements IMessage
+public class ClientActionHolderPacket
 {
     public static AtomicInteger previousActionID;
 
-    private NBTTagCompound actionPayload;
-    private int            replyID;
+    private CompoundNBT actionPayload;
+    private int         replyID;
 
-    public ClientActionHolderPacket(int replyID, NBTTagCompound payload)
+    public ClientActionHolderPacket(int replyID, CompoundNBT payload)
     {
-        this.actionPayload = payload;
+        actionPayload = payload;
         this.replyID = replyID;
     }
 
-    @Override
-    public void toBytes(ByteBuf buf)
+    public static ClientActionHolderPacket decode(ByteBuf buffer)
     {
-        buf.writeInt(replyID);
-        ByteBufUtils.writeTag(buf, actionPayload);
+        ClientActionHolderPacket packet = new ClientActionHolderPacket();
+        packet.replyID = buffer.readInt();
+        packet.actionPayload = ByteBufHelper.readTag(buffer);
+
+        return packet;
     }
 
-    @Override
-    public void fromBytes(ByteBuf buf)
+    public static void encode(ClientActionHolderPacket packet, ByteBuf buffer)
     {
-        this.replyID = buf.readInt();
-        this.actionPayload = ByteBufUtils.readTag(buf);
+        buffer.writeInt(packet.replyID);
+        ByteBufHelper.writeTag(buffer, packet.actionPayload);
     }
 
-
-    @NoArgsConstructor
-    public static class ClientActionHolderPacketHandler implements IMessageHandler<ClientActionHolderPacket, IMessage>
+    public static void handle(ClientActionHolderPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
-        @Override
-        public IMessage onMessage(ClientActionHolderPacket message, MessageContext ctx)
-        {
-            Minecraft.getMinecraft().addScheduledTask(() ->
-                    ActionManager.getInstance().triggerCallback(message.getReplyID(), message.getActionPayload()));
-            return null;
-        }
+        contextSupplier.get().enqueueWork(() -> ActionManager.getInstance().triggerCallback(packet.replyID, packet.actionPayload));
+        contextSupplier.get().setPacketHandled(true);
     }
 }

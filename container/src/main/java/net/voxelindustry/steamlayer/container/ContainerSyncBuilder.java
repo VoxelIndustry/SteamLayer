@@ -28,15 +28,15 @@ public class ContainerSyncBuilder
     ContainerSyncBuilder(ContainerBuilder parent)
     {
         this.parent = parent;
-        this.syncs = new ArrayList<>();
-        this.namedSyncs = new HashMap<>();
+        syncs = new ArrayList<>();
+        namedSyncs = new HashMap<>();
     }
 
     private SyncedValue registerSynced(SyncedValue synced, String name)
     {
-        this.syncs.add(synced);
+        syncs.add(synced);
         if (name != null)
-            this.namedSyncs.put(name, synced);
+            namedSyncs.put(name, synced);
         return synced;
     }
 
@@ -50,7 +50,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncBoolean(Supplier<Boolean> supplier, Consumer<Boolean> setter, String name)
     {
-        this.registerSynced(new SyncedProperty<>(supplier, setter,
+        registerSynced(new SyncedProperty<>(supplier, setter,
                 SyncedWrappers.instance().get(Boolean.class)), name);
         return this;
     }
@@ -65,7 +65,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncInteger(Supplier<Integer> supplier, Consumer<Integer> setter, String name)
     {
-        this.registerSynced(new SyncedProperty<>(supplier, setter,
+        registerSynced(new SyncedProperty<>(supplier, setter,
                 SyncedWrappers.instance().get(Integer.class)), name);
         return this;
     }
@@ -80,7 +80,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncFloat(Supplier<Float> supplier, Consumer<Float> setter, String name)
     {
-        this.registerSynced(new SyncedProperty<>(supplier, setter,
+        registerSynced(new SyncedProperty<>(supplier, setter,
                 SyncedWrappers.instance().get(Float.class)), name);
         return this;
     }
@@ -95,7 +95,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncString(Supplier<String> supplier, Consumer<String> setter, String name)
     {
-        this.registerSynced(new SyncedProperty<>(supplier, setter,
+        registerSynced(new SyncedProperty<>(supplier, setter,
                 SyncedWrappers.instance().get(String.class)), name);
         return this;
     }
@@ -110,7 +110,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncFluid(Supplier<FluidStack> supplier, Consumer<FluidStack> setter, String name)
     {
-        this.registerSynced(new SyncedProperty<>(supplier, setter,
+        registerSynced(new SyncedProperty<>(supplier, setter,
                 SyncedWrappers.instance().get(FluidStack.class)), name);
         return this;
     }
@@ -125,7 +125,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncItem(Supplier<ItemStack> supplier, Consumer<ItemStack> setter, String name)
     {
-        this.registerSynced(new SyncedProperty<>(supplier, setter,
+        registerSynced(new SyncedProperty<>(supplier, setter,
                 SyncedWrappers.instance().get(ItemStack.class)), name);
         return this;
     }
@@ -141,7 +141,7 @@ public class ContainerSyncBuilder
     public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter,
                                               String name)
     {
-        this.syncInventory(supplier, setter, 0, name);
+        syncInventory(supplier, setter, 0, name);
         return this;
     }
 
@@ -157,7 +157,7 @@ public class ContainerSyncBuilder
     public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter,
                                               int syncRate, String name)
     {
-        this.registerSynced(new SyncedProperty<>(supplier, setter,
+        registerSynced(new SyncedProperty<>(supplier, setter,
                 SyncedWrappers.instance().get(IItemHandler.class), syncRate), name);
         return this;
     }
@@ -171,7 +171,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncAny(SyncedValue synced, String name)
     {
-        this.registerSynced(synced, name);
+        registerSynced(synced, name);
         return this;
     }
 
@@ -188,7 +188,7 @@ public class ContainerSyncBuilder
     public <T> ContainerSyncBuilder syncArray(Supplier<T[]> supplier, Class<T> elementClass, Range<Integer> range,
                                               String name)
     {
-        this.registerSynced(new SyncedArrayProperty<>(supplier, SyncedWrappers.instance().get(elementClass),
+        registerSynced(new SyncedArrayProperty<>(supplier, SyncedWrappers.instance().get(elementClass),
                 elementClass, range), name);
         return this;
     }
@@ -209,7 +209,7 @@ public class ContainerSyncBuilder
         if (elementClass.isEnum())
             throw new RuntimeException("Enum must be synced with either syncEnum or syncEnumList!");
 
-        this.registerSynced(new SyncedListProperty<>(supplier, SyncedWrappers.instance().get(elementClass), range),
+        registerSynced(new SyncedListProperty<>(supplier, SyncedWrappers.instance().get(elementClass), range),
                 name);
         return this;
     }
@@ -227,7 +227,7 @@ public class ContainerSyncBuilder
     public <E extends Enum<E>> ContainerSyncBuilder syncEnum(Supplier<E> supplier, Consumer<E> consumer,
                                                              Class<E> enumClass, String name)
     {
-        this.syncInteger(() -> supplier.get().ordinal(), ordinal -> consumer.accept(SharedSecrets.getJavaLangAccess()
+        syncInteger(() -> supplier.get().ordinal(), ordinal -> consumer.accept(SharedSecrets.getJavaLangAccess()
                 .getEnumConstantsShared(enumClass)[ordinal]), name);
         return this;
     }
@@ -244,7 +244,7 @@ public class ContainerSyncBuilder
     public <E extends Enum<E>> ContainerSyncBuilder syncEnumList(Supplier<List<E>> supplier, Class<E> enumClass,
                                                                  Range<Integer> range, String name)
     {
-        this.registerSynced(new SyncedEnumListProperty<>(supplier, enumClass, range), name);
+        registerSynced(new SyncedEnumListProperty<>(supplier, enumClass, range), name);
         return this;
     }
 
@@ -257,7 +257,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncBoolean(Supplier<Boolean> supplier, Consumer<Boolean> setter)
     {
-        return this.syncBoolean(supplier, setter, null);
+        return syncBoolean(supplier, setter, null);
     }
 
     /**
@@ -269,7 +269,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncInteger(Supplier<Integer> supplier, Consumer<Integer> setter)
     {
-        return this.syncInteger(supplier, setter, null);
+        return syncInteger(supplier, setter, null);
     }
 
     /**
@@ -281,7 +281,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncFloat(Supplier<Float> supplier, Consumer<Float> setter)
     {
-        this.syncFloat(supplier, setter, null);
+        syncFloat(supplier, setter, null);
         return this;
     }
 
@@ -294,7 +294,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncString(Supplier<String> supplier, Consumer<String> setter)
     {
-        this.syncString(supplier, setter, null);
+        syncString(supplier, setter, null);
         return this;
     }
 
@@ -307,7 +307,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncFluid(Supplier<FluidStack> supplier, Consumer<FluidStack> setter)
     {
-        this.syncFluid(supplier, setter, null);
+        syncFluid(supplier, setter, null);
         return this;
     }
 
@@ -320,7 +320,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncItem(Supplier<ItemStack> supplier, Consumer<ItemStack> setter)
     {
-        this.syncItem(supplier, setter, null);
+        syncItem(supplier, setter, null);
         return this;
     }
 
@@ -333,7 +333,7 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter)
     {
-        this.syncInventory(supplier, setter, null);
+        syncInventory(supplier, setter, null);
         return this;
     }
 
@@ -348,7 +348,7 @@ public class ContainerSyncBuilder
     public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter,
                                               int syncRate)
     {
-        this.syncInventory(supplier, setter, syncRate, null);
+        syncInventory(supplier, setter, syncRate, null);
         return this;
     }
 
@@ -363,7 +363,7 @@ public class ContainerSyncBuilder
      */
     public <T> ContainerSyncBuilder syncArray(Supplier<T[]> supplier, Class<T> elementClass, Range<Integer> range)
     {
-        this.syncArray(supplier, elementClass, range, null);
+        syncArray(supplier, elementClass, range, null);
         return this;
     }
 
@@ -377,7 +377,7 @@ public class ContainerSyncBuilder
      */
     public <T> ContainerSyncBuilder syncArray(Supplier<T[]> supplier, Class<T> elementClass)
     {
-        this.syncArray(supplier, elementClass, null, null);
+        syncArray(supplier, elementClass, null, null);
         return this;
     }
 
@@ -392,7 +392,7 @@ public class ContainerSyncBuilder
      */
     public <T> ContainerSyncBuilder syncList(Supplier<List<T>> supplier, Class<T> elementClass, Range<Integer> range)
     {
-        this.syncList(supplier, elementClass, range, null);
+        syncList(supplier, elementClass, range, null);
         return this;
     }
 
@@ -406,7 +406,7 @@ public class ContainerSyncBuilder
      */
     public <T> ContainerSyncBuilder syncList(Supplier<List<T>> supplier, Class<T> elementClass)
     {
-        this.syncList(supplier, elementClass, null, null);
+        syncList(supplier, elementClass, null, null);
         return this;
     }
 
@@ -422,7 +422,7 @@ public class ContainerSyncBuilder
     public <E extends Enum<E>> ContainerSyncBuilder syncEnum(Supplier<E> supplier, Consumer<E> consumer,
                                                              Class<E> enumClass)
     {
-        this.syncEnum(supplier, consumer, enumClass);
+        syncEnum(supplier, consumer, enumClass);
         return this;
     }
 
@@ -434,14 +434,14 @@ public class ContainerSyncBuilder
      */
     public ContainerSyncBuilder syncAny(SyncedValue synced)
     {
-        this.syncAny(synced, null);
+        syncAny(synced, null);
         return this;
     }
 
-    public BuiltContainer create()
+    public BuiltContainer create(int windowId)
     {
-        this.parent.syncs = this.syncs;
-        this.parent.namedSyncs = this.namedSyncs;
-        return this.parent.create();
+        parent.syncs = syncs;
+        parent.namedSyncs = namedSyncs;
+        return parent.create(windowId);
     }
 }

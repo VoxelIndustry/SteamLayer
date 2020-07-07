@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.container.sync;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NoArgsConstructor;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.voxelindustry.steamlayer.common.container.ISyncedContainer;
 import net.voxelindustry.steamlayer.network.packet.Message;
 
@@ -41,7 +41,7 @@ public class ContainerSyncPacket extends Message
     }
 
     @Override
-    public void handle(EntityPlayer player)
+    public void handle(PlayerEntity player)
     {
         if (player.openContainer instanceof ISyncedContainer && player.openContainer.windowId == windowID)
             ((ISyncedContainer) player.openContainer).updateProperty(syncID, bufferCopy);

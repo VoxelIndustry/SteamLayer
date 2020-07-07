@@ -1,154 +1,129 @@
 package net.voxelindustry.steamlayer.multiblock;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockHorizontal;
+import net.minecraft.block.BlockRenderType;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.HorizontalBlock;
 import net.minecraft.block.ITileEntityProvider;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.properties.PropertyBool;
-import net.minecraft.block.properties.PropertyDirection;
-import net.minecraft.block.state.BlockStateContainer;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryHelper;
+import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.state.BooleanProperty;
+import net.minecraft.state.DirectionProperty;
+import net.minecraft.state.StateContainer;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.*;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Mirror;
+import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ChunkCache;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.shapes.ISelectionContext;
+import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.shapes.VoxelShapes;
+import net.minecraft.world.IBlockReader;
+import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.storage.loot.LootContext;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.steamlayer.tile.descriptor.ModularTiles;
 
 import javax.annotation.Nullable;
+import java.util.List;
+
+import static java.util.Collections.emptyList;
 
 public abstract class BlockMultiblockBase<T extends TileBase & ITileMultiblockCore> extends Block implements ITileEntityProvider
 {
-    public static final PropertyBool      MULTIBLOCK_GAG = PropertyBool.create("multiblockgag");
-    public static final PropertyDirection FACING         = BlockHorizontal.FACING;
+    public static final BooleanProperty   MULTIBLOCK_GAG = BooleanProperty.create("multiblockgag");
+    public static final DirectionProperty FACING         = HorizontalBlock.HORIZONTAL_FACING;
 
     private final String   modClass;
     private final Class<T> tileClass;
 
     private MultiblockComponent multiblock;
 
-    public BlockMultiblockBase(String modClass, Material material, Class<T> tileClass)
+    public BlockMultiblockBase(String modClass, Block.Properties properties, Class<T> tileClass)
     {
-        super(material);
+        super(properties);
 
         this.modClass = modClass;
         this.tileClass = tileClass;
 
-        this.setDefaultState(this.blockState.getBaseState().withProperty(BlockMultiblockBase.MULTIBLOCK_GAG, false)
-                .withProperty(BlockMultiblockBase.FACING, EnumFacing.NORTH));
+        setDefaultState(getStateContainer().getBaseState()
+                .with(BlockMultiblockBase.MULTIBLOCK_GAG, false)
+                .with(BlockMultiblockBase.FACING, Direction.NORTH));
     }
 
     @Override
-    public BlockRenderLayer getRenderLayer()
-    {
-        return BlockRenderLayer.CUTOUT;
-    }
-
-    @Override
-    public boolean isOpaqueCube(IBlockState state)
+    public boolean isNormalCube(BlockState state, IBlockReader worldIn, BlockPos pos)
     {
         return false;
     }
 
     @Override
-    public boolean isFullCube(IBlockState state)
+    public BlockRenderType getRenderType(BlockState state)
     {
-        return false;
+        if (state.get(BlockMultiblockBase.MULTIBLOCK_GAG))
+            return BlockRenderType.INVISIBLE;
+        return BlockRenderType.MODEL;
+    }
+
+    public static Direction getFacing(BlockState state)
+    {
+        return state.get(BlockMultiblockBase.FACING);
     }
 
     @Override
-    public EnumBlockRenderType getRenderType(IBlockState state)
+    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder)
     {
-        if (state.getValue(BlockMultiblockBase.MULTIBLOCK_GAG))
-            return EnumBlockRenderType.INVISIBLE;
-        return EnumBlockRenderType.MODEL;
-    }
-
-    @Nullable
-    public static EnumFacing getFacing(int meta)
-    {
-        int i = meta & 7;
-        return i > 5 ? null : EnumFacing.byIndex(i);
-    }
-
-    public static EnumFacing getFacing(IBlockState state)
-    {
-        return state.getValue(BlockMultiblockBase.FACING);
+        builder.add(MULTIBLOCK_GAG, FACING);
     }
 
     @Override
-    public IBlockState getStateFromMeta(int meta)
+    public VoxelShape getShape(BlockState state, IBlockReader w, BlockPos pos, ISelectionContext context)
     {
-        return this.getDefaultState().withProperty(BlockMultiblockBase.FACING, BlockMultiblockBase.getFacing(meta))
-                .withProperty(BlockMultiblockBase.MULTIBLOCK_GAG, (meta & 8) > 0);
-    }
-
-    @Override
-    public int getMetaFromState(IBlockState state)
-    {
-        int i = 0;
-        i = i | state.getValue(BlockMultiblockBase.FACING).getIndex();
-
-        if (state.getValue(BlockMultiblockBase.MULTIBLOCK_GAG))
-            i |= 8;
-        return i;
-    }
-
-    @Override
-    public BlockStateContainer createBlockState()
-    {
-        return new BlockStateContainer(this, MULTIBLOCK_GAG, FACING);
-    }
-
-    @Override
-    public AxisAlignedBB getSelectedBoundingBox(IBlockState state, World w, BlockPos pos)
-    {
-        if (!state.getValue(BlockMultiblockBase.MULTIBLOCK_GAG))
-            return this.getMultiblock().getBox(BlockMultiblockBase.getFacing(state)).offset(pos);
+        if (!state.get(BlockMultiblockBase.MULTIBLOCK_GAG))
+            return getMultiblock().getBox(BlockMultiblockBase.getFacing(state));
 
         if (w.getTileEntity(pos) instanceof ITileMultiblock)
         {
             ITileMultiblock tile = (ITileMultiblock) w.getTileEntity(pos);
             if (tile != null && !tile.isCore())
-                return w.getBlockState(tile.getCorePos()).getSelectedBoundingBox(w, tile.getCorePos());
+                return w.getBlockState(tile.getCorePos()).getShape(w, tile.getCorePos(), context)
+                        .withOffset(tile.getCoreOffset().getX(), tile.getCoreOffset().getY(), tile.getCoreOffset().getZ());
         }
-        return Block.FULL_BLOCK_AABB.offset(pos);
+        return VoxelShapes.fullCube();
     }
 
-    public boolean canPlaceBlockAt(World w, BlockPos pos, EnumFacing facing)
+    public boolean canPlaceBlockAt(World w, BlockPos pos, Direction facing)
     {
-        Iterable<BlockPos> searchables = this.getMultiblock().getAllInBox(pos, facing);
+        BlockPos[] searchables = getMultiblock().getAllInBox(pos, facing).toArray(BlockPos[]::new);
 
         for (BlockPos current : searchables)
         {
-            if (!w.getBlockState(current).getBlock().isReplaceable(w, current))
+            if (!w.getBlockState(current).getMaterial().isReplaceable())
                 return false;
         }
         return true;
     }
 
     @Override
-    public void onBlockPlacedBy(World w, BlockPos pos, IBlockState state,
-                                EntityLivingBase placer, ItemStack stack)
+    public void onBlockPlacedBy(World w, BlockPos pos, BlockState state,
+                                LivingEntity placer, ItemStack stack)
     {
-        Iterable<BlockPos> searchables = this.getMultiblock().getAllInBox(pos, BlockMultiblockBase.getFacing
-                (state));
+        BlockPos[] searchables = getMultiblock().getAllInBox(pos,
+                BlockMultiblockBase.getFacing(state)).toArray(BlockPos[]::new);
 
         for (BlockPos current : searchables)
         {
             if (!current.equals(pos))
             {
-                IBlockState previous = w.getBlockState(current);
-                w.setBlockState(current, this.getDefaultState().withProperty(BlockMultiblockBase.MULTIBLOCK_GAG, true));
+                BlockState previous = w.getBlockState(current);
+                w.setBlockState(current, getDefaultState().with(BlockMultiblockBase.MULTIBLOCK_GAG, true));
                 w.notifyBlockUpdate(current, previous, w.getBlockState(current), 3);
                 TileMultiblockGag gag = (TileMultiblockGag) w.getTileEntity(current);
                 if (gag != null)
@@ -158,7 +133,7 @@ public abstract class BlockMultiblockBase<T extends TileBase & ITileMultiblockCo
     }
 
     @Override
-    public void breakBlock(World w, BlockPos pos, IBlockState state)
+    public void onReplaced(BlockState state, World w, BlockPos pos, BlockState newState, boolean isMoving)
     {
         ITileMultiblock tile = (ITileMultiblock) w.getTileEntity(pos);
         if (tile != null)
@@ -170,18 +145,25 @@ public abstract class BlockMultiblockBase<T extends TileBase & ITileMultiblockCo
                     InventoryHelper.dropInventoryItems(w, pos, (IInventory) tile);
                     w.updateComparatorOutputLevel(pos, this);
                 }
-                this.dropBlockAsItem(w, pos, state, 0);
             }
             else
                 tile.breakCore();
         }
-        super.breakBlock(w, pos, state);
+        super.onReplaced(state, w, pos, newState, isMoving);
     }
 
     @Override
-    public void neighborChanged(IBlockState state, World w, BlockPos pos, Block block, BlockPos from)
+    public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder)
     {
-        super.neighborChanged(state, w, pos, block, from);
+        if (state.get(MULTIBLOCK_GAG))
+            return super.getDrops(state, builder);
+        return emptyList();
+    }
+
+    @Override
+    public void onNeighborChange(BlockState state, IWorldReader w, BlockPos pos, BlockPos from)
+    {
+        super.onNeighborChange(state, w, pos, from);
 
         TileEntity tile = w.getTileEntity(pos);
         if (tile instanceof TileMultiblockGag && !((TileMultiblockGag) tile).isCorePresent())
@@ -189,88 +171,72 @@ public abstract class BlockMultiblockBase<T extends TileBase & ITileMultiblockCo
     }
 
     @Override
-    public boolean onBlockActivated(World w, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand,
-                                    EnumFacing facing, float hitX, float hitY, float hitZ)
+    public boolean onBlockActivated(BlockState state, World w, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult hit)
     {
         ITileMultiblock tile = (ITileMultiblock) w.getTileEntity(pos);
 
         if (tile != null)
-            return tile.getCore().onRightClick(player, facing, hitX, hitY, hitZ, tile.getCoreOffset());
+            return tile.getCore().onRightClick(player, hit, tile.getCoreOffset());
         return false;
     }
 
     @Override
-    public IBlockState withRotation(IBlockState state, Rotation rot)
+    public BlockState rotate(BlockState state, Rotation rot)
     {
-        return state.withProperty(BlockMultiblockBase.FACING, rot.rotate(state.getValue(BlockMultiblockBase.FACING)));
+        return state.with(FACING, rot.rotate(state.get(FACING)));
     }
 
     @Override
-    public IBlockState withMirror(IBlockState state, Mirror mirrorIn)
+    public BlockState mirror(BlockState state, Mirror mirrorIn)
     {
-        return state.withRotation(mirrorIn.toRotation(state.getValue(BlockMultiblockBase.FACING)));
+        return state.rotate(mirrorIn.toRotation(state.get(FACING)));
     }
 
     @Override
-    public IBlockState getStateForPlacement(World worldIn, BlockPos pos, EnumFacing facing,
-                                            float hitX, float hitY, float hitZ, int meta,
-                                            EntityLivingBase placer)
+    public BlockState getStateForPlacement(BlockItemUseContext context)
     {
-        return this.getDefaultState().withProperty(BlockMultiblockBase.MULTIBLOCK_GAG, false)
-                .withProperty(BlockMultiblockBase.FACING, placer.getHorizontalFacing().getOpposite());
+        return getDefaultState()
+                .with(BlockMultiblockBase.MULTIBLOCK_GAG, false)
+                .with(BlockMultiblockBase.FACING, context.getPlacementHorizontalFacing().getOpposite());
     }
 
+
+    @Nullable
     @Override
-    public TileEntity createNewTileEntity(World w, int meta)
+    public TileEntity createTileEntity(BlockState state, IBlockReader world)
     {
-        IBlockState state = this.getStateFromMeta(meta);
-        if (state.getValue(BlockMultiblockBase.MULTIBLOCK_GAG))
+        if (state.get(BlockMultiblockBase.MULTIBLOCK_GAG))
             return new TileMultiblockGag();
-        return this.getTile(w, state);
+        return getTile(world, state);
     }
 
-    public abstract T getTile(World w, IBlockState state);
+    public abstract T getTile(IBlockReader w, BlockState state);
 
     public MultiblockComponent getMultiblock()
     {
-        if (this.multiblock == null)
-            this.multiblock = ModularTiles.instance(modClass).getComponent(MultiblockComponent.class,
-                    this.getRegistryName().getPath());
-        return this.multiblock;
-    }
-
-    public boolean isWordTileCore(IBlockAccess world, BlockPos pos)
-    {
-        if (world instanceof ChunkCache)
-            return ((ChunkCache) world).getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK)
-                    instanceof ITileMultiblockCore;
-        else
-            return world.getTileEntity(pos) instanceof ITileMultiblockCore;
+        if (multiblock == null)
+            multiblock = ModularTiles.instance(modClass).getComponent(MultiblockComponent.class,
+                    getRegistryName().getPath());
+        return multiblock;
     }
 
     ////////////////////
     // TILE RETRIEVAL //
     ////////////////////
 
-    public T getWorldTile(IBlockAccess world, BlockPos pos)
+    public T getWorldTile(IBlockReader world, BlockPos pos)
     {
-        return (T) this.getRawWorldTile(world, pos);
+        return (T) getRawWorldTile(world, pos);
     }
 
-    public TileEntity getRawWorldTile(IBlockAccess world, BlockPos pos)
+    public TileEntity getRawWorldTile(IBlockReader world, BlockPos pos)
     {
-        if (world instanceof ChunkCache)
-            return ((ChunkCache) world).getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
-        else
-            return world.getTileEntity(pos);
+        return world.getTileEntity(pos);
     }
 
-    public boolean checkWorldTile(IBlockAccess world, BlockPos pos)
+    public boolean checkWorldTile(IBlockReader world, BlockPos pos)
     {
-        if (world instanceof ChunkCache)
-            return tileClass.isInstance(((ChunkCache) world).getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK));
-        else
-            return tileClass.isInstance(world.getTileEntity(pos));
+        return tileClass.isInstance(world.getTileEntity(pos));
     }
 
     public Class<T> getTileClass()

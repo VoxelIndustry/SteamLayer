@@ -3,55 +3,47 @@ package net.voxelindustry.steamlayer.network.packet;
 import io.netty.buffer.ByteBuf;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.voxelindustry.steamlayer.network.ByteBufHelper;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
+
+import java.util.function.Supplier;
 
 @AllArgsConstructor
 @NoArgsConstructor
-public class TileSyncRequestPacket implements IMessage
+public class TileSyncRequestPacket
 {
     private int      dimensionID;
     private BlockPos pos;
 
-    @Override
-    public void toBytes(ByteBuf buf)
+    public static TileSyncRequestPacket decode(ByteBuf buffer)
     {
-        buf.writeLong(pos.toLong());
-        buf.writeInt(dimensionID);
+        TileSyncRequestPacket packet = new TileSyncRequestPacket();
+        packet.dimensionID = buffer.readInt();
+        packet.pos = ByteBufHelper.readPos(buffer);
+
+        return packet;
     }
 
-    @Override
-    public void fromBytes(ByteBuf buf)
+    public static void encode(TileSyncRequestPacket packet, ByteBuf buffer)
     {
-        this.pos = BlockPos.fromLong(buf.readLong());
-        this.dimensionID = buf.readInt();
+        buffer.writeInt(packet.dimensionID);
+        ByteBufHelper.writePos(buffer, packet.pos);
     }
 
-    public static class TileSyncRequestPacketHandler implements IMessageHandler<TileSyncRequestPacket, IMessage>
+    public static void handle(TileSyncRequestPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
-        public TileSyncRequestPacketHandler()
+        NetworkEvent.Context context = contextSupplier.get();
+
+        context.enqueueWork(() ->
         {
-
-        }
-
-        @Override
-        public IMessage onMessage(TileSyncRequestPacket message, MessageContext ctx)
-        {
-            EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
-
-            serverPlayer.getServerWorld().addScheduledTask(() ->
-            {
-                if (serverPlayer.getEntityWorld().provider.getDimension() == message.dimensionID
-                        && serverPlayer.getEntityWorld().isBlockLoaded(message.pos) &&
-                        serverPlayer.getEntityWorld().getTileEntity(message.pos) != null)
-                    NetworkHandler.sendTileToPlayer(serverPlayer.getEntityWorld().getTileEntity(message.pos),
-                            serverPlayer);
-            });
-            return null;
-        }
+            if (context.getSender().getEntityWorld().getDimension().getType().getId() == packet.dimensionID
+                    && context.getSender().getEntityWorld().isBlockLoaded(packet.pos) &&
+                    context.getSender().getEntityWorld().getTileEntity(packet.pos) != null)
+                NetworkHandler.sendTileToPlayer(context.getSender().getEntityWorld().getTileEntity(packet.pos),
+                        context.getSender());
+        });
+        context.setPacketHandled(true);
     }
 }

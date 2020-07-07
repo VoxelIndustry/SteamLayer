@@ -1,4 +1,4 @@
-package net.voxelindustry.steamlayer.utils;
+package net.voxelindustry.steamlayer.common.utils;
 
 import net.minecraft.util.math.BlockPos;
 

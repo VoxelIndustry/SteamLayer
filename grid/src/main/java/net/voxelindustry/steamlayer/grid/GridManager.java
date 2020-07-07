@@ -1,6 +1,11 @@
 package net.voxelindustry.steamlayer.grid;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GridManager
@@ -18,94 +23,111 @@ public class GridManager
     {
         for (GridManager manager : instances.values())
         {
-            for (CableGrid grid : manager.cableGrids.values())
+            for (CableGrid grid : manager.gridsByIdentifier.values())
                 grid.getCables().clear();
-            manager.cableGrids.clear();
+            manager.gridsByIdentifier.clear();
         }
     }
 
-    public Map<Integer, CableGrid> cableGrids;
+    public final Map<Integer, CableGrid> gridsByIdentifier = new ConcurrentHashMap<>();
+
+    private final List<Integer>      gridsToRemove = new ArrayList<>();
+    private final List<ITickingGrid> tickingGrids  = new ArrayList<>();
 
     private GridManager()
     {
-        this.cableGrids = new ConcurrentHashMap<>();
     }
 
-    public CableGrid addGrid(final CableGrid grid)
+    public CableGrid addGrid(CableGrid grid)
     {
-        if (!this.cableGrids.containsKey(grid.getIdentifier()))
-            this.cableGrids.put(grid.getIdentifier(), grid);
+        if (!gridsByIdentifier.containsKey(grid.getIdentifier()))
+            gridsByIdentifier.put(grid.getIdentifier(), grid);
+        grid.setGridManager(this);
+
+        if (grid instanceof ITickingGrid)
+            tickingGrids.add((ITickingGrid) grid);
         return grid;
     }
 
-    public CableGrid removeGrid(final int identifier)
+    public void markGridForRemoval(CableGrid grid)
     {
-        return this.cableGrids.remove(identifier);
+        gridsToRemove.add(grid.getIdentifier());
     }
 
-    public boolean hasGrid(final int identifier)
+    public CableGrid removeGrid(int identifier)
     {
-        return this.cableGrids.containsKey(identifier);
+        CableGrid grid = gridsByIdentifier.get(identifier);
+
+        if (grid instanceof ITickingGrid)
+            tickingGrids.remove(grid);
+
+        return gridsByIdentifier.remove(identifier);
     }
 
-    public CableGrid getGrid(final int identifier)
+    public boolean hasGrid(int identifier)
     {
-        if (this.cableGrids.containsKey(identifier))
-            return this.cableGrids.get(identifier);
+        return gridsByIdentifier.containsKey(identifier);
+    }
+
+    public CableGrid getGrid(int identifier)
+    {
+        if (gridsByIdentifier.containsKey(identifier))
+            return gridsByIdentifier.get(identifier);
         return null;
     }
 
     public int getNextID()
     {
         int i = 0;
-        while (this.cableGrids.containsKey(i))
+        while (gridsByIdentifier.containsKey(i))
             i++;
         return i;
     }
 
-    public void tickGrids()
+    public void tickGrids(int tickIndex)
     {
-        Iterator<CableGrid> gridIterator = this.cableGrids.values().iterator();
+        gridsToRemove.forEach(gridsByIdentifier::remove);
+        gridsToRemove.clear();
 
-        while (gridIterator.hasNext())
+
+        tickingGrids.forEach(grid ->
         {
-            CableGrid next = gridIterator.next();
-            if (next.isMarkedForRemoval())
-                gridIterator.remove();
-            else
-                next.tick();
-        }
+            if (tickIndex % (20 / grid.getTickRate()) == 0) // Implicit floor is intended -> 20 / 3 per seconds = 6.667 = 6 -> Always 3 times per 20 ticks
+            {
+                grid.tick(tickIndex);
+            }
+        });
     }
 
-    public <T extends CableGrid> void connectCable(final ITileNode<T> added)
+    public <T extends CableGrid> void connectCable(ITileNode<T> added)
     {
         added.adjacentConnect();
 
         for (int edge : added.getConnections())
         {
-            final ITileNode<T> adjacent = added.getConnected(edge);
+            ITileNode<T> adjacent = added.getConnected(edge);
 
             if (adjacent.getGrid() != -1)
             {
-                if (added.getGrid() == -1 && this.getGrid(adjacent.getGrid()) != null)
+                if (added.getGrid() == -1 && getGrid(adjacent.getGrid()) != null)
                 {
                     added.setGrid(adjacent.getGrid());
-                    this.getGrid(adjacent.getGrid()).addCable(added);
+                    getGrid(adjacent.getGrid()).addCable(added);
                 }
-                else if (this.getGrid(added.getGrid()).canMerge(this.getGrid(adjacent.getGrid())))
-                    this.mergeGrids(this.getGrid(added.getGrid()), this.getGrid(adjacent.getGrid()));
+                else if (getGrid(added.getGrid()).canMerge(getGrid(adjacent.getGrid())))
+                    mergeGrids(getGrid(added.getGrid()), getGrid(adjacent.getGrid()));
             }
         }
 
         if (added.getGrid() == -1)
         {
-            final CableGrid newGrid = this.addGrid(added.createGrid(this.getNextID()));
+            CableGrid newGrid = addGrid(added.createGrid(getNextID()));
             newGrid.addCable(added);
             added.setGrid(newGrid.getIdentifier());
         }
     }
 
-    public <T extends CableGrid> void disconnectCable(final ITileNode<T> removed)
+    public <T extends CableGrid> void disconnectCable(ITileNode<T> removed)
     {
         if (removed.getGrid() != -1)
         {
@@ -116,24 +138,24 @@ public class GridManager
 
                 if (removed.getConnections().length == 1)
                 {
-                    this.getGrid(removed.getGrid()).removeCable(removed);
+                    getGrid(removed.getGrid()).removeCable(removed);
                     removed.setGrid(-1);
                 }
                 else
                 {
-                    this.getGrid(removed.getGrid()).removeCable(removed);
-                    if (!this.getOrphans(this.getGrid(removed.getGrid()), removed).isEmpty())
+                    getGrid(removed.getGrid()).removeCable(removed);
+                    if (!getOrphans(getGrid(removed.getGrid()), removed).isEmpty())
                     {
                         for (int edge : removed.getConnections())
                             removed.getConnected(edge).setGrid(-1);
-                        final CableGrid old = this.removeGrid(removed.getGrid());
+                        CableGrid old = removeGrid(removed.getGrid());
                         for (int edge : removed.getConnections())
                         {
                             if (removed.getConnected(edge).getGrid() == -1)
                             {
-                                final CableGrid newGrid = this.addGrid(old.copy(this.getNextID()));
+                                CableGrid newGrid = addGrid(old.copy(getNextID()));
 
-                                this.exploreGrid(newGrid, removed.getConnected(edge));
+                                exploreGrid(newGrid, removed.getConnected(edge));
                                 newGrid.onSplit(old);
                             }
                         }
@@ -142,39 +164,39 @@ public class GridManager
                 }
             }
             else
-                this.removeGrid(removed.getGrid());
+                removeGrid(removed.getGrid());
         }
     }
 
-    public void mergeGrids(final CableGrid destination, final CableGrid source)
+    public void mergeGrids(CableGrid destination, CableGrid source)
     {
         destination.addCables(source.getCables());
 
         source.getCables().forEach(cable -> cable.setGrid(destination.getIdentifier()));
-        this.cableGrids.remove(source.getIdentifier());
+        gridsByIdentifier.remove(source.getIdentifier());
         destination.onMerge(source);
     }
 
-    public <T extends CableGrid> List<ITileNode<T>> getOrphans(final CableGrid grid, final ITileNode<T> cable)
+    public <T extends CableGrid> List<ITileNode<T>> getOrphans(CableGrid grid, ITileNode<T> cable)
     {
-        final List<ITileNode<T>> toScan = new ArrayList<>();
+        List<ITileNode<T>> toScan = new ArrayList<>();
         // Shut the fuck up gradle
         grid.getCables().forEach(cable2 -> toScan.add((ITileNode<T>) cable2));
 
-        final List<ITileNode<T>> openset = new ArrayList<>();
-        final List<ITileNode<T>> frontier = new ArrayList<>();
+        List<ITileNode<T>> openset = new ArrayList<>();
+        List<ITileNode<T>> frontier = new ArrayList<>();
 
         frontier.add(cable.getConnected(cable.getConnections()[0]));
         while (!frontier.isEmpty())
         {
-            final List<ITileNode<T>> frontierCpy = new ArrayList<>(frontier);
-            for (final ITileNode<T> current : frontierCpy)
+            List<ITileNode<T>> frontierCpy = new ArrayList<>(frontier);
+            for (ITileNode<T> current : frontierCpy)
             {
                 openset.add(current);
                 toScan.remove(current);
                 for (int edge : current.getConnections())
                 {
-                    final ITileNode<T> facingCable = current.getConnected(edge);
+                    ITileNode<T> facingCable = current.getConnected(edge);
                     if (!openset.contains(facingCable) && !frontier.contains(facingCable))
                         frontier.add(facingCable);
                 }
@@ -184,16 +206,16 @@ public class GridManager
         return toScan;
     }
 
-    private <T extends CableGrid> void exploreGrid(final CableGrid grid, final ITileNode<T> cable)
+    private <T extends CableGrid> void exploreGrid(CableGrid grid, ITileNode<T> cable)
     {
-        final Set<ITileNode<T>> openset = new HashSet<>();
-        final Set<ITileNode<T>> frontier = new HashSet<>();
+        Set<ITileNode<T>> openset = new HashSet<>();
+        Set<ITileNode<T>> frontier = new HashSet<>();
 
         frontier.add(cable);
         while (!frontier.isEmpty())
         {
             Set<ITileNode<T>> frontierCpy = new HashSet<>(frontier);
-            for (final ITileNode<T> current : frontierCpy)
+            for (ITileNode<T> current : frontierCpy)
             {
                 openset.add(current);
                 current.setGrid(grid.getIdentifier());

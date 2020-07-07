@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.multiblock.adapter;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.voxelindustry.steamlayer.multiblock.MultiblockSide;
 
@@ -18,10 +18,10 @@ public class MultiblockSideParser
 {
     private static List<String> KEYS = Arrays.asList("pos", "facing", "fromPos", "toPos");
 
-    private BlockPos         from    = null;
-    private BlockPos         to      = null;
-    private BlockPos         unique  = null;
-    private List<EnumFacing> facings = new ArrayList<>();
+    private BlockPos        from    = null;
+    private BlockPos        to      = null;
+    private BlockPos        unique  = null;
+    private List<Direction> facings = new ArrayList<>();
 
     public boolean isKey(String key)
     {
@@ -42,11 +42,11 @@ public class MultiblockSideParser
                 {
                     in.beginArray();
                     while (in.hasNext())
-                        facings.add(EnumFacing.byName(in.nextString()));
+                        facings.add(Direction.byName(in.nextString()));
                     in.endArray();
                 }
                 else
-                    facings = Collections.singletonList(EnumFacing.byName(in.nextString()));
+                    facings = Collections.singletonList(Direction.byName(in.nextString()));
                 break;
             case "fromPos":
                 in.beginArray();

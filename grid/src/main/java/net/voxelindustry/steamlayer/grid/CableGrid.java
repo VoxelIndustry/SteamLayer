@@ -1,7 +1,9 @@
 package net.voxelindustry.steamlayer.grid;
 
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.util.math.BlockPos;
 
@@ -18,25 +20,22 @@ public abstract class CableGrid
 
     private final HashSet<ITileNode<?>> cables;
 
-    private boolean markedForRemoval;
+    @Setter(AccessLevel.PACKAGE)
+    @EqualsAndHashCode.Exclude
+    private GridManager gridManager;
 
-    public CableGrid(final int identifier)
+    public CableGrid(int identifier)
     {
         this.identifier = identifier;
 
-        this.cables = new HashSet<>();
+        cables = new HashSet<>();
     }
 
-    public void tick()
+    public abstract CableGrid copy(int identifier);
+
+    public boolean canMerge(CableGrid grid)
     {
-
-    }
-
-    public abstract CableGrid copy(final int identifier);
-
-    public boolean canMerge(final CableGrid grid)
-    {
-        return grid.getIdentifier() != this.getIdentifier();
+        return grid.getIdentifier() != getIdentifier();
     }
 
     /**
@@ -44,7 +43,7 @@ public abstract class CableGrid
      *
      * @param grid the source grid
      */
-    public void onMerge(final CableGrid grid)
+    public void onMerge(CableGrid grid)
     {
 
     }
@@ -55,49 +54,49 @@ public abstract class CableGrid
      *
      * @param grid the grid source grid before splitting.
      */
-    public void onSplit(final CableGrid grid)
+    public void onSplit(CableGrid grid)
     {
 
     }
 
-    public void addCable(@Nonnull final ITileNode<?> cable)
+    public void addCable(@Nonnull ITileNode<?> cable)
     {
-        this.cables.add(cable);
+        cables.add(cable);
     }
 
-    public void addCables(final Collection<ITileNode<?>> cables)
+    public void addCables(Collection<ITileNode<?>> cables)
     {
         cables.forEach(this::addCable);
     }
 
-    public boolean removeCable(final ITileNode<?> cable)
+    public boolean removeCable(ITileNode<?> cable)
     {
-        if (this.cables.remove(cable))
+        if (cables.remove(cable))
         {
-            if (this.cables.isEmpty())
-                this.markedForRemoval = true;
+            if (cables.isEmpty())
+                getGridManager().markGridForRemoval(this);
             return true;
         }
         return false;
     }
 
-    public void removeCables(final Collection<ITileNode<?>> cables)
+    public void removeCables(Collection<ITileNode<?>> cables)
     {
         cables.forEach(this::removeCable);
     }
 
-    public boolean hasCable(final ITileNode<?> cable)
+    public boolean hasCable(ITileNode<?> cable)
     {
-        return this.cables.contains(cable);
+        return cables.contains(cable);
     }
 
     public boolean isEmpty()
     {
-        return this.getCables().isEmpty();
+        return getCables().isEmpty();
     }
 
     public ITileNode<?> getFromPos(BlockPos pos)
     {
-        return this.cables.stream().filter(node -> node.getBlockPos().equals(pos)).findFirst().orElse(null);
+        return cables.stream().filter(node -> node.getBlockPos().equals(pos)).findFirst().orElse(null);
     }
 }

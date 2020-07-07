@@ -2,12 +2,12 @@ package net.voxelindustry.steamlayer.container.sync;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
-import net.voxelindustry.steamlayer.utils.ItemUtils;
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
+import net.voxelindustry.steamlayer.network.ByteBufHelper;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -27,9 +27,9 @@ public class SyncedWrappers
 
     private SyncedWrappers()
     {
-        this.wrappers = new IdentityHashMap<>();
+        wrappers = new IdentityHashMap<>();
 
-        this.wrappers.put(Integer.class, new SyncedWrapper<Integer>()
+        wrappers.put(Integer.class, new SyncedWrapper<Integer>()
         {
             @Override
             public void write(ByteBuf buffer, Integer value)
@@ -44,7 +44,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(Float.class, new SyncedWrapper<Float>()
+        wrappers.put(Float.class, new SyncedWrapper<Float>()
         {
             @Override
             public void write(ByteBuf buffer, Float value)
@@ -59,7 +59,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(Boolean.class, new SyncedWrapper<Boolean>()
+        wrappers.put(Boolean.class, new SyncedWrapper<Boolean>()
         {
             @Override
             public void write(ByteBuf buffer, Boolean value)
@@ -74,7 +74,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(Long.class, new SyncedWrapper<Long>()
+        wrappers.put(Long.class, new SyncedWrapper<Long>()
         {
             @Override
             public void write(ByteBuf buffer, Long value)
@@ -89,40 +89,39 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(String.class, new SyncedWrapper<String>()
+        wrappers.put(String.class, new SyncedWrapper<String>()
         {
             @Override
             public void write(ByteBuf buffer, String value)
             {
-                ByteBufUtils.writeUTF8String(buffer, value);
+                ByteBufHelper.writeString(buffer, value);
             }
 
             @Override
             public String read(ByteBuf buffer)
             {
-                return ByteBufUtils.readUTF8String(buffer);
+                return ByteBufHelper.readString(buffer);
             }
         });
 
-        this.wrappers.put(FluidStack.class, new SyncedWrapper<FluidStack>()
+        wrappers.put(FluidStack.class, new SyncedWrapper<FluidStack>()
         {
             @Override
             public void write(ByteBuf buffer, FluidStack value)
             {
-                ByteBufUtils.writeUTF8String(buffer, value.getFluid().getName());
-                buffer.writeInt(value.amount);
+                value.writeToPacket(new PacketBuffer(buffer));
             }
 
             @Override
             public FluidStack read(ByteBuf buffer)
             {
-                return FluidRegistry.getFluidStack(ByteBufUtils.readUTF8String(buffer), buffer.readInt());
+                return FluidStack.readFromPacket(new PacketBuffer(buffer));
             }
 
             @Override
             public boolean areEquals(FluidStack first, FluidStack second)
             {
-                return super.areEquals(first, second) && first.amount == second.amount;
+                return super.areEquals(first, second) && first.getAmount() == second.getAmount();
             }
 
             @Override
@@ -132,18 +131,18 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(ItemStack.class, new SyncedWrapper<ItemStack>()
+        wrappers.put(ItemStack.class, new SyncedWrapper<ItemStack>()
         {
             @Override
             public void write(ByteBuf buffer, ItemStack value)
             {
-                ByteBufUtils.writeItemStack(buffer, value);
+                ByteBufHelper.writeItemStack(buffer, value);
             }
 
             @Override
             public ItemStack read(ByteBuf buffer)
             {
-                return ByteBufUtils.readItemStack(buffer);
+                return ByteBufHelper.readItemStack(buffer);
             }
 
             @Override
@@ -159,7 +158,7 @@ public class SyncedWrappers
             }
         });
 
-        this.wrappers.put(IItemHandler.class, new SyncedWrapper<IItemHandler>()
+        wrappers.put(IItemHandler.class, new SyncedWrapper<IItemHandler>()
         {
             @Override
             public void write(ByteBuf buffer, IItemHandler value)
@@ -167,7 +166,7 @@ public class SyncedWrappers
                 buffer.writeInt(value.getSlots());
 
                 for (int slot = 0; slot < value.getSlots(); slot++)
-                    ByteBufUtils.writeItemStack(buffer, value.getStackInSlot(slot));
+                    ByteBufHelper.writeItemStack(buffer, value.getStackInSlot(slot));
             }
 
             @Override
@@ -176,7 +175,7 @@ public class SyncedWrappers
                 ItemStackHandler inventory = new ItemStackHandler(buffer.readInt());
 
                 for (int slot = 0; slot < inventory.getSlots(); slot++)
-                    inventory.setStackInSlot(slot, ByteBufUtils.readItemStack(buffer));
+                    inventory.setStackInSlot(slot, ByteBufHelper.readItemStack(buffer));
                 return inventory;
             }
 
@@ -205,14 +204,13 @@ public class SyncedWrappers
         });
     }
 
-    @SuppressWarnings("unchecked")
     public <T> SyncedWrapper<T> get(Class<T> typeClass)
     {
-        return (SyncedWrapper<T>) this.wrappers.get(typeClass);
+        return (SyncedWrapper<T>) wrappers.get(typeClass);
     }
 
     public <T> void registerWrapper(SyncedWrapper<T> wrapper, Class<T> typeClass)
     {
-        this.wrappers.put(typeClass, wrapper);
+        wrappers.put(typeClass, wrapper);
     }
 }

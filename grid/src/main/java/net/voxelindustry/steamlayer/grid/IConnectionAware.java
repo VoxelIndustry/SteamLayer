@@ -1,10 +1,10 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 
 public interface IConnectionAware
 {
-    void connectTrigger(EnumFacing facing, CableGrid grid);
+    void connectTrigger(Direction facing, CableGrid grid);
 
-    void disconnectTrigger(EnumFacing facing, CableGrid grid);
+    void disconnectTrigger(Direction facing, CableGrid grid);
 }

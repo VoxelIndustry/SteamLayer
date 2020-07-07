@@ -4,98 +4,92 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.server.ServerLifecycleHooks;
+import net.voxelindustry.steamlayer.network.ByteBufHelper;
 import net.voxelindustry.steamlayer.network.action.ActionSender;
 import net.voxelindustry.steamlayer.network.action.IActionReceiver;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 @NoArgsConstructor
 @Getter
-public class ServerActionHolderPacket implements IMessage
+public class ServerActionHolderPacket
 {
     public static AtomicInteger previousActionID = new AtomicInteger();
 
     private String actionName;
 
     @Setter
-    private NBTTagCompound actionPayload;
-    private BlockPos       pos;
-    private int            dimension;
-    private int            actionID;
+    private CompoundNBT actionPayload;
+    private BlockPos    pos;
+    private int         dimension;
+    private int         actionID;
 
     @Setter
     boolean expectAnswer;
 
     public ServerActionHolderPacket(TileEntity to, String name)
     {
-        this.actionName = name;
-        this.dimension = to.getWorld().provider.getDimension();
-        this.pos = to.getPos();
+        actionName = name;
+        dimension = to.getWorld().getDimension().getType().getId();
+        pos = to.getPos();
 
-        this.actionID = previousActionID.getAndUpdate(previous -> previous > 32765 ? 0 : previous + 1);
+        actionID = previousActionID.getAndUpdate(previous -> previous > 32765 ? 0 : previous + 1);
     }
 
-    @Override
-    public void toBytes(ByteBuf buf)
+    public static ServerActionHolderPacket decode(ByteBuf buffer)
     {
-        buf.writeShort(actionID);
-        buf.writeInt(dimension);
-        buf.writeLong(pos.toLong());
-        buf.writeBoolean(expectAnswer);
+        ServerActionHolderPacket packet = new ServerActionHolderPacket();
 
-        ByteBufUtils.writeUTF8String(buf, actionName);
-        ByteBufUtils.writeTag(buf, actionPayload);
+        packet.actionID = buffer.readShort();
+        packet.dimension = buffer.readInt();
+        packet.pos = ByteBufHelper.readPos(buffer);
+        packet.expectAnswer = buffer.readBoolean();
+
+        packet.actionName = ByteBufHelper.readString(buffer);
+        packet.actionPayload = ByteBufHelper.readTag(buffer);
+
+        return packet;
     }
 
-    @Override
-    public void fromBytes(ByteBuf buf)
+    public static void encode(ServerActionHolderPacket packet, ByteBuf buffer)
     {
-        actionID = buf.readShort();
-        dimension = buf.readInt();
-        pos = BlockPos.fromLong(buf.readLong());
-        expectAnswer = buf.readBoolean();
+        buffer.writeShort(packet.actionID);
+        buffer.writeInt(packet.dimension);
+        ByteBufHelper.writePos(buffer, packet.pos);
+        buffer.writeBoolean(packet.expectAnswer);
 
-        actionName = ByteBufUtils.readUTF8String(buf);
-        actionPayload = ByteBufUtils.readTag(buf);
+        ByteBufHelper.writeString(buffer, packet.actionName);
+        ByteBufHelper.writeTag(buffer, packet.actionPayload);
     }
 
-    @NoArgsConstructor
-    public static class ServerActionHolderPacketHandler implements IMessageHandler<ServerActionHolderPacket, IMessage>
+    public static void handle(ServerActionHolderPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
-        @Override
-        public IMessage onMessage(ServerActionHolderPacket message, MessageContext ctx)
+        contextSupplier.get().enqueueWork(() ->
         {
-            EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
+            ServerWorld world = ServerLifecycleHooks.getCurrentServer().getWorld(DimensionType.getById(packet.dimension));
 
-            serverPlayer.getServerWorld().addScheduledTask(() ->
+            if (world.isBlockLoaded(packet.getPos()))
             {
-                World world = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(message.getDimension());
+                TileEntity receiver = world.getTileEntity(packet.getPos());
 
-                if (world.isBlockLoaded(message.getPos()))
+                if (receiver instanceof IActionReceiver)
                 {
-                    TileEntity receiver = world.getTileEntity(message.getPos());
-
-                    if (receiver instanceof IActionReceiver)
-                    {
-                        ActionSender actionSender = new ActionSender(serverPlayer, receiver, message.getActionID());
-                        ((IActionReceiver) receiver).handle(actionSender, message.getActionName(),
-                                message.getActionPayload());
-                        if (message.isExpectAnswer() && !actionSender.isAnswered())
-                            actionSender.answer().send();
-                    }
+                    ActionSender actionSender = new ActionSender(contextSupplier.get().getSender(), receiver, packet.getActionID());
+                    ((IActionReceiver) receiver).handle(actionSender, packet.getActionName(),
+                            packet.getActionPayload());
+                    if (packet.isExpectAnswer() && !actionSender.isAnswered())
+                        actionSender.answer().send();
                 }
-            });
-            return null;
-        }
+            }
+        });
+        contextSupplier.get().setPacketHandled(true);
     }
 }

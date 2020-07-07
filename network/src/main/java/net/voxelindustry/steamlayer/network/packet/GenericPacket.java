@@ -3,13 +3,13 @@ package net.voxelindustry.steamlayer.network.packet;
 import io.netty.buffer.ByteBuf;
 import lombok.NoArgsConstructor;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraft.network.PacketBuffer;
+import net.minecraftforge.fml.network.NetworkEvent;
+
+import java.util.function.Supplier;
 
 @NoArgsConstructor
-public class GenericPacket implements IMessage
+public class GenericPacket
 {
     private Message message;
     private int     packetID;
@@ -17,54 +17,42 @@ public class GenericPacket implements IMessage
     public GenericPacket(Message message)
     {
         this.message = message;
-        this.packetID = PacketHandler.getInstance().getID(message.getClass());
+        packetID = PacketHandler.getInstance().getID(message.getClass());
     }
 
-    @Override
-    public void fromBytes(ByteBuf buf)
+    public static GenericPacket decode(ByteBuf buffer)
     {
-        this.packetID = buf.readInt();
+        GenericPacket packet = new GenericPacket();
+        packet.packetID = buffer.readInt();
 
         try
         {
-            this.message = PacketHandler.getInstance().byID(this.packetID).newInstance();
+            packet.message = PacketHandler.getInstance().byID(packet.packetID).newInstance();
         } catch (InstantiationException | IllegalAccessException e)
         {
             e.printStackTrace();
         }
 
-        this.message.read(buf);
+        packet.message.read(buffer);
+
+        return packet;
     }
 
-    @Override
-    public void toBytes(ByteBuf buf)
+    public static void encode(GenericPacket packet, PacketBuffer buffer)
     {
-        buf.writeInt(packetID);
-        this.message.write(buf);
+        buffer.writeInt(packet.packetID);
+        packet.message.write(buffer);
     }
 
-    private void handle(EntityPlayer player)
+    public static void handle(GenericPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
     {
-        this.message.handle(player);
-    }
+        NetworkEvent.Context context = contextSupplier.get();
 
-    public static class GenericServerPacketHandler implements IMessageHandler<GenericPacket, IMessage>
-    {
-        @Override
-        public IMessage onMessage(GenericPacket message, MessageContext ctx)
-        {
-            ctx.getServerHandler().player.getServerWorld().addScheduledTask(() -> message.handle(ctx.getServerHandler().player));
-            return null;
-        }
-    }
+        if (context.getDirection().getReceptionSide().isClient())
+            context.enqueueWork(() -> packet.message.handle(Minecraft.getInstance().player));
+        else
+            context.enqueueWork(() -> packet.message.handle(context.getSender()));
 
-    public static class GenericClientPacketHandler implements IMessageHandler<GenericPacket, IMessage>
-    {
-        @Override
-        public IMessage onMessage(GenericPacket message, MessageContext ctx)
-        {
-            Minecraft.getMinecraft().addScheduledTask(() -> message.handle(Minecraft.getMinecraft().player));
-            return null;
-        }
+        context.setPacketHandled(true);
     }
 }

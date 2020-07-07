@@ -1,7 +1,8 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.EquipmentSlotType;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
@@ -10,14 +11,14 @@ import org.apache.commons.lang3.Range;
 
 public class ContainerPlayerInventoryBuilder
 {
-    private final EntityPlayer     player;
+    private final PlayerEntity     player;
     private final PlayerInvWrapper inventory;
     private final ContainerBuilder parent;
     private       Range<Integer>   main;
     private       Range<Integer>   hotbar;
     private       Range<Integer>   armor;
 
-    ContainerPlayerInventoryBuilder(ContainerBuilder parent, EntityPlayer player, PlayerInvWrapper inventory)
+    ContainerPlayerInventoryBuilder(ContainerBuilder parent, PlayerEntity player, PlayerInvWrapper inventory)
     {
         this.inventory = inventory;
         this.player = player;
@@ -34,12 +35,12 @@ public class ContainerPlayerInventoryBuilder
      */
     public ContainerPlayerInventoryBuilder inventory(int xStart, int yStart)
     {
-        int startIndex = this.parent.slots.size();
+        int startIndex = parent.slots.size();
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 9; ++j)
-                this.parent.slots.add(new ListenerSlot(this.inventory, j + i * 9 + 9, xStart + j * 18, yStart + i *
+                parent.slots.add(new ListenerSlot(inventory, j + i * 9 + 9, xStart + j * 18, yStart + i *
                         18));
-        this.main = Range.between(startIndex, this.parent.slots.size() - 1);
+        main = Range.between(startIndex, parent.slots.size() - 1);
         return this;
     }
 
@@ -52,10 +53,10 @@ public class ContainerPlayerInventoryBuilder
      */
     public ContainerPlayerInventoryBuilder hotbar(int xStart, int yStart)
     {
-        int startIndex = this.parent.slots.size();
+        int startIndex = parent.slots.size();
         for (int i = 0; i < 9; ++i)
-            this.parent.slots.add(new ListenerSlot(this.inventory, i, xStart + i * 18, yStart));
-        this.hotbar = Range.between(startIndex, this.parent.slots.size() - 1);
+            parent.slots.add(new ListenerSlot(inventory, i, xStart + i * 18, yStart));
+        hotbar = Range.between(startIndex, parent.slots.size() - 1);
         return this;
     }
 
@@ -69,7 +70,7 @@ public class ContainerPlayerInventoryBuilder
      */
     public ContainerPlayerInventoryBuilder inventory()
     {
-        return this.inventory(8, 94);
+        return inventory(8, 94);
     }
 
     /**
@@ -81,7 +82,7 @@ public class ContainerPlayerInventoryBuilder
      */
     public ContainerPlayerInventoryBuilder hotbar()
     {
-        return this.hotbar(8, 152);
+        return hotbar(8, 152);
     }
 
     /**
@@ -98,7 +99,7 @@ public class ContainerPlayerInventoryBuilder
     /**
      * Close this builder and add the slot list to the current {@link BuiltContainer} construction.
      * <p>
-     * A special case has been implemented with armor slots, they are considered as a tile slot range. Allowing
+     * A special case has been implemented with armor slots, they are considered as a inventory slot range. Allowing
      * shift-insert from the main inventory of the player.
      * <p>
      * Begin the construction of a {@link ContainerTileInventoryBuilder} builder.
@@ -106,13 +107,50 @@ public class ContainerPlayerInventoryBuilder
      * Multiple tiles can be linked to a same container with recall of
      * this method after completing the previous nested builder.
      *
-     * @param tile an IInventory representing a tile inventory
-     * @return the tile builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
+     * @param inventory an ItemStackHandler to use as main inventory
+     * @return the inventory builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder tile(ItemStackHandler tile)
+    public ContainerTileInventoryBuilder tile(ItemStackHandler inventory)
     {
-        this.emptyTile();
-        return new ContainerTileInventoryBuilder(this.parent, tile);
+        noTile();
+        return new ContainerTileInventoryBuilder(parent, inventory);
+    }
+
+    /**
+     * Close this builder and add the slot list to the current {@link BuiltContainer} construction.
+     * <p>
+     * A special case has been implemented with armor slots, they are considered as a inventory slot range. Allowing
+     * shift-insert from the main inventory of the player.
+     * <p>
+     * Begin the construction of a {@link ContainerTileInventoryBuilder} builder.
+     * <p>
+     * Multiple tiles can be linked to a same container with recall of
+     * this method after completing the previous nested builder.
+     *
+     * @param tile      the main TileEntity passed to the BuiltContainer
+     * @param inventory an ItemStackHandler to use as main inventory
+     * @return the inventory builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
+     */
+    public ContainerTileInventoryBuilder tile(TileEntity tile, ItemStackHandler inventory)
+    {
+        noTile();
+        parent.mainTile = tile;
+        return new ContainerTileInventoryBuilder(parent, inventory);
+    }
+
+    /**
+     * Close this builder and add the slot list to the current {@link BuiltContainer} construction.
+     * Allow to set a TileEntity to use in the BuiltContainer
+     * <p>
+     * A special case has been implemented with armor slots, they are considered as a tile slot range. Allowing
+     * shift-insert from the main inventory of the player.
+     *
+     * @return the parent builder {@link ContainerBuilder} to resume the "Builder" pattern
+     */
+    public ContainerBuilder emptyTile(TileEntity tile)
+    {
+        parent.mainTile = tile;
+        return noTile();
     }
 
     /**
@@ -123,15 +161,15 @@ public class ContainerPlayerInventoryBuilder
      *
      * @return the parent builder {@link ContainerBuilder} to resume the "Builder" pattern
      */
-    public ContainerBuilder emptyTile()
+    public ContainerBuilder noTile()
     {
-        if (this.hotbar != null)
-            this.parent.addPlayerInventoryRange(this.hotbar);
-        if (this.main != null)
-            this.parent.addPlayerInventoryRange(this.main);
-        if (this.armor != null)
-            this.parent.addTileInventoryRange(this.armor);
-        return this.parent;
+        if (hotbar != null)
+            parent.addPlayerInventoryRange(hotbar);
+        if (main != null)
+            parent.addPlayerInventoryRange(main);
+        if (armor != null)
+            parent.addTileInventoryRange(armor);
+        return parent;
     }
 
     /**
@@ -141,8 +179,8 @@ public class ContainerPlayerInventoryBuilder
      */
     public ContainerSyncBuilder sync()
     {
-        this.emptyTile();
-        return new ContainerSyncBuilder(this.parent);
+        noTile();
+        return new ContainerSyncBuilder(parent);
     }
 
     public static class ContainerPlayerArmorInventoryBuilder
@@ -153,47 +191,47 @@ public class ContainerPlayerInventoryBuilder
         public ContainerPlayerArmorInventoryBuilder(ContainerPlayerInventoryBuilder parent)
         {
             this.parent = parent;
-            this.startIndex = parent.parent.slots.size();
+            startIndex = parent.parent.slots.size();
         }
 
         private ContainerPlayerArmorInventoryBuilder armor(int index, int xStart, int yStart,
-                                                           EntityEquipmentSlot slotType)
+                                                           EquipmentSlotType slotType)
         {
-            this.parent.parent.slots.add(new FilteredSlot(this.parent.inventory, index, xStart, yStart)
-                    .setFilter(stack -> stack.getItem().isValidArmor(stack, slotType, parent.player)));
+            parent.parent.slots.add(new FilteredSlot(parent.inventory, index, xStart, yStart)
+                    .setFilter(stack -> stack.getItem().canEquip(stack, slotType, parent.player)));
             return this;
         }
 
         public ContainerPlayerArmorInventoryBuilder helmet(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 2, xStart, yStart, EntityEquipmentSlot.HEAD);
+            return armor(parent.inventory.getSlots() - 2, xStart, yStart, EquipmentSlotType.HEAD);
         }
 
         public ContainerPlayerArmorInventoryBuilder chestplate(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 3, xStart, yStart, EntityEquipmentSlot.CHEST);
+            return armor(parent.inventory.getSlots() - 3, xStart, yStart, EquipmentSlotType.CHEST);
         }
 
         public ContainerPlayerArmorInventoryBuilder leggings(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 4, xStart, yStart, EntityEquipmentSlot.LEGS);
+            return armor(parent.inventory.getSlots() - 4, xStart, yStart, EquipmentSlotType.LEGS);
         }
 
         public ContainerPlayerArmorInventoryBuilder boots(int xStart, int yStart)
         {
-            return this.armor(this.parent.inventory.getSlots() - 5, xStart, yStart, EntityEquipmentSlot.FEET);
+            return armor(parent.inventory.getSlots() - 5, xStart, yStart, EquipmentSlotType.FEET);
         }
 
         public ContainerPlayerArmorInventoryBuilder complete(int xStart, int yStart)
         {
-            return this.helmet(xStart, yStart).chestplate(xStart, yStart + 18).leggings(xStart, yStart + 18 + 18)
+            return helmet(xStart, yStart).chestplate(xStart, yStart + 18).leggings(xStart, yStart + 18 + 18)
                     .boots(xStart, yStart + 18 + 18 + 18);
         }
 
         public ContainerPlayerInventoryBuilder addArmor()
         {
-            this.parent.armor = Range.between(this.startIndex, this.parent.parent.slots.size() - 1);
-            return this.parent;
+            parent.armor = Range.between(startIndex, parent.parent.slots.size() - 1);
+            return parent;
         }
     }
 }

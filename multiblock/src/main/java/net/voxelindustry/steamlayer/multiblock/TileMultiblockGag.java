@@ -1,62 +1,64 @@
 package net.voxelindustry.steamlayer.multiblock;
 
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
 import net.voxelindustry.steamlayer.tile.TileBase;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class TileMultiblockGag extends TileBase implements ITileMultiblock
 {
-    private BlockPos corePos    = this.pos;
+    public static TileEntityType<TileMultiblockGag> TYPE;
+
+    private BlockPos corePos    = pos;
     private BlockPos coreOffset = null;
+
+    public TileMultiblockGag(TileEntityType<? extends TileMultiblockGag> type)
+    {
+        super(type);
+    }
 
     public TileMultiblockGag()
     {
-
+        this(TileMultiblockGag.TYPE);
     }
 
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound tag)
+    public CompoundNBT write(CompoundNBT tag)
     {
-        tag.setInteger("corePosX", this.corePos.getX());
-        tag.setInteger("corePosY", this.corePos.getY());
-        tag.setInteger("corePosZ", this.corePos.getZ());
+        tag.putInt("corePosX", corePos.getX());
+        tag.putInt("corePosY", corePos.getY());
+        tag.putInt("corePosZ", corePos.getZ());
 
-        return super.writeToNBT(tag);
+        return super.write(tag);
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound tag)
+    public void read(CompoundNBT tag)
     {
-        this.corePos = new BlockPos(tag.getInteger("corePosX"), tag.getInteger("corePosY"), tag.getInteger("corePosZ"));
+        corePos = new BlockPos(tag.getInt("corePosX"), tag.getInt("corePosY"), tag.getInt("corePosZ"));
 
-        super.readFromNBT(tag);
+        super.read(tag);
     }
 
     @Override
     public void onLoad()
     {
-        if (this.isClient())
-            this.askServerSync();
+        if (isClient())
+            askServerSync();
     }
 
+    @Nonnull
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing)
+    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> capability, @Nullable Direction facing)
     {
-        if (this.isCorePresent())
-            return this.getCore().hasCapability(capability, this.getCoreOffset(), facing);
-        return super.hasCapability(capability, facing);
-    }
-
-    @Override
-    @Nullable
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing)
-    {
-        if (this.isCorePresent())
-            return this.getCore().getCapability(capability, this.getCoreOffset(), facing);
+        if (isCorePresent())
+            return getCore().getCapability(capability, getCoreOffset(), facing);
         return super.getCapability(capability, facing);
     }
 
@@ -69,39 +71,40 @@ public class TileMultiblockGag extends TileBase implements ITileMultiblock
     @Override
     public boolean isCorePresent()
     {
-        return this.world.getTileEntity(this.getCorePos()) != null
-                && this.world.getTileEntity(this.getCorePos()) instanceof ITileMultiblockCore;
+        return world.getTileEntity(getCorePos()) != null
+                && world.getTileEntity(getCorePos()) instanceof ITileMultiblockCore;
     }
 
     @Override
     public void breakCore()
     {
-        if (this.isCorePresent())
-            this.getCore().breakCore();
-        this.world.destroyBlock(this.getPos(), false);
+        if (isCorePresent())
+            getCore().breakCore();
+        world.destroyBlock(getPos(), false);
     }
 
     @Override
     public BlockPos getCorePos()
     {
-        return this.corePos;
+        return corePos;
     }
 
     public void setCorePos(BlockPos pos)
     {
-        this.corePos = pos;
+        corePos = pos;
     }
 
     @Override
     public ITileMultiblockCore getCore()
     {
-        return (ITileMultiblockCore) this.world.getTileEntity(this.getCorePos());
+        return (ITileMultiblockCore) world.getTileEntity(getCorePos());
     }
 
+    @Override
     public BlockPos getCoreOffset()
     {
-        if (this.coreOffset == null)
-            this.coreOffset = this.pos.subtract(this.corePos);
-        return this.coreOffset;
+        if (coreOffset == null)
+            coreOffset = pos.subtract(corePos);
+        return coreOffset;
     }
 }

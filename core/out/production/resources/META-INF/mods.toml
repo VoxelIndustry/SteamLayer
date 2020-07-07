@@ -1,0 +1,15 @@
+modLoader="javafml" #mandatory
+loaderVersion="[28,)" #mandatory (26 is current forge version)
+
+[[mods]] #mandatory
+    modId="steamlayer"
+    namespace="steamlayer"
+    version="${file.jarVersion}" #mandatory
+    displayName="SteamLayer | Core" #mandatory
+    description='''SteamLayer is a modular mod library.'''
+[[dependencies.steamlayer]]
+    modId="forge"
+    mandatory=true
+    versionRange="[${forge_version},)"
+    ordering="NONE"
+    side="BOTH"

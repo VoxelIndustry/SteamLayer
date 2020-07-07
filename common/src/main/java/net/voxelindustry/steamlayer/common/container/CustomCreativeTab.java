@@ -1,12 +1,12 @@
 package net.voxelindustry.steamlayer.common.container;
 
-import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 
 import javax.annotation.Nonnull;
 import java.util.function.Supplier;
 
-public class CustomCreativeTab extends CreativeTabs
+public class CustomCreativeTab extends ItemGroup
 {
     private Supplier<ItemStack> iconSupplier;
 

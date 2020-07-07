@@ -1,7 +1,9 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.container.ContainerType;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
@@ -28,15 +30,15 @@ import java.util.function.Predicate;
  */
 public class ContainerBuilder
 {
-    private final String name;
+    private final ContainerType<BuiltContainer> type;
 
-    private final EntityPlayer            player;
-    private       Predicate<EntityPlayer> canInteract = player -> true;
+    private final PlayerEntity            player;
+    private       Predicate<PlayerEntity> canInteract = player -> true;
 
     final List<ListenerSlot>   slots;
     final List<Range<Integer>> playerInventoryRanges, tileInventoryRanges;
 
-    final List<Consumer<InventoryCrafting>> craftEvents;
+    final List<Consumer<CraftingInventory>> craftEvents;
 
     private ContainerEvent       closeEvent;
     private List<ContainerEvent> tickEvents;
@@ -45,6 +47,7 @@ public class ContainerBuilder
     Map<String, SyncedValue> namedSyncs;
 
     List<ItemStackHandler> inventories;
+    TileEntity             mainTile;
 
     /**
      * Creates a ContainerBuilder instance to produce a BuiltContainer
@@ -55,33 +58,32 @@ public class ContainerBuilder
      * <p>
      * This builder contains several sub builders to configure specific aspects of the Container logic.
      *
-     * @param name   an unique name to be used as an identifier of the produced Container.
+     * @param type   the ContainerType corresponding to the produced Container to be used as an identifier.
      * @param player the player instance to which the Container is to be attached.
      */
-    public ContainerBuilder(String name, EntityPlayer player)
+    public ContainerBuilder(ContainerType<BuiltContainer> type, PlayerEntity player)
     {
-        this.name = name;
-
+        this.type = type;
         this.player = player;
 
-        this.slots = new ArrayList<>();
-        this.playerInventoryRanges = new ArrayList<>();
-        this.tileInventoryRanges = new ArrayList<>();
+        slots = new ArrayList<>();
+        playerInventoryRanges = new ArrayList<>();
+        tileInventoryRanges = new ArrayList<>();
 
-        this.craftEvents = new ArrayList<>();
-        this.tickEvents = new ArrayList<>();
+        craftEvents = new ArrayList<>();
+        tickEvents = new ArrayList<>();
 
-        this.inventories = new ArrayList<>();
+        inventories = new ArrayList<>();
     }
 
     /**
      * Use this method to configure a custom interact predicate.
      * The vanilla behavior is to check the distance between the opened tile and the player.
      *
-     * @param canInteract predicate consuming an {@link EntityPlayer} instance provided by the {@link BuiltContainer}
+     * @param canInteract predicate consuming an {@link PlayerEntity} instance provided by the {@link BuiltContainer}
      * @return a reference to this {@code ContainerBuilder} to resume the "Builder" pattern
      */
-    public ContainerBuilder interact(Predicate<EntityPlayer> canInteract)
+    public ContainerBuilder interact(Predicate<PlayerEntity> canInteract)
     {
         this.canInteract = canInteract;
         return this;
@@ -93,7 +95,7 @@ public class ContainerBuilder
      * @param player the inventory of the player to base this container on.
      * @return a {@link ContainerPlayerInventoryBuilder} marked as child of this builder
      */
-    public ContainerPlayerInventoryBuilder player(EntityPlayer player)
+    public ContainerPlayerInventoryBuilder player(PlayerEntity player)
     {
         return new ContainerPlayerInventoryBuilder(this, player, new PlayerInvWrapper(player.inventory));
     }
@@ -105,24 +107,24 @@ public class ContainerBuilder
 
     public ContainerBuilder onClose(ContainerEvent event)
     {
-        this.closeEvent = event;
+        closeEvent = event;
         return this;
     }
 
     public ContainerBuilder onTick(ContainerEvent event)
     {
-        this.tickEvents.add(event);
+        tickEvents.add(event);
         return this;
     }
 
     void addPlayerInventoryRange(Range<Integer> range)
     {
-        this.playerInventoryRanges.add(range);
+        playerInventoryRanges.add(range);
     }
 
     void addTileInventoryRange(Range<Integer> range)
     {
-        this.tileInventoryRanges.add(range);
+        tileInventoryRanges.add(range);
     }
 
     /**
@@ -133,22 +135,29 @@ public class ContainerBuilder
      *
      * @return an instance of {@link BuiltContainer} configured accordingly to this builder
      */
-    public BuiltContainer create()
+    public BuiltContainer create(int windowId)
     {
-        BuiltContainer built = new BuiltContainer(this.name, this.player, this.inventories, this.canInteract,
-                this.playerInventoryRanges, this.tileInventoryRanges);
+        BuiltContainer built = new BuiltContainer(
+                type,
+                windowId,
+                player,
+                inventories,
+                canInteract,
+                playerInventoryRanges,
+                tileInventoryRanges);
+        built.setMainTile(mainTile);
 
         built.setCloseEvent(closeEvent);
         built.setTickEvents(tickEvents);
 
-        if (this.syncs != null)
-            built.setSyncables(this.syncs, this.namedSyncs);
-        if (!this.craftEvents.isEmpty())
-            built.addCraftEvents(this.craftEvents);
+        if (syncs != null)
+            built.setSyncables(syncs, namedSyncs);
+        if (!craftEvents.isEmpty())
+            built.addCraftEvents(craftEvents);
 
-        this.slots.forEach(built::addSlot);
+        slots.forEach(built::addSlot);
 
-        this.slots.clear();
+        slots.clear();
         return built;
     }
 }

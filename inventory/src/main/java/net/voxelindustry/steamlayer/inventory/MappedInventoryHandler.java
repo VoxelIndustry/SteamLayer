@@ -65,8 +65,15 @@ public class MappedInventoryHandler implements IItemHandlerModifiable
     @Override
     public int getSlotLimit(int slot)
     {
-        this.validateSlotIndex(slot);
+        validateSlotIndex(slot);
         return this.compose.getSlotLimit(map(slot));
+    }
+
+    @Override
+    public boolean isItemValid(int slot, @Nonnull ItemStack stack)
+    {
+        validateSlotIndex(slot);
+        return this.compose.isItemValid(map(slot), stack);
     }
 
     private int map(int slot)

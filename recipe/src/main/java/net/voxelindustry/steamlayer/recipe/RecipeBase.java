@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.recipe;
 
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.NonNullList;
+import net.minecraft.util.collection.DefaultedList;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 
 import java.util.IdentityHashMap;
@@ -10,8 +10,8 @@ import java.util.Optional;
 
 public abstract class RecipeBase
 {
-    protected final Map<Class<?>, NonNullList<RecipeIngredient<?>>> inputs  = new IdentityHashMap<>();
-    protected final Map<Class<?>, NonNullList<RecipeIngredient<?>>> outputs = new IdentityHashMap<>();
+    protected final Map<Class<?>, DefaultedList<RecipeIngredient<?>>> inputs  = new IdentityHashMap<>();
+    protected final Map<Class<?>, DefaultedList<RecipeIngredient<?>>> outputs = new IdentityHashMap<>();
 
     public boolean hasInputType(Class<?> input)
     {
@@ -23,21 +23,21 @@ public abstract class RecipeBase
         return outputs.containsKey(output);
     }
 
-    public <T> NonNullList<RecipeIngredient<T>> getRecipeInputs(Class<T> clazz)
+    public <T> DefaultedList<RecipeIngredient<T>> getRecipeInputs(Class<T> clazz)
     {
         if (hasInputType(clazz))
-            return (NonNullList<RecipeIngredient<T>>) (Object) inputs.get(clazz);
-        return NonNullList.create();
+            return (DefaultedList<RecipeIngredient<T>>) (Object) inputs.get(clazz);
+        return DefaultedList.of();
     }
 
-    public <T> NonNullList<RecipeIngredient<T>> getRecipeOutputs(Class<T> clazz)
+    public <T> DefaultedList<RecipeIngredient<T>> getRecipeOutputs(Class<T> clazz)
     {
         if (hasOutputType(clazz))
-            return (NonNullList<RecipeIngredient<T>>) (Object) outputs.get(clazz);
-        return NonNullList.create();
+            return (DefaultedList<RecipeIngredient<T>>) (Object) outputs.get(clazz);
+        return DefaultedList.of();
     }
 
-    public Optional<NonNullList<ItemStack>> getRemainingItems()
+    public Optional<DefaultedList<ItemStack>> getRemainingItems()
     {
         return Optional.empty();
     }

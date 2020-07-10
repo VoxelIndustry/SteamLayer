@@ -1,23 +1,22 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.Direction;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized.Parameters;
-import org.mockito.junit.MockitoJUnitRunner;
+import net.minecraft.util.math.Direction;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class GridManagerTest
 {
     private GridManager instance;
 
-    @Before
+    @BeforeEach
     public void setupTest()
     {
         instance = GridManager.createGetInstance("steamlayer:test");
@@ -120,8 +119,8 @@ public class GridManagerTest
         ITileCable right = spy(ITileCableTestImpl.class);
 
         when(center.getConnections()).thenReturn(new int[]{Direction.WEST.ordinal(), Direction.EAST.ordinal()});
-        when(center.getConnected(Direction.WEST)).thenReturn(left);
-        when(center.getConnected(Direction.EAST)).thenReturn(right);
+        doReturn(left).when(center).getConnected(Direction.WEST.ordinal());
+        doReturn(right).when(center).getConnected(Direction.EAST.ordinal());
 
         CableGrid leftGrid = new CableGrid(0)
         {
@@ -191,7 +190,8 @@ public class GridManagerTest
         neighbor.setGrid(0);
 
         when(cable.getConnections()).thenReturn(new int[]{Direction.UP.ordinal()});
-        when(cable.getConnected(Direction.UP)).thenReturn(neighbor);
+
+        when(cable.getConnected(Direction.UP.ordinal())).thenReturn(neighbor);
 
         instance.disconnectCable(cable);
 
@@ -285,7 +285,6 @@ public class GridManagerTest
     }
 
     @Test
-    @Parameters
     public void testGridTickRates()
     {
         CableGrid grid = mock(CableGrid.class, withSettings().extraInterfaces(ITickingGrid.class));

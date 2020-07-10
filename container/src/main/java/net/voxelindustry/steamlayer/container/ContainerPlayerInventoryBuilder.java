@@ -1,10 +1,11 @@
 package net.voxelindustry.steamlayer.container;
 
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.items.wrapper.PlayerInvWrapper;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
 import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
 import org.apache.commons.lang3.Range;
@@ -12,13 +13,13 @@ import org.apache.commons.lang3.Range;
 public class ContainerPlayerInventoryBuilder
 {
     private final PlayerEntity     player;
-    private final PlayerInvWrapper inventory;
+    private final PlayerInventory  inventory;
     private final ContainerBuilder parent;
     private       Range<Integer>   main;
     private       Range<Integer>   hotbar;
     private       Range<Integer>   armor;
 
-    ContainerPlayerInventoryBuilder(ContainerBuilder parent, PlayerEntity player, PlayerInvWrapper inventory)
+    ContainerPlayerInventoryBuilder(ContainerBuilder parent, PlayerEntity player, PlayerInventory inventory)
     {
         this.inventory = inventory;
         this.player = player;
@@ -107,10 +108,10 @@ public class ContainerPlayerInventoryBuilder
      * Multiple tiles can be linked to a same container with recall of
      * this method after completing the previous nested builder.
      *
-     * @param inventory an ItemStackHandler to use as main inventory
+     * @param inventory an Inventory to use as main inventory
      * @return the inventory builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder tile(ItemStackHandler inventory)
+    public ContainerTileInventoryBuilder tile(Inventory inventory)
     {
         noTile();
         return new ContainerTileInventoryBuilder(parent, inventory);
@@ -127,11 +128,11 @@ public class ContainerPlayerInventoryBuilder
      * Multiple tiles can be linked to a same container with recall of
      * this method after completing the previous nested builder.
      *
-     * @param tile      the main TileEntity passed to the BuiltContainer
-     * @param inventory an ItemStackHandler to use as main inventory
+     * @param tile      the main BlockEntity passed to the BuiltContainer
+     * @param inventory an Inventory to use as main inventory
      * @return the inventory builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder tile(TileEntity tile, ItemStackHandler inventory)
+    public ContainerTileInventoryBuilder tile(BlockEntity tile, Inventory inventory)
     {
         noTile();
         parent.mainTile = tile;
@@ -140,14 +141,14 @@ public class ContainerPlayerInventoryBuilder
 
     /**
      * Close this builder and add the slot list to the current {@link BuiltContainer} construction.
-     * Allow to set a TileEntity to use in the BuiltContainer
+     * Allow to set a BlockEntity to use in the BuiltContainer
      * <p>
      * A special case has been implemented with armor slots, they are considered as a tile slot range. Allowing
      * shift-insert from the main inventory of the player.
      *
      * @return the parent builder {@link ContainerBuilder} to resume the "Builder" pattern
      */
-    public ContainerBuilder emptyTile(TileEntity tile)
+    public ContainerBuilder emptyTile(BlockEntity tile)
     {
         parent.mainTile = tile;
         return noTile();
@@ -195,31 +196,31 @@ public class ContainerPlayerInventoryBuilder
         }
 
         private ContainerPlayerArmorInventoryBuilder armor(int index, int xStart, int yStart,
-                                                           EquipmentSlotType slotType)
+                                                           EquipmentSlot slotType)
         {
             parent.parent.slots.add(new FilteredSlot(parent.inventory, index, xStart, yStart)
-                    .setFilter(stack -> stack.getItem().canEquip(stack, slotType, parent.player)));
+                    .setFilter(stack -> MobEntity.getPreferredEquipmentSlot(stack) == slotType));
             return this;
         }
 
         public ContainerPlayerArmorInventoryBuilder helmet(int xStart, int yStart)
         {
-            return armor(parent.inventory.getSlots() - 2, xStart, yStart, EquipmentSlotType.HEAD);
+            return armor(parent.inventory.size() - 2, xStart, yStart, EquipmentSlot.HEAD);
         }
 
         public ContainerPlayerArmorInventoryBuilder chestplate(int xStart, int yStart)
         {
-            return armor(parent.inventory.getSlots() - 3, xStart, yStart, EquipmentSlotType.CHEST);
+            return armor(parent.inventory.size() - 3, xStart, yStart, EquipmentSlot.CHEST);
         }
 
         public ContainerPlayerArmorInventoryBuilder leggings(int xStart, int yStart)
         {
-            return armor(parent.inventory.getSlots() - 4, xStart, yStart, EquipmentSlotType.LEGS);
+            return armor(parent.inventory.size() - 4, xStart, yStart, EquipmentSlot.LEGS);
         }
 
         public ContainerPlayerArmorInventoryBuilder boots(int xStart, int yStart)
         {
-            return armor(parent.inventory.getSlots() - 5, xStart, yStart, EquipmentSlotType.FEET);
+            return armor(parent.inventory.size() - 5, xStart, yStart, EquipmentSlot.FEET);
         }
 
         public ContainerPlayerArmorInventoryBuilder complete(int xStart, int yStart)

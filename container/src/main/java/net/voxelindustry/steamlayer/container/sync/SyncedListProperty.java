@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.container.sync;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
+import net.minecraft.network.PacketByteBuf;
 import org.apache.commons.lang3.Range;
 
 import java.util.ArrayList;
@@ -28,11 +28,11 @@ public class SyncedListProperty<T> implements SyncedValue
     {
         this.supplier = supplier;
         this.wrapper = wrapper;
-        this.stored = new ArrayList<>();
+        stored = new ArrayList<>();
         this.range = range;
 
         this.syncRate = syncRate;
-        this.lastSync = 0;
+        lastSync = 0;
     }
 
     public SyncedListProperty(Supplier<List<T>> supplier, SyncedWrapper<T> wrapper, Range<Integer> range)
@@ -43,25 +43,25 @@ public class SyncedListProperty<T> implements SyncedValue
     @Override
     public boolean needRefresh()
     {
-        if (this.lastSync != this.syncRate)
+        if (lastSync != syncRate)
         {
-            this.lastSync++;
+            lastSync++;
             return false;
         }
-        this.lastSync = 0;
+        lastSync = 0;
 
-        List<T> supplied = this.supplier.get();
+        List<T> supplied = supplier.get();
 
-        if ((this.stored == null ^ supplied == null))
+        if ((stored == null ^ supplied == null))
             return true;
-        if (this.stored == null)
+        if (stored == null)
             return false;
 
         if (range != null)
         {
             for (int index = range.getMinimum(); index < range.getMaximum(); index++)
             {
-                if (!this.wrapper.areEquals(stored.get(index - range.getMinimum()), supplied.get(index)))
+                if (!wrapper.areEquals(stored.get(index - range.getMinimum()), supplied.get(index)))
                     return true;
             }
         }
@@ -72,7 +72,7 @@ public class SyncedListProperty<T> implements SyncedValue
 
             for (int index = 0; index < supplied.size(); index++)
             {
-                if (!this.wrapper.areEquals(stored.get(index), supplied.get(index)))
+                if (!wrapper.areEquals(stored.get(index), supplied.get(index)))
                     return true;
             }
         }
@@ -82,18 +82,18 @@ public class SyncedListProperty<T> implements SyncedValue
     @Override
     public void updateInternal()
     {
-        List<T> supplied = this.supplier.get();
+        List<T> supplied = supplier.get();
 
-        if (this.range != null)
+        if (range != null)
         {
-            this.stored.clear();
+            stored.clear();
 
             for (int index = range.getMinimum(); index < range.getMaximum(); index++)
-                this.stored.add(this.wrapper.copy(supplied.get(index)));
+                stored.add(wrapper.copy(supplied.get(index)));
         }
         else
         {
-            this.stored.clear();
+            stored.clear();
             supplied.forEach(element -> stored.add(wrapper.copy(element)));
         }
     }
@@ -101,48 +101,48 @@ public class SyncedListProperty<T> implements SyncedValue
     @Override
     public void update()
     {
-        List<T> supplied = this.supplier.get();
+        List<T> supplied = supplier.get();
 
-        if (this.range != null)
+        if (range != null)
         {
             for (int index = range.getMinimum(); index < range.getMaximum(); index++)
             {
                 if (supplied.size() <= index)
-                    supplied.add(this.wrapper.copy(this.stored.get(index - range.getMinimum())));
+                    supplied.add(wrapper.copy(stored.get(index - range.getMinimum())));
                 else
-                    supplied.set(index, this.wrapper.copy(this.stored.get(index - range.getMinimum())));
+                    supplied.set(index, wrapper.copy(stored.get(index - range.getMinimum())));
             }
         }
         else
         {
             supplied.clear();
 
-            for (int index = 0; index < this.stored.size(); index++)
+            for (int index = 0; index < stored.size(); index++)
             {
                 if (supplied.size() <= index)
-                    supplied.add(this.wrapper.copy(this.stored.get(index)));
+                    supplied.add(wrapper.copy(stored.get(index)));
                 else
-                    supplied.set(index, this.wrapper.copy(this.stored.get(index)));
+                    supplied.set(index, wrapper.copy(stored.get(index)));
             }
         }
     }
 
     @Override
-    public void write(ByteBuf buffer)
+    public void write(PacketByteBuf buffer)
     {
-        buffer.writeInt(this.stored.size());
+        buffer.writeInt(stored.size());
 
-        for (T element : this.stored)
-            this.wrapper.write(buffer, element);
+        for (T element : stored)
+            wrapper.write(buffer, element);
     }
 
     @Override
-    public void read(ByteBuf buffer)
+    public void read(PacketByteBuf buffer)
     {
-        this.stored.clear();
+        stored.clear();
 
         int count = buffer.readInt();
         for (int index = 0; index < count; index++)
-            this.stored.add(this.wrapper.read(buffer));
+            stored.add(wrapper.read(buffer));
     }
 }

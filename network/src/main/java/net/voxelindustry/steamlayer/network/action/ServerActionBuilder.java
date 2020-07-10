@@ -1,27 +1,27 @@
 package net.voxelindustry.steamlayer.network.action;
 
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.fluids.FluidStack;
-import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
+import net.minecraft.nbt.CompoundTag;
 import net.voxelindustry.steamlayer.network.packet.ServerActionHolderPacket;
+
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.*;
 
 public class ServerActionBuilder
 {
     private String actionKey;
 
-    private TileEntity               tile;
-    private CompoundNBT              payload;
+    private BlockEntity              tile;
+    private CompoundTag              payload;
     private ServerActionHolderPacket packet;
 
     public ServerActionBuilder(String actionKey)
     {
         this.actionKey = actionKey;
-        payload = new CompoundNBT();
+        payload = new CompoundTag();
     }
 
-    public ServerActionBuilder toTile(TileEntity tile)
+    public ServerActionBuilder toTile(BlockEntity tile)
     {
         this.tile = tile;
         packet = new ServerActionHolderPacket(this.tile, actionKey);
@@ -60,13 +60,7 @@ public class ServerActionBuilder
 
     public ServerActionBuilder withItemStack(String key, ItemStack value)
     {
-        payload.put(key, value.write(new CompoundNBT()));
-        return this;
-    }
-
-    public ServerActionBuilder withFluidStack(String key, FluidStack value)
-    {
-        payload.put(key, value.writeToNBT(new CompoundNBT()));
+        payload.put(key, value.toTag(new CompoundTag()));
         return this;
     }
 
@@ -80,8 +74,8 @@ public class ServerActionBuilder
     public void send()
     {
         if (packet == null)
-            throw new RuntimeException("Action packet is null! Did you use setTile(TileEntity) before sending?");
+            throw new RuntimeException("Action packet is null! Did you use setTile(BlockEntity) before sending?");
         packet.setActionPayload(payload);
-        SteamLayerPacketHandler.getHandler().sendToServer(packet);
+        sendToServer(createServerBoundPacket(SERVER_ACTION_HOLDER, buffer -> ServerActionHolderPacket.encode(packet, buffer)));
     }
 }

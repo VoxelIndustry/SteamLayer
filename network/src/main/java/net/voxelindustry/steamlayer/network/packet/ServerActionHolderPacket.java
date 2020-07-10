@@ -1,22 +1,22 @@
 package net.voxelindustry.steamlayer.network.packet;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
+import net.fabricmc.fabric.api.network.PacketContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.server.ServerLifecycleHooks;
-import net.voxelindustry.steamlayer.network.ByteBufHelper;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.voxelindustry.steamlayer.network.action.ActionSender;
 import net.voxelindustry.steamlayer.network.action.IActionReceiver;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 @NoArgsConstructor
 @Getter
@@ -27,62 +27,64 @@ public class ServerActionHolderPacket
     private String actionName;
 
     @Setter
-    private CompoundNBT actionPayload;
+    private CompoundTag actionPayload;
     private BlockPos    pos;
-    private int         dimension;
+    private String      dimensionKey;
     private int         actionID;
 
     @Setter
     boolean expectAnswer;
 
-    public ServerActionHolderPacket(TileEntity to, String name)
+    public ServerActionHolderPacket(BlockEntity to, String name)
     {
         actionName = name;
-        dimension = to.getWorld().getDimension().getType().getId();
+        dimensionKey = to.getWorld().getRegistryKey().getValue().toString();
         pos = to.getPos();
 
         actionID = previousActionID.getAndUpdate(previous -> previous > 32765 ? 0 : previous + 1);
     }
 
-    public static ServerActionHolderPacket decode(ByteBuf buffer)
+    public static ServerActionHolderPacket decode(PacketByteBuf buffer)
     {
         ServerActionHolderPacket packet = new ServerActionHolderPacket();
 
         packet.actionID = buffer.readShort();
-        packet.dimension = buffer.readInt();
-        packet.pos = ByteBufHelper.readPos(buffer);
+        packet.dimensionKey = buffer.readString();
+        packet.pos = buffer.readBlockPos();
         packet.expectAnswer = buffer.readBoolean();
 
-        packet.actionName = ByteBufHelper.readString(buffer);
-        packet.actionPayload = ByteBufHelper.readTag(buffer);
+        packet.actionName = buffer.readString();
+        packet.actionPayload = buffer.readCompoundTag();
 
         return packet;
     }
 
-    public static void encode(ServerActionHolderPacket packet, ByteBuf buffer)
+    public static void encode(ServerActionHolderPacket packet, PacketByteBuf buffer)
     {
         buffer.writeShort(packet.actionID);
-        buffer.writeInt(packet.dimension);
-        ByteBufHelper.writePos(buffer, packet.pos);
+        buffer.writeString(packet.dimensionKey);
+        buffer.writeBlockPos(packet.pos);
         buffer.writeBoolean(packet.expectAnswer);
 
-        ByteBufHelper.writeString(buffer, packet.actionName);
-        ByteBufHelper.writeTag(buffer, packet.actionPayload);
+        buffer.writeString(packet.actionName);
+        buffer.writeCompoundTag(packet.actionPayload);
     }
 
-    public static void handle(ServerActionHolderPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
+    public static void handle(ServerActionHolderPacket packet, PacketContext context)
     {
-        contextSupplier.get().enqueueWork(() ->
+        context.getTaskQueue().execute(() ->
         {
-            ServerWorld world = ServerLifecycleHooks.getCurrentServer().getWorld(DimensionType.getById(packet.dimension));
+            ServerWorld world = context.getPlayer().getServer().getWorld(RegistryKey.of(Registry.DIMENSION, new Identifier(packet.dimensionKey)));
 
-            if (world.isBlockLoaded(packet.getPos()))
+            ChunkPos chunkPos = new ChunkPos(packet.getPos());
+
+            if (world.isChunkLoaded(chunkPos.x, chunkPos.z))
             {
-                TileEntity receiver = world.getTileEntity(packet.getPos());
+                BlockEntity receiver = world.getBlockEntity(packet.getPos());
 
                 if (receiver instanceof IActionReceiver)
                 {
-                    ActionSender actionSender = new ActionSender(contextSupplier.get().getSender(), receiver, packet.getActionID());
+                    ActionSender actionSender = new ActionSender(context.getPlayer(), receiver, packet.getActionID());
                     ((IActionReceiver) receiver).handle(actionSender, packet.getActionName(),
                             packet.getActionPayload());
                     if (packet.isExpectAnswer() && !actionSender.isAnswered())
@@ -90,6 +92,5 @@ public class ServerActionHolderPacket
                 }
             }
         });
-        contextSupplier.get().setPacketHandled(true);
     }
 }

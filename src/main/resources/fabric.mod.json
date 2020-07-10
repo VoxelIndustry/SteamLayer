@@ -1,0 +1,23 @@
+{
+    "schemaVersion": 1,
+    "environment": "*",
+    "id": "steamlayer",
+    "name": "Steam Layer",
+    "description": "todo",
+    "version": "${version}",
+    "side": "universal",
+    "authors": [
+        {
+            "name": "Ourten",
+            "contact": {
+                "homepage": "https://github.com/Ourten"
+            }
+        }
+    ],
+    "contact": {
+        "homepage": "https://github.com/VoxelIndustry/SteamLayer",
+        "issues": "https://github.com/VoxelIndustry/SteamLayer",
+        "sources": "https://github.com/VoxelIndustry/SteamLayer"
+    },
+    "license": "MIT"
+}

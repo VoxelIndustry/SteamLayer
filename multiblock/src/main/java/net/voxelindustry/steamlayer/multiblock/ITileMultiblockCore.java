@@ -1,21 +1,14 @@
 package net.voxelindustry.steamlayer.multiblock;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Direction;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.LazyOptional;
-
-import javax.annotation.Nullable;
 
 public interface ITileMultiblockCore extends ITileMultiblock
 {
     @Override
     void breakCore();
-
-    @Nullable
-    <T> LazyOptional<T> getCapability(Capability<T> capability, BlockPos from, @Nullable Direction facing);
 
     @Override
     default ITileMultiblockCore getCore()
@@ -26,7 +19,7 @@ public interface ITileMultiblockCore extends ITileMultiblock
     @Override
     default BlockPos getCoreOffset()
     {
-        return BlockPos.ZERO;
+        return BlockPos.ORIGIN;
     }
 
     @Override
@@ -41,8 +34,8 @@ public interface ITileMultiblockCore extends ITileMultiblock
         return true;
     }
 
-    default boolean onRightClick(PlayerEntity player, RayTraceResult hit, BlockPos from)
+    default ActionResult onRightClick(PlayerEntity player, BlockHitResult hit, BlockPos from)
     {
-        return false;
+        return ActionResult.PASS;
     }
 }

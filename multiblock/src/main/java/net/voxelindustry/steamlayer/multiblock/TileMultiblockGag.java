@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.multiblock;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.tileentity.BlockEntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
@@ -13,12 +13,12 @@ import javax.annotation.Nullable;
 
 public class TileMultiblockGag extends TileBase implements ITileMultiblock
 {
-    public static TileEntityType<TileMultiblockGag> TYPE;
+    public static BlockEntityType<TileMultiblockGag> TYPE;
 
     private BlockPos corePos    = pos;
     private BlockPos coreOffset = null;
 
-    public TileMultiblockGag(TileEntityType<? extends TileMultiblockGag> type)
+    public TileMultiblockGag(BlockEntityType<? extends TileMultiblockGag> type)
     {
         super(type);
     }
@@ -29,7 +29,7 @@ public class TileMultiblockGag extends TileBase implements ITileMultiblock
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT tag)
+    public CompoundTag write(CompoundTag tag)
     {
         tag.putInt("corePosX", corePos.getX());
         tag.putInt("corePosY", corePos.getY());
@@ -39,7 +39,7 @@ public class TileMultiblockGag extends TileBase implements ITileMultiblock
     }
 
     @Override
-    public void read(CompoundNBT tag)
+    public void read(CompoundTag tag)
     {
         corePos = new BlockPos(tag.getInt("corePosX"), tag.getInt("corePosY"), tag.getInt("corePosZ"));
 
@@ -71,8 +71,8 @@ public class TileMultiblockGag extends TileBase implements ITileMultiblock
     @Override
     public boolean isCorePresent()
     {
-        return world.getTileEntity(getCorePos()) != null
-                && world.getTileEntity(getCorePos()) instanceof ITileMultiblockCore;
+        return world.getBlockEntity(getCorePos()) != null
+                && world.getBlockEntity(getCorePos()) instanceof ITileMultiblockCore;
     }
 
     @Override
@@ -97,7 +97,7 @@ public class TileMultiblockGag extends TileBase implements ITileMultiblock
     @Override
     public ITileMultiblockCore getCore()
     {
-        return (ITileMultiblockCore) world.getTileEntity(getCorePos());
+        return (ITileMultiblockCore) world.getBlockEntity(getCorePos());
     }
 
     @Override

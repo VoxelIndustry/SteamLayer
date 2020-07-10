@@ -2,7 +2,6 @@ package net.voxelindustry.steamlayer.tile;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.FluidStack;
 
 public interface ITileInfoList
 {
@@ -11,8 +10,6 @@ public interface ITileInfoList
     void addProgress(int current, int max);
 
     void addItem(ItemStack stack);
-
-    void addFluid(FluidStack stack, int capacity);
 
     void addEntity(Entity e);
 }

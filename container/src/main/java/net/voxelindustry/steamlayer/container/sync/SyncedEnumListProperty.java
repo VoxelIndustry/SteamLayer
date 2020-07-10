@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.container.sync;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
+import net.minecraft.network.PacketByteBuf;
 import org.apache.commons.lang3.Range;
 import sun.misc.SharedSecrets;
 
@@ -29,11 +29,11 @@ public class SyncedEnumListProperty<E extends Enum<E>> implements SyncedValue
     {
         this.supplier = supplier;
         this.enumClass = enumClass;
-        this.stored = new ArrayList<>();
+        stored = new ArrayList<>();
         this.range = range;
 
         this.syncRate = syncRate;
-        this.lastSync = 0;
+        lastSync = 0;
     }
 
     public SyncedEnumListProperty(Supplier<List<E>> supplier, Class<E> enumClass, Range<Integer> range)
@@ -44,18 +44,18 @@ public class SyncedEnumListProperty<E extends Enum<E>> implements SyncedValue
     @Override
     public boolean needRefresh()
     {
-        if (this.lastSync != this.syncRate)
+        if (lastSync != syncRate)
         {
-            this.lastSync++;
+            lastSync++;
             return false;
         }
-        this.lastSync = 0;
+        lastSync = 0;
 
-        List<E> supplied = this.supplier.get();
+        List<E> supplied = supplier.get();
 
-        if ((this.stored == null ^ supplied == null))
+        if ((stored == null ^ supplied == null))
             return true;
-        if (this.stored == null)
+        if (stored == null)
             return false;
 
         if (range != null)
@@ -83,18 +83,18 @@ public class SyncedEnumListProperty<E extends Enum<E>> implements SyncedValue
     @Override
     public void updateInternal()
     {
-        List<E> supplied = this.supplier.get();
+        List<E> supplied = supplier.get();
 
-        if (this.range != null)
+        if (range != null)
         {
-            this.stored.clear();
+            stored.clear();
 
             for (int index = range.getMinimum(); index < range.getMaximum(); index++)
-                this.stored.add(supplied.get(index));
+                stored.add(supplied.get(index));
         }
         else
         {
-            this.stored.clear();
+            stored.clear();
             stored.addAll(supplied);
         }
     }
@@ -102,48 +102,48 @@ public class SyncedEnumListProperty<E extends Enum<E>> implements SyncedValue
     @Override
     public void update()
     {
-        List<E> supplied = this.supplier.get();
+        List<E> supplied = supplier.get();
 
-        if (this.range != null)
+        if (range != null)
         {
             for (int index = range.getMinimum(); index < range.getMaximum(); index++)
             {
                 if (supplied.size() <= index)
-                    supplied.add(this.stored.get(index - range.getMinimum()));
+                    supplied.add(stored.get(index - range.getMinimum()));
                 else
-                    supplied.set(index, this.stored.get(index - range.getMinimum()));
+                    supplied.set(index, stored.get(index - range.getMinimum()));
             }
         }
         else
         {
             supplied.clear();
 
-            for (int index = 0; index < this.stored.size(); index++)
+            for (int index = 0; index < stored.size(); index++)
             {
                 if (supplied.size() <= index)
-                    supplied.add(this.stored.get(index));
+                    supplied.add(stored.get(index));
                 else
-                    supplied.set(index, this.stored.get(index));
+                    supplied.set(index, stored.get(index));
             }
         }
     }
 
     @Override
-    public void write(ByteBuf buffer)
+    public void write(PacketByteBuf buffer)
     {
-        buffer.writeInt(this.stored.size());
+        buffer.writeInt(stored.size());
 
-        for (E element : this.stored)
+        for (E element : stored)
             buffer.writeInt(element.ordinal());
     }
 
     @Override
-    public void read(ByteBuf buffer)
+    public void read(PacketByteBuf buffer)
     {
-        this.stored.clear();
+        stored.clear();
 
         int count = buffer.readInt();
         for (int index = 0; index < count; index++)
-            this.stored.add(SharedSecrets.getJavaLangAccess().getEnumConstantsShared(enumClass)[buffer.readInt()]);
+            stored.add(SharedSecrets.getJavaLangAccess().getEnumConstantsShared(enumClass)[buffer.readInt()]);
     }
 }

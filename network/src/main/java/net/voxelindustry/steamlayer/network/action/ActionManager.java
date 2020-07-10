@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.network.action;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.HashMap;
 
@@ -19,19 +19,19 @@ public class ActionManager
 
     private ActionManager()
     {
-        this.callbackMap = new HashMap<>();
+        callbackMap = new HashMap<>();
     }
 
     void addCallback(Integer actionID, IActionCallback callback)
     {
-        this.callbackMap.put(actionID, callback);
+        callbackMap.put(actionID, callback);
     }
 
-    public void triggerCallback(int actionID, CompoundNBT payload)
+    public void triggerCallback(int actionID, CompoundTag payload)
     {
-        if(!this.callbackMap.containsKey(actionID))
+        if (!callbackMap.containsKey(actionID))
             return;
-        this.callbackMap.get(actionID).call(payload);
-        this.callbackMap.remove(actionID);
+        callbackMap.get(actionID).call(payload);
+        callbackMap.remove(actionID);
     }
 }

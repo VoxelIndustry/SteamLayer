@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 import java.util.EnumMap;

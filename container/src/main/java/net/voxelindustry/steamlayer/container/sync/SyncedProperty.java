@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.container.sync;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.Setter;
+import net.minecraft.network.PacketByteBuf;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -28,10 +28,10 @@ public class SyncedProperty<T> implements SyncedValue
         this.supplier = supplier;
         this.consumer = consumer;
         this.wrapper = wrapper;
-        this.stored = null;
+        stored = null;
 
         this.syncRate = syncRate;
-        this.lastSync = 0;
+        lastSync = 0;
     }
 
     public SyncedProperty(Supplier<T> supplier, Consumer<T> consumer, SyncedWrapper<T> wrapper)
@@ -42,44 +42,44 @@ public class SyncedProperty<T> implements SyncedValue
     @Override
     public boolean needRefresh()
     {
-        if (this.lastSync != this.syncRate)
+        if (lastSync != syncRate)
         {
-            this.lastSync++;
+            lastSync++;
             return false;
         }
-        this.lastSync = 0;
+        lastSync = 0;
 
-        T supplied = this.supplier.get();
+        T supplied = supplier.get();
 
-        if ((this.stored == null ^ supplied == null))
+        if ((stored == null ^ supplied == null))
             return true;
-        if (this.stored == null)
+        if (stored == null)
             return false;
 
-        return !this.wrapper.areEquals(stored, supplied);
+        return !wrapper.areEquals(stored, supplied);
     }
 
     @Override
     public void updateInternal()
     {
-        this.stored = this.wrapper.copy(this.supplier.get());
+        stored = wrapper.copy(supplier.get());
     }
 
     @Override
     public void update()
     {
-        this.consumer.accept(this.stored);
+        consumer.accept(stored);
     }
 
     @Override
-    public void write(ByteBuf buffer)
+    public void write(PacketByteBuf buffer)
     {
-        this.wrapper.write(buffer, this.stored);
+        wrapper.write(buffer, stored);
     }
 
     @Override
-    public void read(ByteBuf buffer)
+    public void read(PacketByteBuf buffer)
     {
-        this.stored = this.wrapper.read(buffer);
+        stored = wrapper.read(buffer);
     }
 }

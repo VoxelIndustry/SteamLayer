@@ -1,17 +1,17 @@
 package net.voxelindustry.steamlayer.container.slot;
 
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.SlotItemHandler;
+import net.minecraft.screen.slot.Slot;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
 
 import java.util.function.Consumer;
 
-public class ListenerSlot extends SlotItemHandler
+public class ListenerSlot extends Slot
 {
     private Consumer<ItemStack> onChange;
 
-    public ListenerSlot(IItemHandler inventory, int index, int x, int y)
+    public ListenerSlot(Inventory inventory, int index, int x, int y)
     {
         super(inventory, index, x, y);
     }
@@ -22,14 +22,14 @@ public class ListenerSlot extends SlotItemHandler
     }
 
     @Override
-    public void onSlotChanged()
+    public void markDirty()
     {
-        super.onSlotChanged();
+        super.markDirty();
 
-        if (this.getItemHandler() instanceof InventoryHandler)
-            ((InventoryHandler) this.getItemHandler()).notifySlotChange();
+        if (inventory instanceof InventoryHandler)
+            ((InventoryHandler) inventory).notifySlotChange();
 
-        if (this.onChange != null)
-            this.onChange.accept(this.getStack());
+        if (onChange != null)
+            onChange.accept(getStack());
     }
 }

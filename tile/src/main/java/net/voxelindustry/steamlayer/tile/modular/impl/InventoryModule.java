@@ -1,11 +1,9 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
-import lombok.Getter;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraftforge.items.wrapper.CombinedInvWrapper;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
 import net.voxelindustry.steamlayer.tile.modular.IModularTile;
 import net.voxelindustry.steamlayer.tile.modular.ISerializableModule;
@@ -20,18 +18,15 @@ public class InventoryModule extends TileModule implements ISerializableModule
     private final Map<String, InventoryHandler> inventories;
     private final Map<String, IntConsumer>      onSlotChangeEvents;
 
-    @Getter
-    private CombinedInvWrapper combinedInventory;
-
     public InventoryModule(IModularTile machine, int slotCount)
     {
         super(machine, "InventoryModule");
 
-        this.inventories = new HashMap<>();
-        this.onSlotChangeEvents = new HashMap<>();
+        inventories = new HashMap<>();
+        onSlotChangeEvents = new HashMap<>();
 
         if (slotCount != -1)
-            this.addBasic(slotCount);
+            addBasic(slotCount);
     }
 
     public InventoryModule(IModularTile machine)
@@ -40,62 +35,60 @@ public class InventoryModule extends TileModule implements ISerializableModule
     }
 
     @Override
-    public void fromNBT(CompoundNBT tag)
+    public void fromNBT(CompoundTag tag)
     {
-        this.inventories.forEach((name, inv) -> inv.deserializeNBT(tag.getCompound("Inv" + name)));
+        inventories.forEach((name, inv) -> inv.fromTag(tag.getCompound("Inv" + name)));
     }
 
     @Override
-    public CompoundNBT toNBT(CompoundNBT tag)
+    public CompoundTag toNBT(CompoundTag tag)
     {
-        this.inventories.forEach((name, inv) -> tag.put("Inv" + name, inv.serializeNBT()));
+        inventories.forEach((name, inv) -> tag.put("Inv" + name, inv.toTag()));
         return tag;
     }
 
     public void addBasic(int slotCount)
     {
-        this.addInventory("basic", new InventoryHandler(slotCount));
+        addInventory("basic", new InventoryHandler(slotCount));
     }
 
     public InventoryModule addInventory(String name, InventoryHandler inventory)
     {
-        this.inventories.put(name, inventory);
+        inventories.put(name, inventory);
 
-        inventory.setOnSlotChange(slot ->
-        {
-            this.getModularTile().markDirty();
+        inventory.onSlotChange(slot ->
+                               {
+                                   getModularTile().markDirty();
 
-            if (this.onSlotChangeEvents.containsKey(name) && slot != -1)
-                this.onSlotChangeEvents.get(name).accept(slot);
-        });
-
-        this.combinedInventory = new CombinedInvWrapper(this.inventories.values().toArray(new InventoryHandler[0]));
+                                   if (onSlotChangeEvents.containsKey(name) && slot != -1)
+                                       onSlotChangeEvents.get(name).accept(slot);
+                               });
         return this;
     }
 
     public void setOnSlotChange(String name, IntConsumer onSlotChange)
     {
-        this.onSlotChangeEvents.put(name, onSlotChange);
+        onSlotChangeEvents.put(name, onSlotChange);
     }
 
     public InventoryHandler getInventory(String name)
     {
-        return this.inventories.get(name);
+        return inventories.get(name);
     }
 
     public boolean hasInventory(String name)
     {
-        return this.inventories.containsKey(name);
+        return inventories.containsKey(name);
     }
 
     public void dropAll(World world, BlockPos pos)
     {
-        for (InventoryHandler inventory : this.inventories.values())
+        for (InventoryHandler inventory : inventories.values())
         {
             if (inventory.canDropContents())
-                for (int slot = 0; slot < inventory.getSlots(); slot++)
-                    InventoryHelper.spawnItemStack(world, pos.getX(), pos.getY(), pos.getZ(),
-                            inventory.getStackInSlot(slot));
+            {
+                ItemScatterer.spawn(world, pos, inventory);
+            }
         }
     }
 }

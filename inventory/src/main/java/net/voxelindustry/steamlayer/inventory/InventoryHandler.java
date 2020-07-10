@@ -1,31 +1,32 @@
 package net.voxelindustry.steamlayer.inventory;
 
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.NonNullList;
-import net.minecraftforge.items.ItemStackHandler;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.voxelindustry.steamlayer.common.utils.TagSerializable;
 
-import javax.annotation.Nonnull;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @Getter
-public class InventoryHandler extends ItemStackHandler
+@Accessors(fluent = true)
+public class InventoryHandler implements Inventory, TagSerializable
 {
     @Setter
     private IntConsumer onSlotChange;
-    @Setter
-    private Runnable    onLoad;
 
-    private Int2IntMap                          slotLimits;
     private Int2ObjectMap<Predicate<ItemStack>> slotFilters;
 
     @Setter
@@ -33,10 +34,14 @@ public class InventoryHandler extends ItemStackHandler
     @Setter
     private Consumer<PlayerEntity> onClose;
 
+    @Setter
+    private Supplier<BlockPos> posSupplier;
+
     @Getter
     @Setter
-    @Accessors(fluent = true)
     private boolean canDropContents = true;
+
+    private final DefaultedList<ItemStack> stacks;
 
     public InventoryHandler()
     {
@@ -45,111 +50,147 @@ public class InventoryHandler extends ItemStackHandler
 
     public InventoryHandler(int size)
     {
-        this(NonNullList.withSize(size, ItemStack.EMPTY));
+        this(DefaultedList.ofSize(size, ItemStack.EMPTY));
     }
 
-    public InventoryHandler(NonNullList<ItemStack> stacks)
+    public InventoryHandler(DefaultedList<ItemStack> stacks)
     {
-        super(stacks);
+        this.stacks = stacks;
 
-        this.slotLimits = new Int2IntOpenHashMap();
-        this.slotFilters = new Int2ObjectOpenHashMap<>();
-    }
-
-    @Override
-    protected void onLoad()
-    {
-        super.onLoad();
-
-        if (this.onLoad != null)
-            this.onLoad.run();
+        slotFilters = new Int2ObjectOpenHashMap<>();
     }
 
     @Override
-    protected void onContentsChanged(int slot)
+    public int size()
     {
-        super.onContentsChanged(slot);
-
-        if (this.onSlotChange != null)
-            this.onSlotChange.accept(slot);
-    }
-
-    public void notifySlotChange()
-    {
-        if (this.onSlotChange != null)
-            this.onSlotChange.accept(-1);
+        return stacks.size();
     }
 
     @Override
-    public void setStackInSlot(int slot, @Nonnull ItemStack stack)
+    public boolean isEmpty()
     {
-        if (!this.slotAcceptStack(slot, stack))
-            return;
-        super.setStackInSlot(slot, stack);
-    }
-
-    @Nonnull
-    @Override
-    public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate)
-    {
-        if (!this.slotAcceptStack(slot, stack))
-            return stack;
-        return super.insertItem(slot, stack, simulate);
-    }
-
-    @Override
-    public int getSlotLimit(int slot)
-    {
-        if (!this.slotLimits.isEmpty() && this.slotLimits.containsKey(slot))
-            return this.slotLimits.get(slot);
-        return super.getSlotLimit(slot);
-    }
-
-    public NonNullList<ItemStack> getStacks()
-    {
-        return this.stacks;
-    }
-
-    public void setSlotLimit(int slot, int limit)
-    {
-        this.slotLimits.put(slot, limit);
-    }
-
-    public boolean slotAcceptStack(int slot, ItemStack stack)
-    {
-        if (!this.slotFilters.isEmpty() && this.slotFilters.containsKey(slot))
-            return this.slotFilters.get(slot).test(stack);
+        for (ItemStack stack : stacks)
+            if (!stack.isEmpty())
+                return false;
         return true;
+    }
+
+    @Override
+    public ItemStack getStack(int slot)
+    {
+        return stacks.get(slot);
+    }
+
+    @Override
+    public ItemStack removeStack(int slot, int amount)
+    {
+        ItemStack stack = Inventories.splitStack(stacks, slot, amount);
+        if (!stack.isEmpty())
+            onContentsChanged(slot);
+
+        return stack;
+    }
+
+    @Override
+    public ItemStack removeStack(int slot)
+    {
+        ItemStack removed = removeStack(slot, getStack(slot).getCount());
+        return removed;
+    }
+
+    @Override
+    public void setStack(int slot, ItemStack stack)
+    {
+        stacks.set(slot, stack);
+
+        onContentsChanged(slot);
+    }
+
+    @Override
+    public int getMaxCountPerStack()
+    {
+        // FIXME : When an api allowing insert/extract is made. Fall back to the slotLimits map
+        return 64;
+    }
+
+    @Override
+    public void markDirty()
+    {
+    }
+
+    @Override
+    public boolean canPlayerUse(PlayerEntity player)
+    {
+        if (posSupplier == null)
+            return true;
+
+        BlockPos pos = posSupplier.get();
+        return player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64;
+    }
+
+    @Override
+    public void onOpen(PlayerEntity player)
+    {
+        if (onOpen != null)
+            onOpen.accept(player);
+    }
+
+    @Override
+    public void onClose(PlayerEntity player)
+    {
+        if (onClose != null)
+            onClose.accept(player);
+    }
+
+    @Override
+    public boolean isValid(int slot, ItemStack stack)
+    {
+        if (!slotFilters.isEmpty() && slotFilters.containsKey(slot))
+            return slotFilters.get(slot).test(stack);
+        return true;
+    }
+
+    @Override
+    public void clear()
+    {
+        stacks.forEach(stack -> stack.setCount(0));
+        notifySlotChange();
     }
 
     public void addSlotFilter(int slot, Predicate<ItemStack> filter)
     {
-        this.slotFilters.put(slot, filter);
+        slotFilters.put(slot, filter);
     }
 
     public void addSlotFilters(Predicate<ItemStack> filter, int... slots)
     {
         for (int slot : slots)
-            this.addSlotFilter(slot, filter);
+            addSlotFilter(slot, filter);
     }
 
-    public void openInventory(PlayerEntity player)
+    public void notifySlotChange()
     {
-        if (this.onOpen != null)
-            this.onOpen.accept(player);
+        if (onSlotChange != null)
+            onSlotChange.accept(-1);
     }
 
-    public void closeInventory(PlayerEntity player)
+    protected void onContentsChanged(int slot)
     {
-        if (this.onClose != null)
-            this.onClose.accept(player);
+        if (onSlotChange != null)
+            onSlotChange.accept(slot);
+
+        markDirty();
     }
 
-    public boolean isEmpty()
+    @Override
+    public Tag toTag()
     {
-        for (ItemStack stack : this.stacks)
-            if (!stack.isEmpty())
-                return false;
-        return true;
+        return Inventories.toTag(new CompoundTag(), stacks);
+    }
+
+    @Override
+    public void fromTag(Tag tag)
+    {
+        Inventories.fromTag((CompoundTag) tag, stacks);
     }
 }

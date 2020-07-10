@@ -1,6 +1,7 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.Direction;
+
+import net.minecraft.util.math.Direction;
 
 public interface IConnectionAware
 {

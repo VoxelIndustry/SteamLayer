@@ -4,16 +4,15 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.Setter;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.inventory.container.Slot;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.items.ItemStackHandler;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.voxelindustry.steamlayer.common.container.ISyncedContainer;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.container.sync.ContainerSyncPacket;
@@ -23,18 +22,16 @@ import net.voxelindustry.steamlayer.container.sync.SyncedValue;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
 import org.apache.commons.lang3.Range;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class BuiltContainer extends Container implements ISyncedContainer
+public class BuiltContainer extends ScreenHandler implements ISyncedContainer
 {
     private final PlayerEntity player;
 
-    private final Predicate<PlayerEntity> canInteract;
+    private final Predicate<PlayerEntity> canUse;
     private final List<Range<Integer>>    playerSlotRanges;
     private final List<Range<Integer>>    tileSlotRanges;
 
@@ -42,26 +39,24 @@ public class BuiltContainer extends Container implements ISyncedContainer
     private Map<String, SyncedValue>        namedSyncables;
     private Map<SyncedValue, ISyncCallback> syncCallbacks;
 
-    private List<Consumer<CraftingInventory>> craftEvents;
-
-    private final List<ItemStackHandler> inventories;
+    private final List<Inventory> inventories;
 
     @Setter
     private ContainerEvent       closeEvent;
     @Setter
     private List<ContainerEvent> tickEvents;
 
-    private List<Slot> cachedInventorySlots;
+    private List<Slot> cachedslots;
 
     @Getter
     @Setter
-    private TileEntity mainTile;
+    private BlockEntity mainTile;
 
-    BuiltContainer(ContainerType<BuiltContainer> type,
+    BuiltContainer(ScreenHandlerType<BuiltContainer> type,
                    int windowId,
                    PlayerEntity player,
-                   List<ItemStackHandler> inventories,
-                   Predicate<PlayerEntity> canInteract,
+                   List<Inventory> inventories,
+                   Predicate<PlayerEntity> canUse,
                    List<Range<Integer>> playerSlotRange,
                    List<Range<Integer>> tileSlotRange)
     {
@@ -69,7 +64,7 @@ public class BuiltContainer extends Container implements ISyncedContainer
 
         this.player = player;
 
-        this.canInteract = canInteract;
+        this.canUse = canUse;
 
         playerSlotRanges = playerSlotRange;
         tileSlotRanges = tileSlotRange;
@@ -79,7 +74,7 @@ public class BuiltContainer extends Container implements ISyncedContainer
         this.inventories.forEach(inventory ->
         {
             if (inventory instanceof InventoryHandler)
-                ((InventoryHandler) inventory).openInventory(player);
+                inventory.onOpen(player);
         });
     }
 
@@ -92,25 +87,6 @@ public class BuiltContainer extends Container implements ISyncedContainer
     public void addSyncable(SyncedProperty<?> property)
     {
         syncablesValues.add(property);
-    }
-
-    public void addCraftEvents(List<Consumer<CraftingInventory>> craftEvents)
-    {
-        this.craftEvents = craftEvents;
-    }
-
-    public void addCraftEvent(Consumer<CraftingInventory> craftEvent)
-    {
-        if (craftEvents == null)
-            craftEvents = new ArrayList<>();
-        craftEvents.add(craftEvent);
-    }
-
-    public void removeCraftEvent(Consumer<CraftingInventory> craftEvent)
-    {
-        if (craftEvents == null)
-            craftEvents = new ArrayList<>();
-        craftEvents.remove(craftEvent);
     }
 
     public void addSyncCallback(String name, ISyncCallback callback)
@@ -130,22 +106,15 @@ public class BuiltContainer extends Container implements ISyncedContainer
     }
 
     @Override
-    public boolean canInteractWith(PlayerEntity player)
+    public boolean canUse(PlayerEntity player)
     {
-        return canInteract.test(player);
+        return canUse.test(player);
     }
 
     @Override
-    public final void onCraftMatrixChanged(IInventory inv)
+    public void sendContentUpdates()
     {
-        if (craftEvents != null && !craftEvents.isEmpty())
-            craftEvents.forEach(consumer -> consumer.accept((CraftingInventory) inv));
-    }
-
-    @Override
-    public void detectAndSendChanges()
-    {
-        super.detectAndSendChanges();
+        super.sendContentUpdates();
 
         if (!tickEvents.isEmpty())
             tickEvents.forEach(event -> event.apply(this, player, false));
@@ -158,7 +127,7 @@ public class BuiltContainer extends Container implements ISyncedContainer
             if (synced.needRefresh())
             {
                 synced.updateInternal();
-                new ContainerSyncPacket(windowId, syncablesValues.indexOf(synced), synced).sendTo((ServerPlayerEntity) player);
+                new ContainerSyncPacket(syncId, syncablesValues.indexOf(synced), synced).sendTo((ServerPlayerEntity) player);
             }
         }
     }
@@ -167,7 +136,7 @@ public class BuiltContainer extends Container implements ISyncedContainer
     public void updateProperty(int id, ByteBuf buffer)
     {
         SyncedValue property = syncablesValues.get(id);
-        property.read(buffer);
+        property.read(new PacketByteBuf(buffer));
         property.update();
 
         if (syncCallbacks != null && syncCallbacks.containsKey(property))
@@ -175,22 +144,21 @@ public class BuiltContainer extends Container implements ISyncedContainer
     }
 
     @Override
-    public ItemStack transferStackInSlot(PlayerEntity player, int index)
+    public ItemStack transferSlot(PlayerEntity player, int index)
     {
-
         ItemStack originalStack = ItemStack.EMPTY;
 
-        Slot slot = inventorySlots.get(index);
+        Slot slot = slots.get(index);
 
-        if (slot != null && slot.getHasStack())
+        if (slot != null && slot.hasStack())
         {
-
             ItemStack stackInSlot = slot.getStack();
             originalStack = stackInSlot.copy();
 
             boolean shifted = false;
 
             for (Range<Integer> range : playerSlotRanges)
+            {
                 if (range.contains(index))
                 {
 
@@ -198,23 +166,28 @@ public class BuiltContainer extends Container implements ISyncedContainer
                         shifted = true;
                     break;
                 }
+            }
 
             if (!shifted)
+            {
                 for (Range<Integer> range : tileSlotRanges)
+                {
                     if (range.contains(index))
                     {
                         if (shiftToPlayer(stackInSlot))
                             shifted = true;
                         break;
                     }
+                }
+            }
 
-            slot.onSlotChange(stackInSlot, originalStack);
+            slot.onStackChanged(stackInSlot, originalStack);
             if (stackInSlot.getCount() <= 0)
-                slot.putStack(ItemStack.EMPTY);
-            slot.onSlotChanged();
+                slot.setStack(ItemStack.EMPTY);
+            slot.markDirty();
             if (stackInSlot.getCount() == originalStack.getCount())
                 return ItemStack.EMPTY;
-            slot.onTake(player, stackInSlot);
+            slot.onTakeItem(player, stackInSlot);
         }
         return originalStack;
     }
@@ -226,25 +199,25 @@ public class BuiltContainer extends Container implements ISyncedContainer
         {
             for (int slotIndex = start; stackToShift.getCount() > 0 && slotIndex < end; slotIndex++)
             {
-                Slot slot = inventorySlots.get(slotIndex);
+                Slot slot = slots.get(slotIndex);
                 ItemStack stackInSlot = slot.getStack();
                 if (!stackInSlot.isEmpty() && ItemUtils.deepEquals(stackInSlot, stackToShift)
-                        && slot.isItemValid(stackToShift))
+                        && slot.canInsert(stackToShift))
                 {
                     int resultingStackSize = stackInSlot.getCount() + stackToShift.getCount();
-                    int max = Math.min(stackToShift.getMaxStackSize(), slot.getSlotStackLimit());
+                    int max = Math.min(stackToShift.getMaxCount(), slot.getMaxStackAmount());
                     if (resultingStackSize <= max)
                     {
                         stackToShift.setCount(0);
                         stackInSlot.setCount(resultingStackSize);
-                        slot.onSlotChanged();
+                        slot.markDirty();
                         changed = true;
                     }
                     else if (stackInSlot.getCount() < max)
                     {
-                        stackToShift.shrink(max - stackInSlot.getCount());
+                        stackToShift.decrement(max - stackInSlot.getCount());
                         stackInSlot.setCount(max);
-                        slot.onSlotChanged();
+                        slot.markDirty();
                         changed = true;
                     }
                 }
@@ -254,16 +227,16 @@ public class BuiltContainer extends Container implements ISyncedContainer
         {
             for (int slotIndex = start; stackToShift.getCount() > 0 && slotIndex < end; slotIndex++)
             {
-                Slot slot = inventorySlots.get(slotIndex);
+                Slot slot = slots.get(slotIndex);
                 ItemStack stackInSlot = slot.getStack();
-                if (stackInSlot.isEmpty() && slot.isItemValid(stackToShift))
+                if (stackInSlot.isEmpty() && slot.canInsert(stackToShift))
                 {
-                    int max = Math.min(stackToShift.getMaxStackSize(), slot.getSlotStackLimit());
+                    int max = Math.min(stackToShift.getMaxCount(), slot.getMaxStackAmount());
                     stackInSlot = stackToShift.copy();
                     stackInSlot.setCount(Math.min(stackToShift.getCount(), max));
-                    stackToShift.shrink(stackInSlot.getCount());
-                    slot.putStack(stackInSlot);
-                    slot.onSlotChanged();
+                    stackToShift.decrement(stackInSlot.getCount());
+                    slot.setStack(stackInSlot);
+                    slot.markDirty();
                     changed = true;
                 }
             }
@@ -288,29 +261,29 @@ public class BuiltContainer extends Container implements ISyncedContainer
     }
 
     @Override
-    public void onContainerClosed(PlayerEntity player)
+    public void close(PlayerEntity player)
     {
-        super.onContainerClosed(player);
+        super.close(player);
 
         if (closeEvent != null)
-            closeEvent.apply(this, player, player.world.isRemote);
+            closeEvent.apply(this, player, player.world.isClient);
 
         inventories.forEach(inventory ->
         {
             if (inventory instanceof InventoryHandler)
-                ((InventoryHandler) inventory).closeInventory(player);
+                inventory.onClose(player);
         });
     }
 
     public void hideAllSlots()
     {
-        cachedInventorySlots = Lists.newArrayList(inventorySlots);
-        inventorySlots.clear();
+        cachedslots = Lists.newArrayList(slots);
+        slots.clear();
     }
 
     public void showAllSlots()
     {
-        inventorySlots.addAll(cachedInventorySlots);
-        cachedInventorySlots.clear();
+        slots.addAll(cachedslots);
+        cachedslots.clear();
     }
 }

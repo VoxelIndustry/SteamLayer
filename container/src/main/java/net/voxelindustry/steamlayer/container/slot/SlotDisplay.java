@@ -1,29 +1,30 @@
 package net.voxelindustry.steamlayer.container.slot;
 
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.items.IItemHandler;
 
 public class SlotDisplay extends ListenerSlot
 {
-    public SlotDisplay(IItemHandler inventory, int index, int x, int y)
+    public SlotDisplay(Inventory inventory, int index, int x, int y)
     {
         super(inventory, index, x, y);
     }
 
     @Override
-    public boolean isItemValid(ItemStack stack)
+    public boolean canInsert(ItemStack stack)
     {
         return false;
     }
 
     @Override
-    public boolean getHasStack()
+    public boolean hasStack()
     {
         return false;
     }
 
     @Override
-    public ItemStack decrStackSize(int par1)
+    public ItemStack onTakeItem(PlayerEntity player, ItemStack stack)
     {
         return ItemStack.EMPTY;
     }

@@ -1,10 +1,10 @@
 package net.voxelindustry.steamlayer.tile.modular;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 public interface ISerializableModule
 {
-    void fromNBT(CompoundNBT tag);
+    void fromNBT(CompoundTag tag);
 
-    CompoundNBT toNBT(CompoundNBT tag);
+    CompoundTag toNBT(CompoundTag tag);
 }

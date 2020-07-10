@@ -1,15 +1,13 @@
 package net.voxelindustry.steamlayer.network.packet;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.voxelindustry.steamlayer.network.ByteBufHelper;
+import net.fabricmc.fabric.api.network.PacketContext;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.PacketByteBuf;
 import net.voxelindustry.steamlayer.network.action.ActionManager;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 @NoArgsConstructor
 @Getter
@@ -17,33 +15,32 @@ public class ClientActionHolderPacket
 {
     public static AtomicInteger previousActionID;
 
-    private CompoundNBT actionPayload;
+    private CompoundTag actionPayload;
     private int         replyID;
 
-    public ClientActionHolderPacket(int replyID, CompoundNBT payload)
+    public ClientActionHolderPacket(int replyID, CompoundTag payload)
     {
         actionPayload = payload;
         this.replyID = replyID;
     }
 
-    public static ClientActionHolderPacket decode(ByteBuf buffer)
+    public static ClientActionHolderPacket decode(PacketByteBuf buffer)
     {
         ClientActionHolderPacket packet = new ClientActionHolderPacket();
         packet.replyID = buffer.readInt();
-        packet.actionPayload = ByteBufHelper.readTag(buffer);
+        packet.actionPayload = buffer.readCompoundTag();
 
         return packet;
     }
 
-    public static void encode(ClientActionHolderPacket packet, ByteBuf buffer)
+    public static void encode(ClientActionHolderPacket packet, PacketByteBuf buffer)
     {
         buffer.writeInt(packet.replyID);
-        ByteBufHelper.writeTag(buffer, packet.actionPayload);
+        buffer.writeCompoundTag(packet.actionPayload);
     }
 
-    public static void handle(ClientActionHolderPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
+    public static void handle(ClientActionHolderPacket packet, PacketContext context)
     {
-        contextSupplier.get().enqueueWork(() -> ActionManager.getInstance().triggerCallback(packet.replyID, packet.actionPayload));
-        contextSupplier.get().setPacketHandled(true);
+        context.getTaskQueue().execute(() -> ActionManager.getInstance().triggerCallback(packet.replyID, packet.actionPayload));
     }
 }

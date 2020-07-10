@@ -1,8 +1,7 @@
 package net.voxelindustry.steamlayer.container;
 
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.items.IItemHandler;
 import net.voxelindustry.steamlayer.container.sync.SyncedArrayProperty;
 import net.voxelindustry.steamlayer.container.sync.SyncedEnumListProperty;
 import net.voxelindustry.steamlayer.container.sync.SyncedListProperty;
@@ -101,21 +100,6 @@ public class ContainerSyncBuilder
     }
 
     /**
-     * Sync a {@link FluidStack} value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @param name     unique name identifier for this Synced
-     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
-     */
-    public ContainerSyncBuilder syncFluid(Supplier<FluidStack> supplier, Consumer<FluidStack> setter, String name)
-    {
-        registerSynced(new SyncedProperty<>(supplier, setter,
-                SyncedWrappers.instance().get(FluidStack.class)), name);
-        return this;
-    }
-
-    /**
      * Sync an {@link ItemStack} value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
@@ -131,14 +115,14 @@ public class ContainerSyncBuilder
     }
 
     /**
-     * Sync an {@link IItemHandler} value between the server and the client
+     * Sync an {@link Inventory} value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
      * @param setter   a consumer used to set the value of the client
      * @param name     unique name identifier for this Synced
      * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
      */
-    public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter,
+    public ContainerSyncBuilder syncInventory(Supplier<Inventory> supplier, Consumer<Inventory> setter,
                                               String name)
     {
         syncInventory(supplier, setter, 0, name);
@@ -146,7 +130,7 @@ public class ContainerSyncBuilder
     }
 
     /**
-     * Sync an {@link IItemHandler} value between the server and the client
+     * Sync an {@link Inventory} value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
      * @param setter   a consumer used to set the value of the client
@@ -154,11 +138,11 @@ public class ContainerSyncBuilder
      * @param name     unique name identifier for this Synced
      * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
      */
-    public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter,
+    public ContainerSyncBuilder syncInventory(Supplier<Inventory> supplier, Consumer<Inventory> setter,
                                               int syncRate, String name)
     {
         registerSynced(new SyncedProperty<>(supplier, setter,
-                SyncedWrappers.instance().get(IItemHandler.class), syncRate), name);
+                SyncedWrappers.instance().get(Inventory.class), syncRate), name);
         return this;
     }
 
@@ -299,19 +283,6 @@ public class ContainerSyncBuilder
     }
 
     /**
-     * Sync a {@link FluidStack} value between the server and the client
-     *
-     * @param supplier a supplier giving the value from the server
-     * @param setter   a consumer used to set the value of the client
-     * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
-     */
-    public ContainerSyncBuilder syncFluid(Supplier<FluidStack> supplier, Consumer<FluidStack> setter)
-    {
-        syncFluid(supplier, setter, null);
-        return this;
-    }
-
-    /**
      * Sync an {@link ItemStack} value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
@@ -325,27 +296,27 @@ public class ContainerSyncBuilder
     }
 
     /**
-     * Sync an {@link IItemHandler} value between the server and the client
+     * Sync an {@link Inventory} value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
      * @param setter   a consumer used to set the value of the client
      * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
      */
-    public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter)
+    public ContainerSyncBuilder syncInventory(Supplier<Inventory> supplier, Consumer<Inventory> setter)
     {
         syncInventory(supplier, setter, null);
         return this;
     }
 
     /**
-     * Sync an {@link IItemHandler} value between the server and the client
+     * Sync an {@link Inventory} value between the server and the client
      *
      * @param supplier a supplier giving the value from the server
      * @param setter   a consumer used to set the value of the client
      * @param syncRate the rate in ticks used to query and refresh the synced
      * @return a reference to this {@code ContainerSyncBuilder} to resume the "Builder" pattern
      */
-    public ContainerSyncBuilder syncInventory(Supplier<IItemHandler> supplier, Consumer<IItemHandler> setter,
+    public ContainerSyncBuilder syncInventory(Supplier<Inventory> supplier, Consumer<Inventory> setter,
                                               int syncRate)
     {
         syncInventory(supplier, setter, syncRate, null);

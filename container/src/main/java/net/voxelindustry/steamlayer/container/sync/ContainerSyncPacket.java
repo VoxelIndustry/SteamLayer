@@ -3,6 +3,7 @@ package net.voxelindustry.steamlayer.container.sync;
 import io.netty.buffer.ByteBuf;
 import lombok.NoArgsConstructor;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.PacketByteBuf;
 import net.voxelindustry.steamlayer.common.container.ISyncedContainer;
 import net.voxelindustry.steamlayer.network.packet.Message;
 
@@ -23,7 +24,7 @@ public class ContainerSyncPacket extends Message
     }
 
     @Override
-    public void read(ByteBuf buf)
+    public void read(PacketByteBuf buf)
     {
         windowID = buf.readInt();
         syncID = buf.readInt();
@@ -32,7 +33,7 @@ public class ContainerSyncPacket extends Message
     }
 
     @Override
-    public void write(ByteBuf buf)
+    public void write(PacketByteBuf buf)
     {
         buf.writeInt(windowID);
         buf.writeInt(syncID);
@@ -43,7 +44,7 @@ public class ContainerSyncPacket extends Message
     @Override
     public void handle(PlayerEntity player)
     {
-        if (player.openContainer instanceof ISyncedContainer && player.openContainer.windowId == windowID)
-            ((ISyncedContainer) player.openContainer).updateProperty(syncID, bufferCopy);
+        if (player.currentScreenHandler instanceof ISyncedContainer && player.currentScreenHandler.syncId == windowID)
+            ((ISyncedContainer) player.currentScreenHandler).updateProperty(syncID, bufferCopy);
     }
 }

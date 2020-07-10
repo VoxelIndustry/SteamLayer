@@ -1,9 +1,8 @@
 package net.voxelindustry.steamlayer.container;
 
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Direction;
-import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.items.ItemStackHandler;
+import net.minecraft.util.math.Direction;
 import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
 import net.voxelindustry.steamlayer.container.slot.SlotDisplay;
@@ -15,11 +14,11 @@ import java.util.function.Predicate;
 
 public class ContainerTileInventoryBuilder
 {
-    private final ItemStackHandler inventory;
+    private final Inventory        inventory;
     private final ContainerBuilder parent;
     private final int              rangeStart;
 
-    ContainerTileInventoryBuilder(ContainerBuilder parent, ItemStackHandler inventory)
+    ContainerTileInventoryBuilder(ContainerBuilder parent, Inventory inventory)
     {
         this.inventory = inventory;
         this.parent = parent;
@@ -120,27 +119,9 @@ public class ContainerTileInventoryBuilder
     }
 
     /**
-     * Add a fluid-containers-only slot to the slot list of the current {@code IInventory}
-     * <p>
-     * The builtin filter will only allow {@link ItemStack} having the {@code CapabilityFluidHandler
-     * .FLUID_HANDLER_ITEM_CAPABILITY} with {@code Direction.UP}
-     *
-     * @param index the index this slot will use to communicate with the inventory.
-     * @param x     the horizontal position at which the slot is placed
-     * @param y     the vertical position at which the slot is placed
-     * @return a reference to this {@code ContainerTileInventoryBuilder} to resume the "Builder" pattern
-     */
-    public ContainerTileInventoryBuilder fluidSlot(int index, int x, int y)
-    {
-        parent.slots.add(new FilteredSlot(inventory, index, x, y).setFilter(
-                stack -> stack.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, Direction.UP).isPresent()));
-        return this;
-    }
-
-    /**
      * Add a fuel-only slot to the slot list of the current {@code IInventory}
      * <p>
-     * The builtin filter will query {@link net.minecraft.tileentity.FurnaceTileEntity#isFuel(ItemStack)} (ItemStack)} with
+     * The builtin filter will query {@link net.minecraft.block.entity.FurnaceBlockEntity#canUseAsFuel(ItemStack)} with
      * the exception of allowing buckets for vanilla behavior compatibility.
      *
      * @param index the index this slot will use to communicate with the inventory.
@@ -190,7 +171,7 @@ public class ContainerTileInventoryBuilder
 
     private void setParentData()
     {
-        if (inventory.getSlots() != 0)
+        if (inventory.size() != 0)
             parent.tileInventoryRanges.add(Range.between(rangeStart, parent.slots.size() - 1));
         parent.inventories.add(inventory);
     }

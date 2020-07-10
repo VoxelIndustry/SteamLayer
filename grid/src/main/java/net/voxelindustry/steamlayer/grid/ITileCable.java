@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 import java.util.EnumMap;
 
@@ -15,7 +15,7 @@ public interface ITileCable<T extends CableGrid> extends ITileNode<T>
     {
         for (Direction facing : Direction.values())
         {
-            TileEntity adjacent = getBlockWorld().getTileEntity(getAdjacentPos(facing));
+            BlockEntity adjacent = getBlockWorld().getBlockEntity(getAdjacentPos(facing));
             if (adjacent instanceof ITileCable && canConnect(facing, (ITileCable<?>) adjacent)
                     && ((ITileCable<?>) adjacent).canConnect(facing.getOpposite(), this))
             {

@@ -1,53 +1,43 @@
 package net.voxelindustry.steamlayer.network.packet;
 
-import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
-
-import static net.minecraftforge.fml.network.PacketDistributor.*;
 
 public abstract class Message
 {
-    public abstract void read(ByteBuf buf);
+    public abstract void read(PacketByteBuf buf);
 
-    public abstract void write(ByteBuf buf);
+    public abstract void write(PacketByteBuf buf);
 
     public abstract void handle(PlayerEntity player);
 
     public void sendTo(ServerPlayerEntity player)
     {
-        SteamLayerPacketHandler.getHandler().send(PLAYER.with(() -> player), new GenericPacket(this));
+        SteamLayerPacketHandler.sendToPlayer(
+                SteamLayerPacketHandler.createClientBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
+                        buffer -> GenericPacket.encode(new GenericPacket(this), buffer)),
+                player);
     }
 
     public void sendToServer()
     {
-        SteamLayerPacketHandler.getHandler().sendToServer(new GenericPacket(this));
+        SteamLayerPacketHandler.sendToServer(SteamLayerPacketHandler.createServerBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
+                buffer -> GenericPacket.encode(new GenericPacket(this), buffer)));
     }
 
-    public void sendToAll()
+    public void sendToAll(MinecraftServer server)
     {
-        SteamLayerPacketHandler.getHandler().send(ALL.noArg(), new GenericPacket(this));
+        SteamLayerPacketHandler.sendToAll(SteamLayerPacketHandler.createClientBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
+                buffer -> GenericPacket.encode(new GenericPacket(this), buffer)), server);
     }
 
-    public void sendToDimension(DimensionType dimensionType)
+    public void sendToDimension(ServerWorld world)
     {
-        SteamLayerPacketHandler.getHandler().send(DIMENSION.with(() -> dimensionType), new GenericPacket(this));
-    }
-
-    public void sendToWatchingChunk(Chunk chunk)
-    {
-        SteamLayerPacketHandler.getHandler().send(TRACKING_CHUNK.with(() -> chunk), new GenericPacket(this));
-    }
-
-    public void sendToAllAround(World world, BlockPos pos, int range)
-    {
-        SteamLayerPacketHandler.getHandler().send(NEAR
-                        .with(() -> new TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, world.getDimension().getType())),
-                new GenericPacket(this));
+        SteamLayerPacketHandler.sendToWorld(SteamLayerPacketHandler.createClientBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
+                buffer -> GenericPacket.encode(new GenericPacket(this), buffer)), world);
     }
 }

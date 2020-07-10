@@ -1,13 +1,9 @@
 package net.voxelindustry.steamlayer.core;
 
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.network.NetworkRegistry;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.voxelindustry.steamlayer.container.sync.ContainerSyncPacket;
 import net.voxelindustry.steamlayer.grid.GridManager;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
@@ -16,63 +12,38 @@ import net.voxelindustry.steamlayer.network.packet.GenericPacket;
 import net.voxelindustry.steamlayer.network.packet.PacketHandler;
 import net.voxelindustry.steamlayer.network.packet.ServerActionHolderPacket;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
+import net.voxelindustry.steamlayer.tile.event.TileTickHandler;
 
-@Mod("steamlayer")
-public class SteamLayerCore
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.*;
+
+public class SteamLayerCore implements ModInitializer
 {
-    private static final String PROTOCOL_VERSION = Integer.toString(1);
-
-    public SteamLayerCore()
+    @Override
+    public void onInitialize()
     {
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::commonSetup);
-    }
-
-    private void commonSetup(FMLCommonSetupEvent e)
-    {
-        SteamLayerPacketHandler.handler = NetworkRegistry.ChannelBuilder
-                .named(new ResourceLocation("steamlayer", "main"))
-                .networkProtocolVersion(() -> "1")
-                .clientAcceptedVersions("1"::equals)
-                .serverAcceptedVersions("1"::equals)
-                .simpleChannel();
-
         registerPackets();
         PacketHandler.getInstance().register(ContainerSyncPacket.class);
 
-        MinecraftForge.EVENT_BUS.register(new TickHandler());
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
-    }
-
-    @SubscribeEvent
-    public void onServerStopping(FMLServerStoppingEvent e)
-    {
-        GridManager.onServerShutdown();
+        ClientTickEvents.START_WORLD_TICK.register(world -> ClientTickCounter.instance().tick(world));
+        ServerTickEvents.END_SERVER_TICK.register(server -> TileTickHandler.tick());
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> GridManager.onServerShutdown());
     }
 
     private void registerPackets()
     {
-        SteamLayerPacketHandler.getHandler().registerMessage(0,
-                GenericPacket.class,
-                GenericPacket::encode,
-                GenericPacket::decode,
-                GenericPacket::handle);
+        SteamLayerPacketHandler.registerServerBoundHandler(GENERIC_PACKET,
+                (buffer, context) -> GenericPacket.handle(GenericPacket.decode(buffer), context));
 
-        SteamLayerPacketHandler.getHandler().registerMessage(1,
-                ServerActionHolderPacket.class,
-                ServerActionHolderPacket::encode,
-                ServerActionHolderPacket::decode,
-                ServerActionHolderPacket::handle);
+        SteamLayerPacketHandler.registerClientBoundHandler(GENERIC_PACKET,
+                (buffer, context) -> GenericPacket.handle(GenericPacket.decode(buffer), context));
 
-        SteamLayerPacketHandler.getHandler().registerMessage(2,
-                ClientActionHolderPacket.class,
-                ClientActionHolderPacket::encode,
-                ClientActionHolderPacket::decode,
-                ClientActionHolderPacket::handle);
+        SteamLayerPacketHandler.registerServerBoundHandler(SERVER_ACTION_HOLDER,
+                (buffer, context) -> ServerActionHolderPacket.handle(ServerActionHolderPacket.decode(buffer), context));
 
-        SteamLayerPacketHandler.getHandler().registerMessage(3,
-                TileSyncRequestPacket.class,
-                TileSyncRequestPacket::encode,
-                TileSyncRequestPacket::decode,
-                TileSyncRequestPacket::handle);
+        SteamLayerPacketHandler.registerClientBoundHandler(CLIENT_ACTION_HOLDER,
+                (buffer, context) -> ClientActionHolderPacket.handle(ClientActionHolderPacket.decode(buffer), context));
+
+        SteamLayerPacketHandler.registerServerBoundHandler(TILE_SYNC_REQUEST,
+                (buffer, context) -> TileSyncRequestPacket.handle(TileSyncRequestPacket.decode(buffer), context));
     }
 }

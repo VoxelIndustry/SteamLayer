@@ -1,18 +1,18 @@
 package net.voxelindustry.steamlayer.network.action;
 
 import lombok.Data;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.tileentity.TileEntity;
 
 @Data
 public class ActionSender
 {
     private PlayerEntity player;
-    private TileEntity   receiver;
+    private BlockEntity  receiver;
     private int          actionID;
     private boolean      answered;
 
-    public ActionSender(PlayerEntity player, TileEntity receiver, int actionID)
+    public ActionSender(PlayerEntity player, BlockEntity receiver, int actionID)
     {
         this.player = player;
         this.receiver = receiver;
@@ -21,7 +21,7 @@ public class ActionSender
 
     public ClientActionBuilder answer()
     {
-        this.answered = true;
+        answered = true;
         return new ClientActionBuilder(actionID, receiver).toPlayer(player);
     }
 }

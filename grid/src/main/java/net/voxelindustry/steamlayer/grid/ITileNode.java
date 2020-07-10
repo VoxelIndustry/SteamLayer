@@ -3,8 +3,6 @@ package net.voxelindustry.steamlayer.grid;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import javax.annotation.Nullable;
-
 public interface ITileNode<T extends CableGrid>
 {
     BlockPos getBlockPos();
@@ -21,16 +19,15 @@ public interface ITileNode<T extends CableGrid>
 
     GridManager getGridManager();
 
-    @Nullable
     default T getGridObject()
     {
         try
         {
-            T grid = (T) getGridManager().getGrid(this.getGrid());
+            T grid = (T) getGridManager().getGrid(getGrid());
 
             if (grid != null)
                 return grid;
-        } catch (final ClassCastException e)
+        } catch (ClassCastException e)
         {
             e.printStackTrace();
         }
@@ -46,7 +43,7 @@ public interface ITileNode<T extends CableGrid>
 
     default boolean hasGrid()
     {
-        return this.getGrid() != -1;
+        return getGrid() != -1;
     }
 
     int[] getConnections();

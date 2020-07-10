@@ -1,11 +1,9 @@
 package net.voxelindustry.steamlayer.container;
 
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.items.wrapper.PlayerInvWrapper;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.screen.ScreenHandlerType;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
 import net.voxelindustry.steamlayer.container.sync.SyncedValue;
 import org.apache.commons.lang3.Range;
@@ -13,7 +11,6 @@ import org.apache.commons.lang3.Range;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -30,7 +27,7 @@ import java.util.function.Predicate;
  */
 public class ContainerBuilder
 {
-    private final ContainerType<BuiltContainer> type;
+    private final ScreenHandlerType<BuiltContainer> type;
 
     private final PlayerEntity            player;
     private       Predicate<PlayerEntity> canInteract = player -> true;
@@ -38,16 +35,14 @@ public class ContainerBuilder
     final List<ListenerSlot>   slots;
     final List<Range<Integer>> playerInventoryRanges, tileInventoryRanges;
 
-    final List<Consumer<CraftingInventory>> craftEvents;
-
     private ContainerEvent       closeEvent;
     private List<ContainerEvent> tickEvents;
 
     List<SyncedValue>        syncs;
     Map<String, SyncedValue> namedSyncs;
 
-    List<ItemStackHandler> inventories;
-    TileEntity             mainTile;
+    List<Inventory> inventories;
+    BlockEntity     mainTile;
 
     /**
      * Creates a ContainerBuilder instance to produce a BuiltContainer
@@ -61,7 +56,7 @@ public class ContainerBuilder
      * @param type   the ContainerType corresponding to the produced Container to be used as an identifier.
      * @param player the player instance to which the Container is to be attached.
      */
-    public ContainerBuilder(ContainerType<BuiltContainer> type, PlayerEntity player)
+    public ContainerBuilder(ScreenHandlerType<BuiltContainer> type, PlayerEntity player)
     {
         this.type = type;
         this.player = player;
@@ -70,7 +65,6 @@ public class ContainerBuilder
         playerInventoryRanges = new ArrayList<>();
         tileInventoryRanges = new ArrayList<>();
 
-        craftEvents = new ArrayList<>();
         tickEvents = new ArrayList<>();
 
         inventories = new ArrayList<>();
@@ -97,7 +91,7 @@ public class ContainerBuilder
      */
     public ContainerPlayerInventoryBuilder player(PlayerEntity player)
     {
-        return new ContainerPlayerInventoryBuilder(this, player, new PlayerInvWrapper(player.inventory));
+        return new ContainerPlayerInventoryBuilder(this, player, player.inventory);
     }
 
     public ContainerSyncBuilder sync()
@@ -152,8 +146,6 @@ public class ContainerBuilder
 
         if (syncs != null)
             built.setSyncables(syncs, namedSyncs);
-        if (!craftEvents.isEmpty())
-            built.addCraftEvents(craftEvents);
 
         slots.forEach(built::addSlot);
 

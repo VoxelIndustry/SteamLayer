@@ -1,28 +1,15 @@
-buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-        maven { url = "http://files.minecraftforge.net/maven" }
-        maven {
-            url 'http://maven.ferenyr.info/artifactory/plugins-release'
-            credentials {
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-            }
-        }
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
-    }
-}
-
 plugins {
-    id "com.jfrog.artifactory" version "4.7.5"
+    id "com.jfrog.artifactory" version "4.16.1"
+    id "fabric-loom" version "0.4-SNAPSHOT"
+    id "maven-publish"
 }
 
-subprojects {
+apply plugin: 'java-library'
+apply plugin: 'com.jfrog.artifactory'
+
+allprojects {
     apply plugin: 'maven-publish'
-    apply plugin: 'net.minecraftforge.gradle'
+    apply plugin: 'fabric-loom'
 
     version = project.steamlayer_version
     group = "net.voxelindustry"
@@ -33,72 +20,46 @@ subprojects {
         sourceCompatibility = targetCompatibility = "1.8"
     }
 
-    def reobfFile = file("$buildDir/reobfJar/output.jar")
-    def reobfArtifact = artifacts.add('default', reobfFile) {
-        type 'jar'
-        builtBy 'reobfJar'
-    }
-
     repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
     }
 
     dependencies {
-        minecraft "net.minecraftforge:forge:${project.forge_version}"
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings "net.fabricmc:yarn:${rootProject.yarn_mappings}:v2"
+        modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
 
-        compileOnly 'org.projectlombok:lombok:1.18.10'
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
 
-        testCompile 'org.assertj:assertj-core-java8:1.0.0m1'
-        testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.8.47'
+        compileOnly 'org.projectlombok:lombok:1.18.12'
+        annotationProcessor 'org.projectlombok:lombok:1.18.12'
+
+        testCompile('org.junit.jupiter:junit-jupiter-api:5.6.1')
+        testCompile('org.mockito:mockito-core:3.3.3')
+        testCompile('org.mockito:mockito-junit-jupiter:3.3.3')
+        testCompile('org.assertj:assertj-core:3.15.0')
+
+        testRuntime('org.junit.jupiter:junit-jupiter-engine:5.6.1')
     }
 
-    minecraft {
-        mappings channel: 'snapshot', version: '20190719-1.14.3'
+    processResources {
+        inputs.property "version", project.version
 
-        runs {
-            client {
-                workingDirectory project.file('run')
+        from(sourceSets.main.resources.srcDirs) {
+            include "fabric.mod.json"
+            expand "version": project.version
+        }
 
-                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-                property 'forge.logging.console.level', 'debug'
-
-                mods {
-                    steamlayer {
-                        source sourceSets.main
-                    }
-                }
-            }
-
-            server {
-                workingDirectory project.file('run')
-
-                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-                property 'forge.logging.console.level', 'debug'
-
-                mods {
-                    steamlayer {
-                        source sourceSets.main
-                    }
-                }
-            }
-
-            data {
-                workingDirectory project.file('run')
-
-                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-                property 'forge.logging.console.level', 'debug'
-
-                args '--mod', 'steamlayer', '--mod', '--output', file('src/generated/resources/')
-
-                mods {
-                    steamlayer {
-                        source sourceSets.main
-                    }
-                }
-            }
+        from(sourceSets.main.resources.srcDirs) {
+            exclude "fabric.mod.json"
         }
     }
 }
+
+archivesBaseName = "steamlayer"
 
 project('common') {
     archivesBaseName = "steamlayer-common"
@@ -142,13 +103,13 @@ project('tile') {
     }
 }
 
-project('multiblock') {
+/*project('multiblock') {
     archivesBaseName = "steamlayer-multiblock"
 
     dependencies {
         compile project(':tile')
     }
-}
+}*/
 
 project('grid') {
     archivesBaseName = "steamlayer-grid"
@@ -167,121 +128,117 @@ project('recipe') {
 }
 
 project('core') {
-    apply plugin: 'com.jfrog.artifactory'
-
     archivesBaseName = "steamlayer-core"
 
     dependencies {
         compile project(':container')
         compile project(':tile')
         compile project(':grid')
-        compile project(':multiblock')
         compile project(':recipe')
     }
-
-    artifactory {
-        contextUrl = "${artifactory_contextUrl}"
-        publish {
-            repository {
-                repoKey = 'voxelindustry'
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-                maven = true
-            }
-            defaults {
-                publications('mavenJava')
-            }
-        }
-    }
-
-    task siblingBuild {
-        dependsOn(":common:build")
-        dependsOn(":container:build")
-        dependsOn(":grid:build")
-        dependsOn(":inventory:build")
-        dependsOn(":multiblock:build")
-        dependsOn(":network:build")
-        dependsOn(":recipe:build")
-        dependsOn(":tile:build")
-        dependsOn(":core:jar")
-    }
-
-    task allJar(type: Jar, dependsOn: siblingBuild) {
-        baseName = 'allJar'
-        from project(':common').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':container').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':grid').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':inventory').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':multiblock').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':network').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':recipe').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':tile').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':core').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-
-        manifest {
-            attributes([
-                    "Specification-Title"     : "steamlayer-core",
-                    "Specification-Vendor"    : "steamlayer-core",
-                    "Specification-Version"   : "1",
-                    "Implementation-Title"    : project.name,
-                    "Implementation-Version"  : "${version}",
-                    "Implementation-Vendor"   : "voxelindustry",
-                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-            ])
-        }
-    }
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives allJar
-    }
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                artifactId archivesBaseName
-                version "${project.steamlayer_version}"
-                groupId "net.voxelindustry"
-
-                artifact source: allJar, extension: 'jar'
-                artifact source: sourcesJar, classifier: 'sources', extension: 'jar'
-
-                // Allows the maven pom file to be modified.
-                pom.withXml {
-                    // Go through all the dependencies.
-                    asNode().dependencies.dependency.each { dep ->
-                        println 'Deleting artifact ' + dep.artifactId.last().value().last() + ' from maven dependencies.'
-                        assert dep.parent().remove(dep)
-                    }
-                }
-            }
-        }
-    }
-
-    artifactoryPublish.dependsOn build
 }
 
 subprojects.each { subproject -> evaluationDependsOn(subproject.path) }
+subprojects.each { remapJar.dependsOn("${it.path}:remapJar") }
+
+artifactory {
+    contextUrl = "${artifactory_contextUrl}"
+    publish {
+        repository {
+            repoKey = 'voxelindustry'
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+            maven = true
+        }
+        defaults {
+            publications('mavenJava')
+            publishArtifacts = true
+            publishPom = true
+        }
+    }
+}
+
+task siblingBuild {
+    dependsOn(":common:build")
+    dependsOn(":container:build")
+    dependsOn(":grid:build")
+    dependsOn(":inventory:build")
+    dependsOn(":network:build")
+    dependsOn(":recipe:build")
+    dependsOn(":tile:build")
+    // dependsOn(":multiblock:build")
+    dependsOn(":core:build")
+}
+
+task allJar(type: Jar, dependsOn: siblingBuild) {
+    from project(':common').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+    from project(':container').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+    from project(':grid').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+    from project(':inventory').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+/*        from project(':multiblock').configurations.archives.allArtifacts.files.collect {
+            zipTree(it)
+        }*/
+    from project(':network').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+    from project(':recipe').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+    from project(':tile').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+    from project(':core').configurations.archives.allArtifacts.files.collect {
+        zipTree(it)
+    }
+
+    manifest {
+        attributes([
+                "Specification-Title"     : "steamlayer-core",
+                "Specification-Vendor"    : "steamlayer-core",
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : "${version}",
+                "Implementation-Vendor"   : "voxelindustry",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact(file("${project.buildDir}/libs/${archivesBaseName}-${project.steamlayer_version}.jar")) {
+                builtBy(remapJar)
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}
+
+dependencies {
+    afterEvaluate {
+        subprojects.each {
+            api it
+            include it
+        }
+    }
+}
+
+tasks.publish.dependsOn build
+artifactoryPublish.dependsOn build

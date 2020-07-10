@@ -1,26 +1,25 @@
 package net.voxelindustry.steamlayer.network.action;
 
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fml.network.PacketDistributor;
-import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.voxelindustry.steamlayer.network.packet.ClientActionHolderPacket;
+
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.*;
 
 public class ClientActionBuilder
 {
-    private TileEntity   sender;
+    private BlockEntity  sender;
     private PlayerEntity player;
-    private CompoundNBT  payload;
+    private CompoundTag  payload;
     private int          replyID;
 
-    public ClientActionBuilder(int replyID, TileEntity sender)
+    public ClientActionBuilder(int replyID, BlockEntity sender)
     {
         this.sender = sender;
-        payload = new CompoundNBT();
+        payload = new CompoundTag();
         this.replyID = replyID;
     }
 
@@ -68,18 +67,15 @@ public class ClientActionBuilder
 
     public ClientActionBuilder withItemStack(String key, ItemStack value)
     {
-        payload.put(key, value.write(new CompoundNBT()));
-        return this;
-    }
-
-    public ClientActionBuilder withFluidStack(String key, FluidStack value)
-    {
-        payload.put(key, value.writeToNBT(new CompoundNBT()));
+        payload.put(key, value.toTag(new CompoundTag()));
         return this;
     }
 
     public void send()
     {
-        SteamLayerPacketHandler.getHandler().send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new ClientActionHolderPacket(replyID, payload));
+        ClientActionHolderPacket packet = new ClientActionHolderPacket(replyID, payload);
+        sendToPlayer(
+                createClientBoundPacket(CLIENT_ACTION_HOLDER, buffer -> ClientActionHolderPacket.encode(packet, buffer)),
+                (ServerPlayerEntity) player);
     }
 }

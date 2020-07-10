@@ -2,21 +2,23 @@ package net.voxelindustry.steamlayer.common.utils;
 
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.collection.DefaultedList;
 import org.apache.commons.lang3.StringUtils;
 
 public class ItemUtils
 {
     public static boolean deepEquals(ItemStack a, ItemStack b)
     {
-        return a.isItemEqual(b) && ItemStack.areItemStackTagsEqual(a, b);
+        return a.isItemEqual(b) && ItemStack.areTagsEqual(a, b);
     }
 
+    @Deprecated
     public static boolean deepEqualsWithAmount(ItemStack a, ItemStack b)
     {
-        return ItemStack.areItemStacksEqual(a, b);
+        return ItemStack.areEqual(a, b);
     }
 
     public static ItemStack copyWithSize(ItemStack stack, int amount)
@@ -36,7 +38,7 @@ public class ItemUtils
         if (stack1.isEmpty() || stack2.isEmpty())
             return true;
 
-        return stack1.getCount() + stack2.getCount() <= stack1.getMaxStackSize()
+        return stack1.getCount() + stack2.getCount() <= stack1.getMaxCount()
                 && ItemUtils.deepEquals(stack1, stack2);
     }
 
@@ -46,18 +48,18 @@ public class ItemUtils
         {
             if (doMerge)
             {
-                dest.grow(from.getCount());
+                dest.increment(from.getCount());
                 from.setCount(0);
             }
             return 0;
         }
         if ((ItemUtils.deepEquals(dest, from)))
         {
-            int merged = Math.min(dest.getMaxStackSize() - dest.getCount(), from.getCount());
+            int merged = Math.min(dest.getMaxCount() - dest.getCount(), from.getCount());
             if (doMerge)
             {
-                dest.grow(merged);
-                from.shrink(merged);
+                dest.increment(merged);
+                from.decrement(merged);
             }
             return merged;
         }
@@ -67,9 +69,9 @@ public class ItemUtils
     public static boolean hasPlayerEnough(PlayerInventory player, ItemStack stack, boolean deepEquals)
     {
         int needed = stack.getCount();
-        for (int i = 0; i < player.getSizeInventory(); ++i)
+        for (int i = 0; i < player.size(); ++i)
         {
-            ItemStack itemstack = player.getStackInSlot(i);
+            ItemStack itemstack = player.getStack(i);
 
             if (deepEquals && ItemUtils.deepEquals(stack, itemstack)
                     || !deepEquals && ItemStack.areItemsEqual(stack, itemstack))
@@ -82,42 +84,47 @@ public class ItemUtils
         return false;
     }
 
-    public static int drainPlayer(PlayerInventory player, ItemStack stack)
+    public static int drainPlayer(ServerPlayerEntity player, ItemStack stack)
     {
-        return player.clearMatchingItems(candidate -> deepEquals(candidate, stack), stack.getCount());
+        int removed = player.inventory.method_29280(candidate -> deepEquals(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.method_29281());
+        player.currentScreenHandler.sendContentUpdates();
+        player.playerScreenHandler.onContentChanged(player.inventory);
+        player.updateCursorStack();
+
+        return removed;
     }
 
-    public static CompoundNBT saveAllItems(CompoundNBT tag, NonNullList<ItemStack> list)
+    public static CompoundTag saveAllItems(CompoundTag tag, DefaultedList<ItemStack> list)
     {
         if (list.size() > Byte.MAX_VALUE)
             throw new RuntimeException("Cannot save more than " + Byte.MAX_VALUE + " entries! size=" + list.size());
 
-        ListNBT nbttaglist = new ListNBT();
+        ListTag tagList = new ListTag();
 
         for (int i = 0; i < list.size(); ++i)
         {
             ItemStack itemstack = list.get(i);
 
-            CompoundNBT nbttagcompound = new CompoundNBT();
+            CompoundTag nbttagcompound = new CompoundTag();
             nbttagcompound.putByte("Slot", (byte) i);
-            itemstack.write(nbttagcompound);
-            nbttaglist.add(nbttagcompound);
+            itemstack.toTag(nbttagcompound);
+            tagList.add(nbttagcompound);
         }
-        tag.put("Items", nbttaglist);
+        tag.put("Items", tagList);
         return tag;
     }
 
-    public static void loadAllItems(CompoundNBT tag, NonNullList<ItemStack> list)
+    public static void loadAllItems(CompoundTag tag, DefaultedList<ItemStack> list)
     {
-        ListNBT nbttaglist = tag.getList("Items", 10);
+        ListTag tagList = tag.getList("Items", 10);
 
-        for (int i = 0; i < nbttaglist.size(); ++i)
+        for (int i = 0; i < tagList.size(); ++i)
         {
-            CompoundNBT nbttagcompound = nbttaglist.getCompound(i);
-            int j = nbttagcompound.getByte("Slot") & 255;
+            CompoundTag compoundTag = tagList.getCompound(i);
+            int j = compoundTag.getByte("Slot") & 255;
 
             if (j >= 0 && j < list.size())
-                list.set(j, ItemStack.read(nbttagcompound));
+                list.set(j, ItemStack.fromTag(compoundTag));
         }
     }
 }

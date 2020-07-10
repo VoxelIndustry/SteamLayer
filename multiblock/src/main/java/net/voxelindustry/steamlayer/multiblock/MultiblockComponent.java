@@ -2,14 +2,14 @@ package net.voxelindustry.steamlayer.multiblock;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Direction.Axis;
-import net.minecraft.util.Direction.AxisDirection;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Direction.AxisDirection;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.math.shapes.VoxelShapes;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.voxelindustry.steamlayer.tile.descriptor.ITileComponent;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
 
@@ -45,13 +45,13 @@ public class MultiblockComponent implements ITileComponent
             CORE_OFFSET.put(facing, internalGetCoreOffset(facing));
 
             if (facing.getAxis() == Axis.Z)
-                CACHED_AABB.put(facing, VoxelShapes.create(
-                        new AxisAlignedBB(-getOffsetX(), -getOffsetY(), -getOffsetZ(),
+                CACHED_AABB.put(facing, VoxelShapes.cuboid(
+                        new Box(-getOffsetX(), -getOffsetY(), -getOffsetZ(),
                                 getWidth() - getOffsetX(), getHeight() - getOffsetY(),
                                 getLength() - getOffsetZ()).offset(CORE_OFFSET.get(facing))));
             else
-                CACHED_AABB.put(facing, VoxelShapes.create(
-                        new AxisAlignedBB(-getOffsetZ(), -getOffsetY(), -getOffsetX(),
+                CACHED_AABB.put(facing, VoxelShapes.cuboid(
+                        new Box(-getOffsetZ(), -getOffsetY(), -getOffsetX(),
                                 getLength() - getOffsetZ(), getHeight() - getOffsetY(),
                                 getWidth() - getOffsetX()).offset(CORE_OFFSET.get(facing))));
         }
@@ -59,21 +59,21 @@ public class MultiblockComponent implements ITileComponent
 
     private BlockPos internalGetCoreOffset(Direction facing)
     {
-        BlockPos rtn = BlockPos.ZERO;
+        BlockPos rtn = BlockPos.ORIGIN;
 
         if (getLength() % 2 == 0 || getWidth() % 2 == 0)
         {
             if (getWidth() % 2 == 0 && facing.getAxis() == Axis.Z
-                    && facing.getAxisDirection() == AxisDirection.NEGATIVE)
+                    && facing.getDirection() == AxisDirection.NEGATIVE)
                 rtn = rtn.add(-1, 0, 0);
             if (getWidth() % 2 == 0 && facing.getAxis() == Axis.X
-                    && facing.getAxisDirection() == AxisDirection.POSITIVE)
+                    && facing.getDirection() == AxisDirection.POSITIVE)
                 rtn = rtn.add(0, 0, -1);
             if (getLength() % 2 == 0 && facing.getAxis() == Axis.Z
-                    && facing.getAxisDirection() == AxisDirection.NEGATIVE)
+                    && facing.getDirection() == AxisDirection.NEGATIVE)
                 rtn = rtn.add(0, 0, -1);
             if (getLength() % 2 == 0 && facing.getAxis() == Axis.X
-                    && facing.getAxisDirection() == AxisDirection.NEGATIVE)
+                    && facing.getDirection() == AxisDirection.NEGATIVE)
                 rtn = rtn.add(-1, 0, 0);
         }
         return rtn;
@@ -95,12 +95,12 @@ public class MultiblockComponent implements ITileComponent
 
         pos = pos.add(getCoreOffset(facing));
         if (facing.getAxis() == Axis.Z)
-            searchables = BlockPos.getAllInBox(
+            searchables = BlockPos.stream(
                     pos.subtract(new Vec3i(getOffsetX(), getOffsetY(), getOffsetZ())),
                     pos.add(getWidth() - 1 - getOffsetX(), getHeight() - 1 - getOffsetY(),
                             getLength() - 1 - getOffsetZ()));
         else
-            searchables = BlockPos.getAllInBox(
+            searchables = BlockPos.stream(
                     pos.subtract(new Vec3i(getOffsetZ(), getOffsetY(), getOffsetX())),
                     pos.add(getLength() - 1 - getOffsetZ(), getHeight() - 1 - getOffsetY(),
                             getWidth() - 1 - getOffsetX()));
@@ -117,14 +117,12 @@ public class MultiblockComponent implements ITileComponent
             if (resultFacing.getAxis().isHorizontal())
                 resultFacing = resultFacing.rotateY();
             resultPos = new BlockPos(-resultPos.getZ(), resultPos.getY(), resultPos.getX());
-        }
-        else if (orientation == Direction.WEST)
+        } else if (orientation == Direction.WEST)
         {
             if (resultFacing.getAxis().isHorizontal())
                 resultFacing = resultFacing.rotateYCCW();
             resultPos = new BlockPos(resultPos.getZ(), resultPos.getY(), -resultPos.getX());
-        }
-        else if (orientation == Direction.NORTH)
+        } else if (orientation == Direction.NORTH)
         {
             if (resultFacing.getAxis().isHorizontal())
                 resultFacing = resultFacing.getOpposite();
@@ -143,14 +141,12 @@ public class MultiblockComponent implements ITileComponent
             if (resultFacing.getAxis().isHorizontal())
                 resultFacing = resultFacing.rotateYCCW();
             resultPos = new BlockPos(resultPos.getZ(), resultPos.getY(), -resultPos.getX());
-        }
-        else if (orientation == Direction.WEST)
+        } else if (orientation == Direction.WEST)
         {
             if (resultFacing.getAxis().isHorizontal())
                 resultFacing = resultFacing.rotateY();
             resultPos = new BlockPos(-resultPos.getZ(), resultPos.getY(), resultPos.getX());
-        }
-        else if (orientation == Direction.NORTH)
+        } else if (orientation == Direction.NORTH)
         {
             if (resultFacing.getAxis().isHorizontal())
                 resultFacing = resultFacing.getOpposite();

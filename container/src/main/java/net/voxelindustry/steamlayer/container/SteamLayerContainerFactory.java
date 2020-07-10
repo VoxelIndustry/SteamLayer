@@ -1,22 +1,16 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.client.Minecraft;
+import net.fabricmc.fabric.api.screenhandler.v1.ScreenHandlerRegistry.ExtendedClientHandlerFactory;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.IContainerFactory;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.screen.NamedScreenHandlerFactory;
 
-public class SteamLayerContainerFactory<T extends BuiltContainer> implements IContainerFactory<T>
+public class SteamLayerContainerFactory<T extends BuiltContainer> implements ExtendedClientHandlerFactory<T>
 {
-    public static <T extends BuiltContainer> ContainerType<T> create()
-    {
-        return new ContainerType<>(new SteamLayerContainerFactory<>());
-    }
-
     @Override
-    public T create(int windowId, PlayerInventory playerInv, PacketBuffer extraData)
+    public T create(int syncID, PlayerInventory playerInventory, PacketByteBuf extraData)
     {
-        return (T) ((INamedContainerProvider) Minecraft.getInstance().world.getTileEntity(extraData.readBlockPos())).createMenu(windowId, playerInv, playerInv.player);
+        return (T) ((NamedScreenHandlerFactory) MinecraftClient.getInstance().world.getBlockEntity(extraData.readBlockPos())).createMenu(syncID, playerInventory, playerInventory.player);
     }
 }

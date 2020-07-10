@@ -1,89 +1,97 @@
 package net.voxelindustry.steamlayer.inventory;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.items.IItemHandlerModifiable;
 
-import javax.annotation.Nonnull;
-
-@AllArgsConstructor
 @Getter
-public class MappedInventoryHandler implements IItemHandlerModifiable
+public class MappedInventoryHandler implements Inventory
 {
-    private final IItemHandlerModifiable compose;
-    private final int[]                  slots;
-    private final boolean                acceptInput;
-    private final boolean                acceptOutput;
+    private final Inventory compose;
+    private final int[]     slots;
 
-    @Override
-    public void setStackInSlot(int slot, @Nonnull ItemStack stack)
+    public MappedInventoryHandler(Inventory compose, int[] slots)
     {
-        validateSlotIndex(slot);
-
-        if (!acceptInput)
-            return;
-        this.compose.setStackInSlot(map(slot), stack);
+        this.compose = compose;
+        this.slots = slots;
     }
 
     @Override
-    public int getSlots()
+    public void setStack(int slot, ItemStack stack)
+    {
+        validateSlotIndex(slot);
+
+        compose.setStack(map(slot), stack);
+    }
+
+    @Override
+    public void markDirty()
+    {
+        compose.markDirty();
+    }
+
+    @Override
+    public boolean canPlayerUse(PlayerEntity player)
+    {
+        return compose.canPlayerUse(player);
+    }
+
+    @Override
+    public int size()
     {
         return slots.length;
     }
 
-    @Nonnull
     @Override
-    public ItemStack getStackInSlot(int slot)
+    public boolean isEmpty()
     {
-        validateSlotIndex(slot);
-        return this.compose.getStackInSlot(map(slot));
-    }
-
-    @Nonnull
-    @Override
-    public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate)
-    {
-        validateSlotIndex(slot);
-        if (!acceptInput)
-            return stack;
-
-        return this.compose.insertItem(map(slot), stack, simulate);
-    }
-
-    @Nonnull
-    @Override
-    public ItemStack extractItem(int slot, int amount, boolean simulate)
-    {
-        validateSlotIndex(slot);
-        if (!acceptOutput)
-            return ItemStack.EMPTY;
-
-        return this.compose.extractItem(map(slot), amount, simulate);
+        return compose.isEmpty();
     }
 
     @Override
-    public int getSlotLimit(int slot)
+    public ItemStack getStack(int slot)
     {
         validateSlotIndex(slot);
-        return this.compose.getSlotLimit(map(slot));
+        return compose.getStack(map(slot));
     }
 
     @Override
-    public boolean isItemValid(int slot, @Nonnull ItemStack stack)
+    public ItemStack removeStack(int slot, int amount)
     {
         validateSlotIndex(slot);
-        return this.compose.isItemValid(map(slot), stack);
+        return compose.removeStack(map(slot), amount);
+    }
+
+    @Override
+    public ItemStack removeStack(int slot)
+    {
+        validateSlotIndex(slot);
+        return compose.removeStack(map(slot));
+    }
+
+    @Override
+    public boolean isValid(int slot, ItemStack stack)
+    {
+        validateSlotIndex(slot);
+        return compose.isValid(map(slot), stack);
     }
 
     private int map(int slot)
     {
-        return this.slots[slot];
+        return slots[slot];
     }
 
     private void validateSlotIndex(int slot)
     {
         if (slot < 0 || slot >= slots.length)
             throw new RuntimeException("Slot " + slot + " not in valid range - [0," + slots.length + ")");
+    }
+
+    @Override
+    public void clear()
+    {
+        for (int slot : slots)
+            compose.removeStack(slot);
     }
 }

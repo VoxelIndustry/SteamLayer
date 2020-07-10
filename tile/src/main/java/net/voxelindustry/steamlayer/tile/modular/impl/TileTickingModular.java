@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
-import net.minecraft.tileentity.ITickableTileEntity;
-import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.util.Tickable;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
 import net.voxelindustry.steamlayer.tile.modular.ITickableModule;
 import net.voxelindustry.steamlayer.tile.modular.TileModule;
@@ -9,16 +9,16 @@ import net.voxelindustry.steamlayer.tile.modular.TileModule;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TileTickingModular extends TileModular implements ITickableTileEntity
+public class TileTickingModular extends TileModular implements Tickable
 {
     private List<ITickableModule> tickeds;
 
-    public TileTickingModular(String modid, TileEntityType<? extends TileTickingModular> type, TileDescriptor descriptor)
+    public TileTickingModular(String modid, BlockEntityType<? extends TileTickingModular> type, TileDescriptor descriptor)
     {
         super(modid, type, descriptor);
     }
 
-    public TileTickingModular(TileEntityType<? extends TileTickingModular> type)
+    public TileTickingModular(BlockEntityType<? extends TileTickingModular> type)
     {
         this(null, type, null);
     }
@@ -26,11 +26,11 @@ public class TileTickingModular extends TileModular implements ITickableTileEnti
     @Override
     public void tick()
     {
-        if (this.getDescriptor() != null)
+        if (getDescriptor() != null)
         {
-            this.syncLock();
-            this.getTickeds().forEach(ITickableModule::tick);
-            this.releaseSyncLock(true);
+            syncLock();
+            getTickeds().forEach(ITickableModule::tick);
+            releaseSyncLock(true);
         }
     }
 
@@ -40,7 +40,7 @@ public class TileTickingModular extends TileModular implements ITickableTileEnti
         super.addModule(module);
 
         if (module instanceof ITickableModule)
-            this.getTickeds().add((ITickableModule) module);
+            getTickeds().add((ITickableModule) module);
     }
 
     @Override
@@ -49,20 +49,20 @@ public class TileTickingModular extends TileModular implements ITickableTileEnti
         super.removeModule(module);
 
         if (module instanceof ITickableModule)
-            this.getTickeds().remove(module);
+            getTickeds().remove(module);
     }
 
     @Override
     protected void reloadModules()
     {
-        this.getTickeds().clear();
+        getTickeds().clear();
         super.reloadModules();
     }
 
     private List<ITickableModule> getTickeds()
     {
-        if (this.tickeds == null)
-            this.tickeds = new ArrayList<>();
-        return this.tickeds;
+        if (tickeds == null)
+            tickeds = new ArrayList<>();
+        return tickeds;
     }
 }

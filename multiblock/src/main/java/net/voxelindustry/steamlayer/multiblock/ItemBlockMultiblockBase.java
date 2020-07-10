@@ -1,63 +1,62 @@
 package net.voxelindustry.steamlayer.multiblock;
 
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.SoundType;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.BlockItem;
-import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.SoundCategory;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 
 public class ItemBlockMultiblockBase extends BlockItem
 {
-    public ItemBlockMultiblockBase(Block block, Item.Properties builder)
+    public ItemBlockMultiblockBase(Block block, Item.Settings builder)
     {
         super(block, builder);
     }
 
     @Override
-    public ActionResultType onItemUse(ItemUseContext context)
+    public ActionResult useOnBlock(ItemUsageContext context)
     {
-        BlockState blockState = context.getWorld().getBlockState(context.getPos());
+        BlockState blockState = context.getWorld().getBlockState(context.getBlockPos());
         Block block = blockState.getBlock();
-        BlockPos pos = context.getPos();
+        BlockPos pos = context.getBlockPos();
 
-        BlockItemUseContext blockContext = getBlockItemUseContext(new BlockItemUseContext(context));
-        if (!block.isReplaceable(blockState, blockContext))
-            pos = pos.offset(context.getFace());
+        ItemPlacementContext blockContext = getPlacementContext(new ItemPlacementContext(context));
+        if (!block.canReplace(blockState, blockContext))
+            pos = pos.offset(context.getSide());
 
-        ItemStack itemstack = context.getPlayer().getHeldItem(context.getHand());
-        final BlockMultiblockBase base = (BlockMultiblockBase) this.getBlock();
+        ItemStack itemstack = context.getPlayer().getStackInHand(context.getHand());
+        BlockMultiblockBase base = (BlockMultiblockBase) getBlock();
 
-        if (!itemstack.isEmpty() && context.getPlayer().canPlayerEdit(pos, context.getFace(), itemstack)
+        if (!itemstack.isEmpty() && context.getPlayer().canPlaceOn(pos, context.getSide(), itemstack)
                 && base.canPlaceBlockAt(context.getWorld(), pos, context.getPlayer().getHorizontalFacing().getOpposite()))
         {
-            BlockState state = this.getBlock().getStateForPlacement(new BlockItemUseContext(context));
+            BlockState state = ((BlockMultiblockBase<?>) getBlock()).getStateForPlacement(new BlockItemUseContext(context));
 
-            if (placeBlock(blockContext, state))
+            if (place(blockContext, state))
             {
                 BlockState currentState = context.getWorld().getBlockState(pos);
 
-                this.onBlockPlaced(pos, context.getWorld(), context.getPlayer(), itemstack, currentState);
-                block.onBlockPlacedBy(context.getWorld(), pos, currentState, context.getPlayer(), itemstack);
+                postPlacement(pos, context.getWorld(), context.getPlayer(), itemstack, currentState);
+                block.onPlaced(context.getWorld(), pos, currentState, context.getPlayer(), itemstack);
 
-                SoundType soundtype = currentState.getSoundType(context.getWorld(), pos, context.getPlayer());
-                context.getWorld().playSound(context.getPlayer(), pos, soundtype.getPlaceSound(), SoundCategory.BLOCKS,
-                        (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
-                itemstack.shrink(1);
+                BlockSoundGroup sound = currentState.getSoundGroup();
+                context.getWorld().playSound(context.getPlayer(), pos, sound.getPlaceSound(), SoundCategory.BLOCKS,
+                                             (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
+                itemstack.decrement(1);
 
                 if (context.getPlayer() instanceof ServerPlayerEntity)
-                    CriteriaTriggers.PLACED_BLOCK.trigger((ServerPlayerEntity) context.getPlayer(), pos, itemstack);
+                    Criteria.PLACED_BLOCK.trigger((ServerPlayerEntity) context.getPlayer(), pos, itemstack);
             }
-            return ActionResultType.SUCCESS;
-        }
-        else
-            return ActionResultType.FAIL;
+            return ActionResult.SUCCESS;
+        } else
+            return ActionResult.FAIL;
     }
 }

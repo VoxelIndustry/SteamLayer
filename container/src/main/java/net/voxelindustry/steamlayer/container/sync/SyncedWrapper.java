@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.container.sync;
 
-import io.netty.buffer.ByteBuf;
+import net.minecraft.network.PacketByteBuf;
 
 import java.util.Objects;
 
@@ -16,7 +16,7 @@ public abstract class SyncedWrapper<T>
         return original;
     }
 
-    public abstract void write(ByteBuf buffer, T value);
+    public abstract void write(PacketByteBuf buffer, T value);
 
-    public abstract T read(ByteBuf buffer);
+    public abstract T read(PacketByteBuf buffer);
 }

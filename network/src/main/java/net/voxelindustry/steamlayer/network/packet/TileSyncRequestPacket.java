@@ -1,49 +1,47 @@
 package net.voxelindustry.steamlayer.network.packet;
 
-import io.netty.buffer.ByteBuf;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import net.fabricmc.fabric.api.network.PacketContext;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.voxelindustry.steamlayer.network.ByteBufHelper;
+import net.minecraft.util.math.ChunkPos;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
-
-import java.util.function.Supplier;
 
 @AllArgsConstructor
 @NoArgsConstructor
 public class TileSyncRequestPacket
 {
-    private int      dimensionID;
+    private String   dimensionKey;
     private BlockPos pos;
 
-    public static TileSyncRequestPacket decode(ByteBuf buffer)
+    public static TileSyncRequestPacket decode(PacketByteBuf buffer)
     {
         TileSyncRequestPacket packet = new TileSyncRequestPacket();
-        packet.dimensionID = buffer.readInt();
-        packet.pos = ByteBufHelper.readPos(buffer);
+        packet.dimensionKey = buffer.readString();
+        packet.pos = buffer.readBlockPos();
 
         return packet;
     }
 
-    public static void encode(TileSyncRequestPacket packet, ByteBuf buffer)
+    public static void encode(TileSyncRequestPacket packet, PacketByteBuf buffer)
     {
-        buffer.writeInt(packet.dimensionID);
-        ByteBufHelper.writePos(buffer, packet.pos);
+        buffer.writeString(packet.dimensionKey);
+        buffer.writeBlockPos(packet.pos);
     }
 
-    public static void handle(TileSyncRequestPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
+    public static void handle(TileSyncRequestPacket packet, PacketContext context)
     {
-        NetworkEvent.Context context = contextSupplier.get();
-
-        context.enqueueWork(() ->
+        context.getTaskQueue().execute(() ->
         {
-            if (context.getSender().getEntityWorld().getDimension().getType().getId() == packet.dimensionID
-                    && context.getSender().getEntityWorld().isBlockLoaded(packet.pos) &&
-                    context.getSender().getEntityWorld().getTileEntity(packet.pos) != null)
-                NetworkHandler.sendTileToPlayer(context.getSender().getEntityWorld().getTileEntity(packet.pos),
-                        context.getSender());
+            ChunkPos chunkPos = new ChunkPos(packet.pos);
+
+            if (context.getPlayer().getEntityWorld().getRegistryKey().getValue().equals(packet.dimensionKey)
+                    && context.getPlayer().getEntityWorld().isChunkLoaded(chunkPos.x, chunkPos.z) &&
+                    context.getPlayer().getEntityWorld().getBlockEntity(packet.pos) != null)
+                NetworkHandler.sendTileToPlayer(context.getPlayer().getEntityWorld().getBlockEntity(packet.pos),
+                        (ServerPlayerEntity) context.getPlayer());
         });
-        context.setPacketHandled(true);
     }
 }

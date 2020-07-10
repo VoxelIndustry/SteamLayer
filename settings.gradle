@@ -1,10 +1,23 @@
+pluginManagement {
+    repositories {
+        jcenter()
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        gradlePluginPortal()
+    }
+}
+
 include 'common'
 include 'container'
 include 'inventory'
 include 'network'
 include 'tile'
 include 'grid'
+/*
 include 'multiblock'
+*/
 include 'recipe'
 
 include 'core'

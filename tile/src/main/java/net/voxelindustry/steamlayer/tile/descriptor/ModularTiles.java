@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.tile.descriptor;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.tile.descriptor.adapter.ITileComponentTypeAdapter;
 import net.voxelindustry.steamlayer.tile.descriptor.adapter.TileDescriptorTypeAdapter;
 import org.apache.commons.io.IOUtils;
@@ -14,7 +14,14 @@ import org.hjson.ParseException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ModularTiles
@@ -39,18 +46,18 @@ public class ModularTiles
     private Map<String, TileDescriptor>                               tiles    = new HashMap<>();
     private Map<Class<? extends ITileComponent>, Set<TileDescriptor>> subLists = new IdentityHashMap<>();
 
-    private List<ResourceLocation> toLoad = new ArrayList<>();
+    private List<Identifier> toLoad = new ArrayList<>();
 
     private ModularTiles(String modid)
     {
         this.modid = modid;
 
-        this.tileAdapter = new TileDescriptorTypeAdapter(this);
+        tileAdapter = new TileDescriptorTypeAdapter(this);
 
-        this.gson = new GsonBuilder()
+        gson = new GsonBuilder()
                 .registerTypeAdapter(TileDescriptor.class, new TileDescriptorTypeAdapter(this)).create();
 
-        this.logger = LogManager.getLogger("ModularTile-" + modid);
+        logger = LogManager.getLogger("ModularTile-" + modid);
     }
 
     public void preloadTiles()
@@ -73,17 +80,17 @@ public class ModularTiles
             subLists.clear();
         }
 
-        this.toLoad.forEach(rsl -> tiles.put(rsl.getPath(), loadTile(rsl)));
+        toLoad.forEach(rsl -> tiles.put(rsl.getPath(), loadTile(rsl)));
     }
 
-    public void addTile(ResourceLocation rsl)
+    public void addTile(Identifier rsl)
     {
-        this.toLoad.add(rsl);
+        toLoad.add(rsl);
     }
 
     public void registerAdapter(String key, ITileComponentTypeAdapter adapter)
     {
-        this.tileAdapter.addSubTypeAdapter(key, adapter);
+        tileAdapter.addSubTypeAdapter(key, adapter);
     }
 
     public Set<TileDescriptor> getAllByComponent(Class<? extends ITileComponent> componentType)
@@ -123,7 +130,7 @@ public class ModularTiles
         return preload;
     }
 
-    private TileDescriptor loadTile(ResourceLocation rsl)
+    private TileDescriptor loadTile(Identifier rsl)
     {
         TileDescriptor descriptor = null;
         InputStream stream = ModularTiles.class

@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.recipe;
 
-import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.recipe.Recipe;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
 
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ public class RecipeHandler
 {
     public static final HashMap<String, RecipeCategory> RECIPES = new HashMap<>();
 
-    public static final ArrayList<IRecipe> CRAFTING_RECIPES = new ArrayList<>();
+    public static final ArrayList<Recipe> CRAFTING_RECIPES = new ArrayList<>();
 
     /**
      * Check if a given indexed ingredient match a recipe.

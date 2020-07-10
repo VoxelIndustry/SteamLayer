@@ -7,7 +7,6 @@ import lombok.Setter;
 import lombok.ToString;
 import net.minecraft.util.math.BlockPos;
 
-import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -59,7 +58,7 @@ public abstract class CableGrid
 
     }
 
-    public void addCable(@Nonnull ITileNode<?> cable)
+    public void addCable(ITileNode<?> cable)
     {
         cables.add(cable);
     }

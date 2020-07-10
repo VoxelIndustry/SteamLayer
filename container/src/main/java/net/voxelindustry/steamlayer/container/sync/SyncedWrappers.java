@@ -1,13 +1,10 @@
 package net.voxelindustry.steamlayer.container.sync;
 
-import io.netty.buffer.ByteBuf;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
+import net.minecraft.network.PacketByteBuf;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
-import net.voxelindustry.steamlayer.network.ByteBufHelper;
+import net.voxelindustry.steamlayer.inventory.InventoryHandler;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -32,13 +29,13 @@ public class SyncedWrappers
         wrappers.put(Integer.class, new SyncedWrapper<Integer>()
         {
             @Override
-            public void write(ByteBuf buffer, Integer value)
+            public void write(PacketByteBuf buffer, Integer value)
             {
                 buffer.writeInt(value);
             }
 
             @Override
-            public Integer read(ByteBuf buffer)
+            public Integer read(PacketByteBuf buffer)
             {
                 return buffer.readInt();
             }
@@ -47,13 +44,13 @@ public class SyncedWrappers
         wrappers.put(Float.class, new SyncedWrapper<Float>()
         {
             @Override
-            public void write(ByteBuf buffer, Float value)
+            public void write(PacketByteBuf buffer, Float value)
             {
                 buffer.writeFloat(value);
             }
 
             @Override
-            public Float read(ByteBuf buffer)
+            public Float read(PacketByteBuf buffer)
             {
                 return buffer.readFloat();
             }
@@ -62,13 +59,13 @@ public class SyncedWrappers
         wrappers.put(Boolean.class, new SyncedWrapper<Boolean>()
         {
             @Override
-            public void write(ByteBuf buffer, Boolean value)
+            public void write(PacketByteBuf buffer, Boolean value)
             {
                 buffer.writeBoolean(value);
             }
 
             @Override
-            public Boolean read(ByteBuf buffer)
+            public Boolean read(PacketByteBuf buffer)
             {
                 return buffer.readBoolean();
             }
@@ -77,13 +74,13 @@ public class SyncedWrappers
         wrappers.put(Long.class, new SyncedWrapper<Long>()
         {
             @Override
-            public void write(ByteBuf buffer, Long value)
+            public void write(PacketByteBuf buffer, Long value)
             {
                 buffer.writeLong(value);
             }
 
             @Override
-            public Long read(ByteBuf buffer)
+            public Long read(PacketByteBuf buffer)
             {
                 return buffer.readLong();
             }
@@ -92,57 +89,30 @@ public class SyncedWrappers
         wrappers.put(String.class, new SyncedWrapper<String>()
         {
             @Override
-            public void write(ByteBuf buffer, String value)
+            public void write(PacketByteBuf buffer, String value)
             {
-                ByteBufHelper.writeString(buffer, value);
+                buffer.writeString(value);
             }
 
             @Override
-            public String read(ByteBuf buffer)
+            public String read(PacketByteBuf buffer)
             {
-                return ByteBufHelper.readString(buffer);
-            }
-        });
-
-        wrappers.put(FluidStack.class, new SyncedWrapper<FluidStack>()
-        {
-            @Override
-            public void write(ByteBuf buffer, FluidStack value)
-            {
-                value.writeToPacket(new PacketBuffer(buffer));
-            }
-
-            @Override
-            public FluidStack read(ByteBuf buffer)
-            {
-                return FluidStack.readFromPacket(new PacketBuffer(buffer));
-            }
-
-            @Override
-            public boolean areEquals(FluidStack first, FluidStack second)
-            {
-                return super.areEquals(first, second) && first.getAmount() == second.getAmount();
-            }
-
-            @Override
-            public FluidStack copy(FluidStack original)
-            {
-                return original != null ? original.copy() : null;
+                return buffer.readString();
             }
         });
 
         wrappers.put(ItemStack.class, new SyncedWrapper<ItemStack>()
         {
             @Override
-            public void write(ByteBuf buffer, ItemStack value)
+            public void write(PacketByteBuf buffer, ItemStack value)
             {
-                ByteBufHelper.writeItemStack(buffer, value);
+                buffer.writeItemStack(value);
             }
 
             @Override
-            public ItemStack read(ByteBuf buffer)
+            public ItemStack read(PacketByteBuf buffer)
             {
-                return ByteBufHelper.readItemStack(buffer);
+                return buffer.readItemStack();
             }
 
             @Override
@@ -158,47 +128,47 @@ public class SyncedWrappers
             }
         });
 
-        wrappers.put(IItemHandler.class, new SyncedWrapper<IItemHandler>()
+        wrappers.put(Inventory.class, new SyncedWrapper<Inventory>()
         {
             @Override
-            public void write(ByteBuf buffer, IItemHandler value)
+            public void write(PacketByteBuf buffer, Inventory value)
             {
-                buffer.writeInt(value.getSlots());
+                buffer.writeInt(value.size());
 
-                for (int slot = 0; slot < value.getSlots(); slot++)
-                    ByteBufHelper.writeItemStack(buffer, value.getStackInSlot(slot));
+                for (int slot = 0; slot < value.size(); slot++)
+                    buffer.writeItemStack(value.getStack(slot));
             }
 
             @Override
-            public IItemHandler read(ByteBuf buffer)
+            public Inventory read(PacketByteBuf buffer)
             {
-                ItemStackHandler inventory = new ItemStackHandler(buffer.readInt());
+                InventoryHandler inventory = new InventoryHandler(buffer.readInt());
 
-                for (int slot = 0; slot < inventory.getSlots(); slot++)
-                    inventory.setStackInSlot(slot, ByteBufHelper.readItemStack(buffer));
+                for (int slot = 0; slot < inventory.size(); slot++)
+                    inventory.setStack(slot, buffer.readItemStack());
                 return inventory;
             }
 
             @Override
-            public boolean areEquals(IItemHandler first, IItemHandler second)
+            public boolean areEquals(Inventory first, Inventory second)
             {
-                if (second.getSlots() != first.getSlots())
+                if (second.size() != first.size())
                     return false;
-                for (int slot = 0; slot < first.getSlots(); slot++)
+                for (int slot = 0; slot < first.size(); slot++)
                 {
-                    if (!ItemUtils.deepEqualsWithAmount(first.getStackInSlot(slot), second.getStackInSlot(slot)))
+                    if (!ItemUtils.deepEqualsWithAmount(first.getStack(slot), second.getStack(slot)))
                         return false;
                 }
                 return true;
             }
 
             @Override
-            public IItemHandler copy(IItemHandler original)
+            public Inventory copy(Inventory original)
             {
-                ItemStackHandler copy = new ItemStackHandler(original.getSlots());
+                InventoryHandler copy = new InventoryHandler(original.size());
 
-                for (int slot = 0; slot < original.getSlots(); slot++)
-                    copy.setStackInSlot(slot, original.getStackInSlot(slot).copy());
+                for (int slot = 0; slot < original.size(); slot++)
+                    copy.setStack(slot, original.getStack(slot).copy());
                 return copy;
             }
         });

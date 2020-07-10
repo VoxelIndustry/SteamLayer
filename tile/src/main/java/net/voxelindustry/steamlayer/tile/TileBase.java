@@ -1,48 +1,45 @@
 package net.voxelindustry.steamlayer.tile;
 
 import lombok.Getter;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SUpdateTileEntityPacket;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityType;
-import net.minecraftforge.fml.common.thread.EffectiveSide;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
 
-public class TileBase extends TileEntity implements ITileInfoProvider, ISyncTile
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.TILE_SYNC_REQUEST;
+
+public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTile
 {
     @Getter
     private boolean isSyncLocked;
     @Getter
     private boolean isSyncQueued;
 
-    public TileBase(TileEntityType<?> type)
+    public TileBase(BlockEntityType<?> type)
     {
         super(type);
     }
 
     @Override
-    public SUpdateTileEntityPacket getUpdatePacket()
+    public BlockEntityUpdateS2CPacket toUpdatePacket()
     {
-        CompoundNBT nbtTag = new CompoundNBT();
-        write(nbtTag);
-        return new SUpdateTileEntityPacket(pos, 1, nbtTag);
-    }
-
-    @Override
-    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket packet)
-    {
-        read(packet.getNbtCompound());
+        CompoundTag nbtTag = new CompoundTag();
+        toTag(nbtTag);
+        return new BlockEntityUpdateS2CPacket(pos, 1, nbtTag);
     }
 
     @Override
     public void askServerSync()
     {
-        SteamLayerPacketHandler.getHandler().sendToServer(new TileSyncRequestPacket(
-                world.getDimension().getType().getId(),
-                getPos()));
+        SteamLayerPacketHandler.createServerBoundPacket(TILE_SYNC_REQUEST,
+                buffer -> TileSyncRequestPacket.encode(
+                        new TileSyncRequestPacket(
+                                world.getRegistryKey().getValue().toString(),
+                                getPos()), buffer)
+        );
     }
 
     @Override
@@ -53,6 +50,18 @@ public class TileBase extends TileEntity implements ITileInfoProvider, ISyncTile
             NetworkHandler.sendTileToRange(this);
             isSyncQueued = false;
         }
+    }
+
+    @Override
+    public void fromClientTag(CompoundTag tag)
+    {
+        fromTag(null, tag);
+    }
+
+    @Override
+    public CompoundTag toClientTag(CompoundTag tag)
+    {
+        return toTag(tag);
     }
 
     @Override
@@ -73,6 +82,7 @@ public class TileBase extends TileEntity implements ITileInfoProvider, ISyncTile
         isSyncLocked = true;
     }
 
+    @Override
     public void releaseSyncLock(boolean flushSync)
     {
         isSyncLocked = false;
@@ -84,16 +94,12 @@ public class TileBase extends TileEntity implements ITileInfoProvider, ISyncTile
 
     public boolean isServer()
     {
-        if (world != null)
-            return !world.isRemote;
-        return EffectiveSide.get().isServer();
+        return !getWorld().isClient();
     }
 
     public boolean isClient()
     {
-        if (world != null)
-            return world.isRemote;
-        return EffectiveSide.get().isClient();
+        return getWorld().isClient();
     }
 
     @Override

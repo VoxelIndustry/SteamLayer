@@ -1,12 +1,10 @@
 package net.voxelindustry.steamlayer.network.packet;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NoArgsConstructor;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.fabric.api.network.PacketContext;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.network.PacketByteBuf;
 
 @NoArgsConstructor
 public class GenericPacket
@@ -20,7 +18,7 @@ public class GenericPacket
         packetID = PacketHandler.getInstance().getID(message.getClass());
     }
 
-    public static GenericPacket decode(ByteBuf buffer)
+    public static GenericPacket decode(PacketByteBuf buffer)
     {
         GenericPacket packet = new GenericPacket();
         packet.packetID = buffer.readInt();
@@ -38,21 +36,17 @@ public class GenericPacket
         return packet;
     }
 
-    public static void encode(GenericPacket packet, PacketBuffer buffer)
+    public static void encode(GenericPacket packet, PacketByteBuf buffer)
     {
         buffer.writeInt(packet.packetID);
         packet.message.write(buffer);
     }
 
-    public static void handle(GenericPacket packet, Supplier<NetworkEvent.Context> contextSupplier)
+    public static void handle(GenericPacket packet, PacketContext context)
     {
-        NetworkEvent.Context context = contextSupplier.get();
-
-        if (context.getDirection().getReceptionSide().isClient())
-            context.enqueueWork(() -> packet.message.handle(Minecraft.getInstance().player));
+        if (context.getPacketEnvironment() == EnvType.CLIENT)
+            context.getTaskQueue().execute(() -> packet.message.handle(MinecraftClient.getInstance().player));
         else
-            context.enqueueWork(() -> packet.message.handle(context.getSender()));
-
-        context.setPacketHandled(true);
+            context.getTaskQueue().execute(() -> packet.message.handle(context.getPlayer()));
     }
 }

@@ -1,13 +1,23 @@
 {
   "schemaVersion": 1,
   "environment": "*",
-  "id": "steamlayer",
-  "name": "Steam Layer",
+  "id": "steamlayer-grid",
+  "name": "SteamLayer (grids)",
   "description": "Aggregate of shared libraries for the VoxelIndustry team",
   "version": "${version}",
   "side": "universal",
   "custom": {
-    "modmenu:api": true
+    "modmenu:api": true,
+    "modmenu:parent": "steamlayer"
+  },
+  "depends": {
+    "fabric-api-base": "*",
+    "steamlayer-tile": "*"
+  },
+  "entrypoints": {
+    "main": [
+      "net.voxelindustry.steamlayer.grid.SteamLayerGrid"
+    ]
   },
   "authors": [
     {

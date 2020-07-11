@@ -4,10 +4,9 @@ plugins {
     id "maven-publish"
 }
 
-apply plugin: 'java-library'
-apply plugin: 'com.jfrog.artifactory'
-
 allprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'com.jfrog.artifactory'
     apply plugin: 'maven-publish'
     apply plugin: 'fabric-loom'
 
@@ -57,49 +56,99 @@ allprojects {
             exclude "fabric.mod.json"
         }
     }
+
+    artifactory {
+        contextUrl = "${artifactory_contextUrl}"
+        publish {
+            repository {
+                repoKey = 'voxelindustry'
+                username = "${artifactory_user}"
+                password = "${artifactory_password}"
+                maven = true
+            }
+            defaults {
+                publications('mavenJava')
+                publishArtifacts = true
+                publishPom = true
+            }
+        }
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                artifact(file("${project.buildDir}/libs/${archivesBaseName}-${project.steamlayer_version}.jar")) {
+                    builtBy(remapJar)
+                }
+            }
+        }
+
+        repositories {
+            mavenLocal()
+        }
+    }
+
+    tasks.publish.dependsOn build
+    artifactoryPublish.dependsOn build
 }
 
 archivesBaseName = "steamlayer"
 
-project('common') {
+subprojects {
+    archivesBaseName = "${rootProject.archivesBaseName}-${project.name}"
+}
+
+project('steamlayer-common') {
     archivesBaseName = "steamlayer-common"
 
     dependencies {
     }
 }
 
-project('inventory') {
+project('steamlayer-test') {
+    archivesBaseName = "steamlayer-test"
+
+    dependencies {
+        compile('org.junit.jupiter:junit-jupiter-api:5.6.1')
+        compile('org.mockito:mockito-core:3.3.3')
+        compile('org.mockito:mockito-junit-jupiter:3.3.3')
+        compile('org.assertj:assertj-core:3.15.0')
+    }
+}
+
+project('steamlayer-inventory') {
     archivesBaseName = "steamlayer-inventory"
 
     dependencies {
-        compile project(':common')
+        compile project(':steamlayer-common')
     }
 }
 
-project('network') {
+project('steamlayer-network') {
     archivesBaseName = "steamlayer-network"
 
     dependencies {
-        compile project(':common')
+        compile project(':steamlayer-common')
     }
 }
 
-project('container') {
+project('steamlayer-container') {
     archivesBaseName = "steamlayer-container"
 
     dependencies {
-        compile project(':inventory')
-        compile project(':network')
+        compile project(':steamlayer-inventory')
+        compile project(':steamlayer-network')
     }
 }
 
-project('tile') {
+project('steamlayer-tile') {
     archivesBaseName = "steamlayer-tile"
 
     dependencies {
-        compile project(':inventory')
-        compile project(':network')
+        compile project(':steamlayer-inventory')
+        compile project(':steamlayer-network')
         compile 'org.hjson:hjson:3.0.0'
+        include 'org.hjson:hjson:3.0.0'
     }
 }
 
@@ -111,106 +160,27 @@ project('tile') {
     }
 }*/
 
-project('grid') {
+project('steamlayer-grid') {
     archivesBaseName = "steamlayer-grid"
 
     dependencies {
-        compile project(':tile')
+        compile project(':steamlayer-tile')
     }
 }
 
-project('recipe') {
+project('steamlayer-recipe') {
     archivesBaseName = "steamlayer-recipe"
 
     dependencies {
-        compile project(':common')
-    }
-}
+        compile project(':steamlayer-common')
 
-project('core') {
-    archivesBaseName = "steamlayer-core"
-
-    dependencies {
-        compile project(':container')
-        compile project(':tile')
-        compile project(':grid')
-        compile project(':recipe')
+        testCompile project(':steamlayer-test')
     }
 }
 
 subprojects.each { subproject -> evaluationDependsOn(subproject.path) }
 subprojects.each { remapJar.dependsOn("${it.path}:remapJar") }
 
-artifactory {
-    contextUrl = "${artifactory_contextUrl}"
-    publish {
-        repository {
-            repoKey = 'voxelindustry'
-            username = "${artifactory_user}"
-            password = "${artifactory_password}"
-            maven = true
-        }
-        defaults {
-            publications('mavenJava')
-            publishArtifacts = true
-            publishPom = true
-        }
-    }
-}
-
-task siblingBuild {
-    dependsOn(":common:build")
-    dependsOn(":container:build")
-    dependsOn(":grid:build")
-    dependsOn(":inventory:build")
-    dependsOn(":network:build")
-    dependsOn(":recipe:build")
-    dependsOn(":tile:build")
-    // dependsOn(":multiblock:build")
-    dependsOn(":core:build")
-}
-
-task allJar(type: Jar, dependsOn: siblingBuild) {
-    from project(':common').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-    from project(':container').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-    from project(':grid').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-    from project(':inventory').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-/*        from project(':multiblock').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }*/
-    from project(':network').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-    from project(':recipe').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-    from project(':tile').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-    from project(':core').configurations.archives.allArtifacts.files.collect {
-        zipTree(it)
-    }
-
-    manifest {
-        attributes([
-                "Specification-Title"     : "steamlayer-core",
-                "Specification-Vendor"    : "steamlayer-core",
-                "Specification-Version"   : "1",
-                "Implementation-Title"    : project.name,
-                "Implementation-Version"  : "${version}",
-                "Implementation-Vendor"   : "voxelindustry",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-}
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
@@ -220,8 +190,18 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact(file("${project.buildDir}/libs/${archivesBaseName}-${project.steamlayer_version}.jar")) {
+            artifact(file("${project.buildDir}/libs/${rootProject.archivesBaseName}-${archivesBaseName}-${project.steamlayer_version}.jar")) {
                 builtBy(remapJar)
+            }
+            pom.withXml {
+                def depsNode = asNode().appendNode("dependencies")
+                subprojects.each {
+                    def depNode = depsNode.appendNode("dependency")
+                    depNode.appendNode("groupId", it.group)
+                    depNode.appendNode("artifactId", it.name)
+                    depNode.appendNode("version", it.version)
+                    depNode.appendNode("scope", "compile")
+                }
             }
         }
     }
@@ -239,6 +219,3 @@ dependencies {
         }
     }
 }
-
-tasks.publish.dependsOn build
-artifactoryPublish.dependsOn build

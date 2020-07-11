@@ -1,13 +1,18 @@
 {
   "schemaVersion": 1,
   "environment": "*",
-  "id": "steamlayer",
-  "name": "Steam Layer",
+  "id": "steamlayer-inventory",
+  "name": "SteamLayer (inventory)",
   "description": "Aggregate of shared libraries for the VoxelIndustry team",
   "version": "${version}",
   "side": "universal",
   "custom": {
-    "modmenu:api": true
+    "modmenu:api": true,
+    "modmenu:parent": "steamlayer"
+  },
+  "depends": {
+    "fabric-api-base": "*",
+    "steamlayer-common": "*"
   },
   "authors": [
     {

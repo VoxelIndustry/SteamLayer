@@ -9,15 +9,14 @@ pluginManagement {
     }
 }
 
-include 'common'
-include 'container'
-include 'inventory'
-include 'network'
-include 'tile'
-include 'grid'
+include 'steamlayer-common'
+include 'steamlayer-container'
+include 'steamlayer-inventory'
+include 'steamlayer-network'
+include 'steamlayer-tile'
+include 'steamlayer-grid'
 /*
 include 'multiblock'
 */
-include 'recipe'
-
-include 'core'
+include 'steamlayer-recipe'
+include 'steamlayer-test'

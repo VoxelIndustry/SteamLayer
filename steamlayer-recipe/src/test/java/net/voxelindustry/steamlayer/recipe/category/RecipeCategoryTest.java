@@ -34,6 +34,6 @@ public class RecipeCategoryTest
         when(recipe2.getRecipeInputs(ItemStack.class)).thenReturn(DefaultedList.copyOf(new ItemStackRecipeIngredient(ItemStack.EMPTY), new ItemStackRecipeIngredient(potato)));
         when(recipe2.hasInputType(ItemStack.class)).thenReturn(Boolean.TRUE);
 
-        assertThat(category.getRecipe(apple)).contains(recipe);
+        assertThat(category.findRecipes(apple)).contains(recipe);
     }
 }

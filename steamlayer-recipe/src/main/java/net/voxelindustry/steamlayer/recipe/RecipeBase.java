@@ -49,7 +49,7 @@ public abstract class RecipeBase
      * Used to retrieve inputs slots to be validated for recipe retrieval by the Category
      *
      * @return array of the slots
-     * @see net.voxelindustry.steamlayer.recipe.category.RecipeCategory#getRecipe(Object...)
+     * @see net.voxelindustry.steamlayer.recipe.category.RecipeCategory#findRecipes(Object...)
      */
     public int[] getEssentialInputSlots()
     {

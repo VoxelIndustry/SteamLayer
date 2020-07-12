@@ -1,10 +1,10 @@
 package net.voxelindustry.steamlayer.tile;
 
 import lombok.Getter;
+import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
@@ -13,7 +13,7 @@ import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
 
 import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.TILE_SYNC_REQUEST;
 
-public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTile
+public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTile, BlockEntityClientSerializable
 {
     @Getter
     private boolean isSyncLocked;
@@ -23,14 +23,6 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     public TileBase(BlockEntityType<?> type)
     {
         super(type);
-    }
-
-    @Override
-    public BlockEntityUpdateS2CPacket toUpdatePacket()
-    {
-        CompoundTag nbtTag = new CompoundTag();
-        toTag(nbtTag);
-        return new BlockEntityUpdateS2CPacket(pos, 1, nbtTag);
     }
 
     @Override

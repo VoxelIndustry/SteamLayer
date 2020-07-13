@@ -1,6 +1,7 @@
 package net.voxelindustry.steamlayer.recipe.ingredient;
 
 import net.minecraft.item.ItemStack;
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.Range;
 
@@ -18,9 +19,6 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
     @Override
     public ItemStack getRaw()
     {
-        ItemStack copy = ingredient.isEmpty() ? cachedStack.copy() : ingredient.copy();
-
-        copy.setCount(RandomUtils.nextInt(range.getMinimum(), range.getMaximum()));
-        return copy;
+        return ItemUtils.copyWithSize(ingredient, RandomUtils.nextInt(range.getMinimum(), range.getMaximum()));
     }
 }

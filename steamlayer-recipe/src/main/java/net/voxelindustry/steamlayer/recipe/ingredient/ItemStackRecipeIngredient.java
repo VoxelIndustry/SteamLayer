@@ -6,15 +6,12 @@ import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
 {
     protected final int       quantity;
-    protected final ItemStack cachedStack;
     protected final ItemStack ingredient;
 
     public ItemStackRecipeIngredient(ItemStack ingredient)
     {
         this.ingredient = ingredient;
         quantity = 0;
-
-        cachedStack = ItemStack.EMPTY;
     }
 
     @Override
@@ -43,8 +40,6 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     @Override
     public ItemStack getRaw()
     {
-        if (!ingredient.isEmpty())
-            return ingredient;
-        return cachedStack;
+        return ingredient.copy();
     }
 }

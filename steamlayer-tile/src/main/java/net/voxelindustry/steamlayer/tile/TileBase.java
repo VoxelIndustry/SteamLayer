@@ -89,12 +89,18 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
 
     public boolean isServer()
     {
-        return !getWorld().isClient();
+        if (getWorld() != null)
+            return !getWorld().isClient();
+
+        return Thread.currentThread().getName().contains("Server");
     }
 
     public boolean isClient()
     {
-        return getWorld().isClient();
+        if (getWorld() != null)
+            return getWorld().isClient();
+
+        return !Thread.currentThread().getName().contains("Server");
     }
 
     @Override

@@ -21,4 +21,10 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
     {
         return ItemUtils.copyWithSize(ingredient, RandomUtils.nextInt(range.getMinimum(), range.getMaximum()));
     }
+
+    @Override
+    public RecipeIngredient<ItemStack> staticForState()
+    {
+        return new ItemStackRecipeIngredient(getRaw());
+    }
 }

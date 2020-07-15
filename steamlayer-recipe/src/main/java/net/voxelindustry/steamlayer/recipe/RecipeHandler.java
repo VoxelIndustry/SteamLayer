@@ -1,10 +1,17 @@
 package net.voxelindustry.steamlayer.recipe;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
+import net.voxelindustry.steamlayer.recipe.ingredient.IngredientHandler;
+import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackIngredientHandler;
 
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Collections.emptyList;
@@ -12,7 +19,17 @@ import static java.util.stream.Collectors.toList;
 
 public class RecipeHandler
 {
-    private static final HashMap<Identifier, RecipeCategory> RECIPES = new HashMap<>();
+    private static final Map<Identifier, RecipeCategory> RECIPES = new HashMap<>();
+
+    private static final Map<Class<?>, IngredientHandler<?>> INGREDIENT_HANDLERS = new IdentityHashMap<>();
+    private static final BiMap<Identifier, Class<?>>         INGREDIENT_TYPES    = HashBiMap.create();
+
+    static
+    {
+        Identifier itemStackIdentifier = new Identifier("itemstack");
+        INGREDIENT_TYPES.put(itemStackIdentifier, ItemStack.class);
+        INGREDIENT_HANDLERS.put(ItemStack.class, new ItemStackIngredientHandler(itemStackIdentifier));
+    }
 
     public static RecipeCategory addCategory(RecipeCategory category)
     {
@@ -23,6 +40,29 @@ public class RecipeHandler
     public static RecipeCategory getCategory(Identifier category)
     {
         return RECIPES.get(category);
+    }
+
+    public static <T> IngredientHandler<T> addIngredientHandler(Class<T> ingredientType, IngredientHandler<T> ingredientHandler)
+    {
+        INGREDIENT_HANDLERS.put(ingredientType, ingredientHandler);
+        INGREDIENT_TYPES.put(ingredientHandler.getIdentifier(), ingredientType);
+        return ingredientHandler;
+    }
+
+    public static <T> Identifier getIngredientHandlerIdentifier(Class<T> ingredientType)
+    {
+        return INGREDIENT_TYPES.inverse().get(ingredientType);
+    }
+
+    public static Class<?> getIngredientHandlerClass(Identifier identifier)
+    {
+        return INGREDIENT_TYPES.get(identifier);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> IngredientHandler<T> getIngredientHandler(Class<T> ingredientType)
+    {
+        return (IngredientHandler<T>) INGREDIENT_HANDLERS.get(ingredientType);
     }
 
     /**

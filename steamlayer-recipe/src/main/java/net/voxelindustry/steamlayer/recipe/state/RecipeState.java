@@ -148,7 +148,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
         tag.putInt("leftInputTypesCount", leftInputs.keySet().size());
 
         int index = 0;
-        for (Class<?> typeClass : leftInputs.keys())
+        for (Class<?> typeClass : leftInputs.keySet())
         {
             String identifier = RecipeHandler.getIngredientHandlerIdentifier(typeClass).toString();
             tag.putString("leftInputType" + index, identifier);
@@ -159,7 +159,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
 
         tag.putInt("consumedInputTypesCount", consumedInputs.keySet().size());
         index = 0;
-        for (Class<?> typeClass : consumedInputs.keys())
+        for (Class<?> typeClass : consumedInputs.keySet())
         {
             String identifier = RecipeHandler.getIngredientHandlerIdentifier(typeClass).toString();
             tag.putString("consumedInputType" + index, identifier);

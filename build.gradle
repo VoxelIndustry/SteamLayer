@@ -183,6 +183,16 @@ project('steamlayer-recipe') {
     }
 }
 
+project('steamlayer-math') {
+    archivesBaseName = "steamlayer-math"
+
+    dependencies {
+        compile project(':steamlayer-common')
+
+        testCompile project(':steamlayer-test')
+    }
+}
+
 subprojects.each { subproject -> evaluationDependsOn(subproject.path) }
 subprojects.each { remapJar.dependsOn("${it.path}:remapJar") }
 

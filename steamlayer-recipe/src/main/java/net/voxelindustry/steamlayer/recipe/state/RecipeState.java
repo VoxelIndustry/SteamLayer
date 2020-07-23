@@ -3,9 +3,13 @@ package net.voxelindustry.steamlayer.recipe.state;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.IngredientHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
@@ -28,8 +32,12 @@ public class RecipeState implements TagSerializable<CompoundTag>
 
     private int currentTime;
 
-    public RecipeState(Multimap<Class<?>, RecipeIngredient<?>> inputs, Multimap<Class<?>, RecipeIngredient<?>> outputs, int recipeTime)
+    private final RecipeBase recipe;
+
+    public RecipeState(RecipeBase recipe, Multimap<Class<?>, RecipeIngredient<?>> inputs, Multimap<Class<?>, RecipeIngredient<?>> outputs, int recipeTime)
     {
+        this.recipe = recipe;
+
         this.inputs = inputs;
         this.outputs = outputs;
 
@@ -58,6 +66,11 @@ public class RecipeState implements TagSerializable<CompoundTag>
         }
 
         return currentTime >= recipeTime && completed;
+    }
+
+    public void complete(World world, BlockPos pos, LivingEntity crafter)
+    {
+        recipe.onCraft(world, pos, this, crafter);
     }
 
     @SuppressWarnings("unchecked")

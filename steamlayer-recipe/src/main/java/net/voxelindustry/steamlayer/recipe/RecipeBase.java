@@ -50,10 +50,10 @@ public abstract class RecipeBase
         return DefaultedList.of();
     }
 
-    public void onCraft(World world, BlockPos pos, LivingEntity crafter)
+    public void onCraft(World world, BlockPos pos, RecipeState state, LivingEntity crafter)
     {
         if (onCraft != null)
-            onCraft.run(world, pos, crafter);
+            onCraft.run(world, pos, state, crafter);
     }
 
     public Optional<List<ItemStack>> getRemainingItems()
@@ -66,6 +66,7 @@ public abstract class RecipeBase
     public RecipeState createState()
     {
         return new RecipeState(
+                this,
                 Multimaps.transformValues(ArrayListMultimap.create(inputs), RecipeIngredient::staticForState),
                 Multimaps.transformValues(ArrayListMultimap.create(outputs), RecipeIngredient::staticForState),
                 getTime()

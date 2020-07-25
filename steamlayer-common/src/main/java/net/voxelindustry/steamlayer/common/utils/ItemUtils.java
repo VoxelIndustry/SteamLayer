@@ -15,6 +15,11 @@ public class ItemUtils
         return a.isItemEqual(b) && ItemStack.areTagsEqual(a, b);
     }
 
+    public static boolean equalsIgnoringTag(ItemStack a, ItemStack b)
+    {
+        return a.isItemEqual(b);
+    }
+
     @Deprecated
     public static boolean deepEqualsWithAmount(ItemStack a, ItemStack b)
     {

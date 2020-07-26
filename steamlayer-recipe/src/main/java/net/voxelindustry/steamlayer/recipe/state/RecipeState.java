@@ -9,8 +9,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import net.voxelindustry.steamlayer.recipe.IngredientManager;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
-import net.voxelindustry.steamlayer.recipe.RecipeHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.IngredientHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 import org.jetbrains.annotations.ApiStatus;
@@ -76,7 +76,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
     @SuppressWarnings("unchecked")
     private <T> boolean isLeftInputTypeEmpty(Class<T> typeClass)
     {
-        IngredientHandler<T> handler = RecipeHandler.getIngredientHandler(typeClass);
+        IngredientHandler<T> handler = IngredientManager.getIngredientHandler(typeClass);
 
         return leftInputs.get(typeClass).stream().allMatch(value -> handler.isEmpty((T) value));
     }
@@ -88,7 +88,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
     {
         List<RecipeIngredient<?>> ingredientsForType = (List<RecipeIngredient<?>>) inputs.get(typeClass);
 
-        IngredientHandler<T> ingredientHandler = RecipeHandler.getIngredientHandler(typeClass);
+        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         List<T> leftInputsForType = (List<T>) leftInputs.get(typeClass);
 
         int index = 0;
@@ -116,7 +116,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
 
         Collection<Object> inputs = consumedInputs.get(typeClass);
 
-        IngredientHandler<T> ingredientHandler = RecipeHandler.getIngredientHandler(typeClass);
+        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         Optional<T> existingIngredient = (Optional<T>) inputs.stream().filter(object -> ingredientHandler.canMerge(ingredient, (T) object)).findFirst();
 
         if (existingIngredient.isPresent())
@@ -163,7 +163,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
         int index = 0;
         for (Class<?> typeClass : leftInputs.keySet())
         {
-            String identifier = RecipeHandler.getIngredientHandlerIdentifier(typeClass).toString();
+            String identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
             tag.putString("leftInputType" + index, identifier);
 
             leftInputForTypeToTag(tag, typeClass, identifier);
@@ -174,7 +174,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
         index = 0;
         for (Class<?> typeClass : consumedInputs.keySet())
         {
-            String identifier = RecipeHandler.getIngredientHandlerIdentifier(typeClass).toString();
+            String identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
             tag.putString("consumedInputType" + index, identifier);
 
             consumedInputForTypeToTag(tag, typeClass, identifier);
@@ -187,7 +187,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
     @SuppressWarnings("unchecked")
     private <T> void consumedInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
-        IngredientHandler<T> ingredientHandler = RecipeHandler.getIngredientHandler(typeClass);
+        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         Collection<T> consumedInputsForType = (Collection<T>) consumedInputs.get(typeClass);
 
         tag.putInt("consumedInputForType" + identifier, consumedInputsForType.size());
@@ -202,7 +202,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
     @SuppressWarnings("unchecked")
     private <T> void leftInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
-        IngredientHandler<T> ingredientHandler = RecipeHandler.getIngredientHandler(typeClass);
+        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         Collection<T> leftInputsForType = (Collection<T>) leftInputs.get(typeClass);
 
         tag.putInt("leftInputForType" + identifier, leftInputsForType.size());
@@ -228,7 +228,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
         for (int index = 0; index < leftInputTypesCount; index++)
         {
             String identifier = tag.getString("leftInputType" + index);
-            Class<?> handlerType = RecipeHandler.getIngredientHandlerClass(new Identifier(identifier));
+            Class<?> handlerType = IngredientManager.getIngredientHandlerClass(new Identifier(identifier));
 
             leftInputForTypeFromTag(tag, handlerType, identifier);
         }
@@ -238,7 +238,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
         for (int index = 0; index < consumedInputTypesCount; index++)
         {
             String identifier = tag.getString("consumedInputType" + index);
-            Class<?> handlerType = RecipeHandler.getIngredientHandlerClass(new Identifier(identifier));
+            Class<?> handlerType = IngredientManager.getIngredientHandlerClass(new Identifier(identifier));
 
             consumedInputForTypeFromTag(tag, handlerType, identifier);
         }
@@ -247,7 +247,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
     private <T> void leftInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
         int leftInputForType = tag.getInt("leftInputForType" + identifier);
-        IngredientHandler<T> ingredientHandler = RecipeHandler.getIngredientHandler(typeClass);
+        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
 
         for (int index = 0; index < leftInputForType; index++)
             leftInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("leftInputForType" + identifier + index)));
@@ -256,7 +256,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
     private <T> void consumedInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
         int consumedInputForType = tag.getInt("consumedInputForType" + identifier);
-        IngredientHandler<T> ingredientHandler = RecipeHandler.getIngredientHandler(typeClass);
+        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
 
         for (int index = 0; index < consumedInputForType; index++)
             consumedInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("consumedInputForType" + identifier + index)));

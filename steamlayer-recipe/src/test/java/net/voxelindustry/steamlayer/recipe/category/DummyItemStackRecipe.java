@@ -4,8 +4,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Singular;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
+import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +25,8 @@ public class DummyItemStackRecipe extends RecipeBase
 
     public DummyItemStackRecipe(List<ItemStack> inputs, List<ItemStack> outputs, int time)
     {
+        super(new SteamLayerRecipeType<>((type, identifier) -> new DummyItemStackRecipe(null, null, 0)),
+                new Identifier("steamlayer", "testrecipe"));
         inputStacks = inputs;
         outputStacks = outputs;
         this.time = time;

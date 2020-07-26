@@ -4,25 +4,43 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.gson.JsonObject;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
+import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
+import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerVanillaRecipeBridge;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public abstract class RecipeBase
+public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 {
+    private final SteamLayerRecipeType<RecipeBase> recipeType;
+
+    private final Identifier identifier;
+
     protected final Multimap<Class<?>, RecipeIngredient<?>> inputs  = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
     protected final Multimap<Class<?>, RecipeIngredient<?>> outputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
 
     protected RecipeCallback onCraft;
+
+    protected RecipeBase(SteamLayerRecipeType<RecipeBase> recipeType, Identifier identifier)
+    {
+        this.recipeType = recipeType;
+        this.identifier = identifier;
+    }
 
     public boolean hasInputType(Class<?> input)
     {
@@ -104,5 +122,41 @@ public abstract class RecipeBase
     protected final <T> void addOutput(Class<T> outputType, RecipeIngredient<T> output)
     {
         outputs.put(outputType, output);
+    }
+
+    public void fromJson(JsonObject json)
+    {
+        RecipeSerializerHelper.ingredientMultimapFromJson(JsonHelper.getObject(json, "inputs"), inputs);
+        RecipeSerializerHelper.ingredientMultimapFromJson(JsonHelper.getObject(json, "outputs"), outputs);
+    }
+
+    public void fromByteBuf(PacketByteBuf buffer)
+    {
+        RecipeSerializerHelper.ingredientMultimapFromByteBuf(buffer, inputs);
+        RecipeSerializerHelper.ingredientMultimapFromByteBuf(buffer, outputs);
+    }
+
+    public void toByteBuf(PacketByteBuf buffer)
+    {
+        RecipeSerializerHelper.ingredientMultimapToByteBuf(buffer, inputs);
+        RecipeSerializerHelper.ingredientMultimapToByteBuf(buffer, outputs);
+    }
+
+    @Override
+    public RecipeSerializer<RecipeBase> getSerializer()
+    {
+        return recipeType;
+    }
+
+    @Override
+    public RecipeType<RecipeBase> getType()
+    {
+        return recipeType;
+    }
+
+    @Override
+    public Identifier getId()
+    {
+        return identifier;
     }
 }

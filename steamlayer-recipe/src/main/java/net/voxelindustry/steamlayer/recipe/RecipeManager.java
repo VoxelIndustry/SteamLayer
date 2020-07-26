@@ -1,15 +1,11 @@
 package net.voxelindustry.steamlayer.recipe;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
-import net.voxelindustry.steamlayer.recipe.ingredient.IngredientHandler;
-import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackIngredientHandler;
+import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,19 +13,9 @@ import java.util.Optional;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
-public class RecipeHandler
+public class RecipeManager
 {
     private static final Map<Identifier, RecipeCategory> RECIPES = new HashMap<>();
-
-    private static final Map<Class<?>, IngredientHandler<?>> INGREDIENT_HANDLERS = new IdentityHashMap<>();
-    private static final BiMap<Identifier, Class<?>>         INGREDIENT_TYPES    = HashBiMap.create();
-
-    static
-    {
-        Identifier itemStackIdentifier = new Identifier("itemstack");
-        INGREDIENT_TYPES.put(itemStackIdentifier, ItemStack.class);
-        INGREDIENT_HANDLERS.put(ItemStack.class, new ItemStackIngredientHandler(itemStackIdentifier));
-    }
 
     public static RecipeCategory addCategory(RecipeCategory category)
     {
@@ -37,32 +23,16 @@ public class RecipeHandler
         return category;
     }
 
+    public static <R extends RecipeBase> SteamLayerRecipeType<R> addRecipeType(SteamLayerRecipeType<R> type, Identifier identifier)
+    {
+        Registry.register(Registry.RECIPE_SERIALIZER, identifier, type);
+        Registry.register(Registry.RECIPE_TYPE, identifier, type);
+        return type;
+    }
+
     public static RecipeCategory getCategory(Identifier category)
     {
         return RECIPES.get(category);
-    }
-
-    public static <T> IngredientHandler<T> addIngredientHandler(Class<T> ingredientType, IngredientHandler<T> ingredientHandler)
-    {
-        INGREDIENT_HANDLERS.put(ingredientType, ingredientHandler);
-        INGREDIENT_TYPES.put(ingredientHandler.getIdentifier(), ingredientType);
-        return ingredientHandler;
-    }
-
-    public static <T> Identifier getIngredientHandlerIdentifier(Class<T> ingredientType)
-    {
-        return INGREDIENT_TYPES.inverse().get(ingredientType);
-    }
-
-    public static Class<?> getIngredientHandlerClass(Identifier identifier)
-    {
-        return INGREDIENT_TYPES.get(identifier);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> IngredientHandler<T> getIngredientHandler(Class<T> ingredientType)
-    {
-        return (IngredientHandler<T>) INGREDIENT_HANDLERS.get(ingredientType);
     }
 
     /**
@@ -81,7 +51,7 @@ public class RecipeHandler
      */
     public static <T> boolean inputMatchWithoutCount(Identifier categoryID, int recipeSlot, T ingredient)
     {
-        RecipeCategory category = RecipeHandler.RECIPES.get(categoryID);
+        RecipeCategory category = RecipeManager.RECIPES.get(categoryID);
         return category != null && category.inputMatchWithoutCount(recipeSlot, ingredient);
     }
 
@@ -102,7 +72,7 @@ public class RecipeHandler
      */
     public static <T> boolean inputMatchWithCount(Identifier categoryID, int recipeSlot, T ingredient)
     {
-        RecipeCategory category = RecipeHandler.RECIPES.get(categoryID);
+        RecipeCategory category = RecipeManager.RECIPES.get(categoryID);
         return category != null && category.inputMatchWithCount(recipeSlot, ingredient);
     }
 
@@ -120,14 +90,14 @@ public class RecipeHandler
      */
     public static Optional<RecipeBase> findRecipe(Identifier categoryID, Object... inputs)
     {
-        return Optional.ofNullable(RecipeHandler.RECIPES.get(categoryID)).flatMap(category -> category.findOneRecipe(inputs));
+        return Optional.ofNullable(RecipeManager.RECIPES.get(categoryID)).flatMap(category -> category.findOneRecipe(inputs));
     }
 
     public static List<RecipeBase> findRecipesWithoutCount(Identifier categoryID, Object... inputs)
     {
-        RecipeCategory category = RecipeHandler.RECIPES.get(categoryID);
+        RecipeCategory category = RecipeManager.RECIPES.get(categoryID);
         if (category != null)
-            return RecipeHandler.RECIPES.get(categoryID).findRecipesWithoutCount(inputs).collect(toList());
+            return RecipeManager.RECIPES.get(categoryID).findRecipesWithoutCount(inputs).collect(toList());
         return emptyList();
     }
 }

@@ -27,7 +27,7 @@ import java.util.Optional;
 
 public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 {
-    private final SteamLayerRecipeType<RecipeBase> recipeType;
+    private final SteamLayerRecipeType<? extends RecipeBase> recipeType;
 
     private final Identifier identifier;
 
@@ -36,7 +36,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 
     protected RecipeCallback onCraft;
 
-    protected RecipeBase(SteamLayerRecipeType<RecipeBase> recipeType, Identifier identifier)
+    protected RecipeBase(SteamLayerRecipeType<? extends RecipeBase> recipeType, Identifier identifier)
     {
         this.recipeType = recipeType;
         this.identifier = identifier;
@@ -143,15 +143,17 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public RecipeSerializer<RecipeBase> getSerializer()
     {
-        return recipeType;
+        return (RecipeSerializer<RecipeBase>) recipeType;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public RecipeType<RecipeBase> getType()
     {
-        return recipeType;
+        return (RecipeType<RecipeBase>) recipeType;
     }
 
     @Override

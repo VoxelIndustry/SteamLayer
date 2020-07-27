@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "net.voxelindustry.steamlayer.recipe.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "AccessorRecipeManager",
+    "MinecraftServerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

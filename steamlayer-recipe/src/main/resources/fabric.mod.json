@@ -22,6 +22,14 @@
       }
     }
   ],
+  "mixins": [
+    "steamlayer-recipe.common.mixins.json"
+  ],
+  "entrypoints": {
+    "main": [
+      "net.voxelindustry.steamlayer.recipe.SteamLayerRecipe"
+    ]
+  },
   "contact": {
     "homepage": "https://github.com/VoxelIndustry/SteamLayer",
     "issues": "https://github.com/VoxelIndustry/SteamLayer",

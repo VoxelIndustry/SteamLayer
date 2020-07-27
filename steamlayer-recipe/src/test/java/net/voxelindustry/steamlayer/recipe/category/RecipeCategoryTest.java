@@ -19,7 +19,7 @@ public class RecipeCategoryTest
     @Test
     void getRecipe_givenPartialRecipeMatch_thenShouldReturnRecipe()
     {
-        RecipeCategory category = new RecipeCategory(null);
+        RecipeCategory category = new RecipeCategory(null, null);
         RecipeBase recipe = mock(RecipeBase.class);
         category.add(recipe);
 

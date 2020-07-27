@@ -68,6 +68,24 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         return DefaultedList.of();
     }
 
+    public <T> T getRecipeInput(Class<T> clazz, int slot)
+    {
+        List<RecipeIngredient<T>> recipeInputs = getRecipeInputs(clazz);
+
+        if (recipeInputs.size() > slot)
+            return recipeInputs.get(slot).getRaw();
+        return IngredientManager.getIngredientHandler(clazz).getEmpty();
+    }
+
+    public <T> T getRecipeOutput(Class<T> clazz, int slot)
+    {
+        List<RecipeIngredient<T>> recipeOutputs = getRecipeOutputs(clazz);
+
+        if (recipeOutputs.size() > slot)
+            return recipeOutputs.get(slot).getRaw();
+        return IngredientManager.getIngredientHandler(clazz).getEmpty();
+    }
+
     public void onCraft(World world, BlockPos pos, RecipeState state, LivingEntity crafter)
     {
         if (onCraft != null)

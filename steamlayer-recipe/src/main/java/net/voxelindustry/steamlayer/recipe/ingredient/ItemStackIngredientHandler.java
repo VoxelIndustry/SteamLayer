@@ -52,6 +52,12 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     }
 
     @Override
+    public ItemStack getEmpty()
+    {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
     public CompoundTag toTag(ItemStack value, CompoundTag tag)
     {
         return value.toTag(tag);

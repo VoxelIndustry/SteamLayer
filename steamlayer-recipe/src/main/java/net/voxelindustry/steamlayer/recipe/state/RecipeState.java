@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Collections.emptyList;
+
 public class RecipeState implements TagSerializable<CompoundTag>
 {
     protected Multimap<Class<?>, RecipeIngredient<?>> inputs;
@@ -130,24 +132,68 @@ public class RecipeState implements TagSerializable<CompoundTag>
 
     public <T> List<T> getIngredientsLeft(Class<T> typeClass)
     {
-        return (List<T>) leftInputs.get(typeClass);
+        if (leftInputs.containsKey(typeClass))
+            return (List<T>) leftInputs.get(typeClass);
+        return emptyList();
+    }
+
+    public <T> T getIngredientLeft(Class<T> typeClass, int slot)
+    {
+        List<T> ingredientsLeft = getIngredientsLeft(typeClass);
+
+        if (ingredientsLeft.size() > slot)
+            return ingredientsLeft.get(slot);
+        return IngredientManager.getIngredientHandler(typeClass).getEmpty();
     }
 
     public <T> List<T> getIngredientsConsumed(Class<T> typeClass)
     {
-        return (List<T>) consumedInputs.get(typeClass);
+        if (consumedInputs.containsKey(typeClass))
+            return (List<T>) consumedInputs.get(typeClass);
+        return emptyList();
+    }
+
+    public <T> T getIngredientConsumed(Class<T> typeClass, int slot)
+    {
+        List<T> ingredientsConsumed = getIngredientsConsumed(typeClass);
+
+        if (ingredientsConsumed.size() > slot)
+            return ingredientsConsumed.get(slot);
+        return IngredientManager.getIngredientHandler(typeClass).getEmpty();
     }
 
     @SuppressWarnings("unchecked")
     public <T> List<RecipeIngredient<T>> getInputs(Class<T> typeClass)
     {
-        return (List<RecipeIngredient<T>>) (Object) inputs.get(typeClass);
+        if (inputs.containsKey(typeClass))
+            return (List<RecipeIngredient<T>>) (Object) inputs.get(typeClass);
+        return emptyList();
+    }
+
+    public <T> T getInput(Class<T> typeClass, int slot)
+    {
+        List<RecipeIngredient<T>> inputs = getInputs(typeClass);
+
+        if (inputs.size() > slot)
+            return inputs.get(slot).getRaw();
+        return IngredientManager.getIngredientHandler(typeClass).getEmpty();
     }
 
     @SuppressWarnings("unchecked")
     public <T> List<RecipeIngredient<T>> getOutputs(Class<T> typeClass)
     {
-        return (List<RecipeIngredient<T>>) (Object) outputs.get(typeClass);
+        if (outputs.containsKey(typeClass))
+            return (List<RecipeIngredient<T>>) (Object) outputs.get(typeClass);
+        return emptyList();
+    }
+
+    public <T> T getOutput(Class<T> typeClass, int slot)
+    {
+        List<RecipeIngredient<T>> outputs = getOutputs(typeClass);
+
+        if (outputs.size() > slot)
+            return outputs.get(slot).getRaw();
+        return IngredientManager.getIngredientHandler(typeClass).getEmpty();
     }
 
     @Override

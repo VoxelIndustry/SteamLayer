@@ -17,6 +17,8 @@ public interface IngredientHandler<T>
 
     boolean isEmpty(T value);
 
+    T getEmpty();
+
     CompoundTag toTag(T value, CompoundTag tag);
 
     T fromTag(CompoundTag tag);

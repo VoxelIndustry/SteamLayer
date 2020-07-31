@@ -14,8 +14,8 @@
     "fabric-api-base": "*"
   },
   "entrypoints": {
-    "main": [
-      "net.voxelindustry.steamlayer.common.SteamLayerCommon"
+    "client": [
+      "net.voxelindustry.steamlayer.common.SteamLayerCommonClient"
     ]
   },
   "authors": [

@@ -17,6 +17,9 @@
   "entrypoints": {
     "main": [
       "net.voxelindustry.steamlayer.network.SteamLayerNetwork"
+    ],
+    "client": [
+      "net.voxelindustry.steamlayer.network.SteamLayerNetworkClient"
     ]
   },
   "authors": [

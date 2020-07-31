@@ -45,8 +45,13 @@ public class GenericPacket
     public static void handle(GenericPacket packet, PacketContext context)
     {
         if (context.getPacketEnvironment() == EnvType.CLIENT)
-            context.getTaskQueue().execute(() -> packet.message.handle(MinecraftClient.getInstance().player));
+            clientHandle(packet, context);
         else
             context.getTaskQueue().execute(() -> packet.message.handle(context.getPlayer()));
+    }
+
+    private static void clientHandle(GenericPacket packet, PacketContext context)
+    {
+        context.getTaskQueue().execute(() -> packet.message.handle(MinecraftClient.getInstance().player));
     }
 }

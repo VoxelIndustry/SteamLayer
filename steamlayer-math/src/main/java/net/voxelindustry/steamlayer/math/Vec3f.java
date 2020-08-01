@@ -135,4 +135,9 @@ public class Vec3f
     {
         return immutable((float) vector.getX(), (float) vector.getY(), (float) vector.getZ());
     }
+
+    public Quaternion getDegreesQuaternion(float angle)
+    {
+        return new Quaternion(new Vector3f(x, y, z), angle, true);
+    }
 }

@@ -49,7 +49,7 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     @Override
     public void fromClientTag(CompoundTag tag)
     {
-        fromTag(null, tag);
+        fromTag(getCachedState(), tag);
     }
 
     @Override

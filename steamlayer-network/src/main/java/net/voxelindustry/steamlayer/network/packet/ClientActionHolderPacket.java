@@ -39,7 +39,7 @@ public class ClientActionHolderPacket
         buffer.writeCompoundTag(packet.actionPayload);
     }
 
-    public static void handle(ClientActionHolderPacket packet, PacketContext context)
+    public static void handleClient(ClientActionHolderPacket packet, PacketContext context)
     {
         context.getTaskQueue().execute(() -> ActionManager.getInstance().triggerCallback(packet.replyID, packet.actionPayload));
     }

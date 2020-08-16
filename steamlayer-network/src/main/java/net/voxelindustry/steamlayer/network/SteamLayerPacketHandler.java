@@ -4,7 +4,9 @@ import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.network.ClientSidePacketRegistry;
 import net.fabricmc.fabric.api.network.PacketContext;
 import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
-import net.minecraft.client.MinecraftClient;
+import net.fabricmc.fabric.api.server.PlayerStream;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -15,6 +17,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
 
 import java.util.function.BiConsumer;
@@ -52,11 +57,6 @@ public class SteamLayerPacketHandler
         ClientSidePacketRegistry.INSTANCE.register(identifier, (packetContext, packetByteBuf) -> consumer.accept(packetByteBuf, packetContext));
     }
 
-    public static void sendToServer(Packet<?> packet)
-    {
-        MinecraftClient.getInstance().getNetworkHandler().sendPacket(packet);
-    }
-
     public static void sendToAll(Packet<?> packet, MinecraftServer server)
     {
         server.getPlayerManager().sendToAll(packet);
@@ -69,7 +69,31 @@ public class SteamLayerPacketHandler
 
     public static void sendToWorld(Packet<?> packet, ServerWorld world)
     {
-        world.getPlayers().forEach(serverPlayerEntity -> sendToPlayer(packet, serverPlayerEntity));
+        world.getPlayers()
+                .forEach(serverPlayerEntity -> sendToPlayer(packet, serverPlayerEntity));
     }
 
+    public static void sendToTracking(Packet<?> packet, BlockEntity tile)
+    {
+        PlayerStream.watching(tile)
+                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+    }
+
+    public static void sendToTracking(Packet<?> packet, Entity entity)
+    {
+        PlayerStream.watching(entity)
+                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+    }
+
+    public static void sendToTracking(Packet<?> packet, World world, BlockPos pos)
+    {
+        PlayerStream.watching(world, pos)
+                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+    }
+
+    public static void sendToTracking(Packet<?> packet, World world, ChunkPos pos)
+    {
+        PlayerStream.watching(world, pos)
+                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+    }
 }

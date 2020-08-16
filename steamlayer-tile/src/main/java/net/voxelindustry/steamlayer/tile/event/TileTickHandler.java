@@ -12,6 +12,6 @@ public class TileTickHandler
     public static void tick()
     {
         while (TileTickHandler.loadables.peek() != null)
-            TileTickHandler.loadables.poll().load();
+            TileTickHandler.loadables.poll().serverLoad();
     }
 }

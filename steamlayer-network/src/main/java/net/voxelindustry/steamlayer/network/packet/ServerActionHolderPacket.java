@@ -70,7 +70,7 @@ public class ServerActionHolderPacket
         buffer.writeCompoundTag(packet.actionPayload);
     }
 
-    public static void handle(ServerActionHolderPacket packet, PacketContext context)
+    public static void handleServer(ServerActionHolderPacket packet, PacketContext context)
     {
         context.getTaskQueue().execute(() ->
         {

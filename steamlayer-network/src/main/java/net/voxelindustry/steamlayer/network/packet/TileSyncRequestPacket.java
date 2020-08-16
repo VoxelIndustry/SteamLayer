@@ -31,7 +31,7 @@ public class TileSyncRequestPacket
         buffer.writeBlockPos(packet.pos);
     }
 
-    public static void handle(TileSyncRequestPacket packet, PacketContext context)
+    public static void handleServer(TileSyncRequestPacket packet, PacketContext context)
     {
         context.getTaskQueue().execute(() ->
         {

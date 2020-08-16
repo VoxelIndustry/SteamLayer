@@ -5,7 +5,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.voxelindustry.steamlayer.network.packet.ServerActionHolderPacket;
 
-import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.*;
+import static net.voxelindustry.steamlayer.network.SteamLayerClientPacketHandler.sendToServer;
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.SERVER_ACTION_HOLDER;
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.createServerBoundPacket;
 
 public class ServerActionBuilder
 {

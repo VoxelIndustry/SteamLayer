@@ -1,5 +1,6 @@
 package net.voxelindustry.steamlayer.common.utils;
 
+import com.mojang.serialization.codecs.ListCodec;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -10,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 
 public class ItemUtils
 {
+    public static final ListCodec<ItemStack> ITEMSTACK_LIST_CODEC = new ListCodec<>(ItemStack.CODEC);
+
     public static boolean deepEquals(ItemStack a, ItemStack b)
     {
         return a.isItemEqual(b) && ItemStack.areTagsEqual(a, b);

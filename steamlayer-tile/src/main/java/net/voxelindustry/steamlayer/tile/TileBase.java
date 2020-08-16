@@ -10,10 +10,12 @@ import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
+import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
+import net.voxelindustry.steamlayer.network.tilesync.PartialTileSyncRequestPacket;
 
 import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.TILE_SYNC_REQUEST;
 
-public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTile, BlockEntityClientSerializable
+public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTile, ILoadable, BlockEntityClientSerializable
 {
     @Getter
     private boolean isSyncLocked;
@@ -107,5 +109,13 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     public void addInfo(ITileInfoList list)
     {
 
+    }
+
+    @Override
+    public void clientLoad()
+    {
+        if (this instanceof PartialSyncedTile && ((PartialSyncedTile) this).syncOnLoad())
+            new PartialTileSyncRequestPacket(getPos(), getWorld().getRegistryKey().getValue(), ((PartialSyncedTile) this).getAllSyncElements())
+                    .sendToServer();
     }
 }

@@ -11,7 +11,7 @@ public class SteamLayerTile implements ModInitializer
         ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register((blockEntity, serverWorld) ->
         {
             if (blockEntity instanceof ILoadable)
-                ((ILoadable) blockEntity).load();
+                ((ILoadable) blockEntity).serverLoad();
         });
     }
 }

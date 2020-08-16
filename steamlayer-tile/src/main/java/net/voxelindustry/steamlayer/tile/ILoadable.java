@@ -2,5 +2,13 @@ package net.voxelindustry.steamlayer.tile;
 
 public interface ILoadable
 {
-    void load();
+    default void serverLoad()
+    {
+        
+    }
+
+    default void clientLoad()
+    {
+
+    }
 }

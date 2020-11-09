@@ -3,8 +3,8 @@ package net.voxelindustry.steamlayer.network.tilesync;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.datafixer.NbtOps;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.util.Identifier;
 
 import java.util.Optional;

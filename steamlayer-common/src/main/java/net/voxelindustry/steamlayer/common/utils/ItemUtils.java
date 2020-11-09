@@ -94,7 +94,7 @@ public class ItemUtils
 
     public static int drainPlayer(ServerPlayerEntity player, ItemStack stack)
     {
-        int removed = player.inventory.method_29280(candidate -> deepEquals(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.method_29281());
+        int removed = player.inventory.remove(candidate -> deepEquals(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.method_29281());
         player.currentScreenHandler.sendContentUpdates();
         player.playerScreenHandler.onContentChanged(player.inventory);
         player.updateCursorStack();

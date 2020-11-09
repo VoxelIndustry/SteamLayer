@@ -14,9 +14,9 @@ public class SlotFuel extends FilteredSlot
     }
 
     @Override
-    public int getMaxStackAmount(ItemStack stack)
+    public int getMaxItemCount(ItemStack stack)
     {
-        return SlotFuel.isBucket(stack) ? 1 : super.getMaxStackAmount(stack);
+        return SlotFuel.isBucket(stack) ? 1 : super.getMaxItemCount(stack);
     }
 
     public static boolean isBucket(ItemStack stack)

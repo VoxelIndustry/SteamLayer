@@ -205,7 +205,7 @@ public class BuiltContainer extends ScreenHandler implements ISyncedContainer
                         && slot.canInsert(stackToShift))
                 {
                     int resultingStackSize = stackInSlot.getCount() + stackToShift.getCount();
-                    int max = Math.min(stackToShift.getMaxCount(), slot.getMaxStackAmount());
+                    int max = Math.min(stackToShift.getMaxCount(), slot.getMaxItemCount(stackToShift));
                     if (resultingStackSize <= max)
                     {
                         stackToShift.setCount(0);
@@ -231,7 +231,7 @@ public class BuiltContainer extends ScreenHandler implements ISyncedContainer
                 ItemStack stackInSlot = slot.getStack();
                 if (stackInSlot.isEmpty() && slot.canInsert(stackToShift))
                 {
-                    int max = Math.min(stackToShift.getMaxCount(), slot.getMaxStackAmount());
+                    int max = Math.min(stackToShift.getMaxCount(), slot.getMaxItemCount(stackToShift));
                     stackInSlot = stackToShift.copy();
                     stackInSlot.setCount(Math.min(stackToShift.getCount(), max));
                     stackToShift.decrement(stackInSlot.getCount());

@@ -3,7 +3,7 @@ package net.voxelindustry.steamlayer.network.packet;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import net.fabricmc.fabric.api.network.PacketContext;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.voxelindustry.steamlayer.network.action.ActionManager;
 
@@ -15,10 +15,10 @@ public class ClientActionHolderPacket
 {
     public static AtomicInteger previousActionID;
 
-    private CompoundTag actionPayload;
+    private NbtCompound actionPayload;
     private int         replyID;
 
-    public ClientActionHolderPacket(int replyID, CompoundTag payload)
+    public ClientActionHolderPacket(int replyID, NbtCompound payload)
     {
         actionPayload = payload;
         this.replyID = replyID;
@@ -28,7 +28,7 @@ public class ClientActionHolderPacket
     {
         ClientActionHolderPacket packet = new ClientActionHolderPacket();
         packet.replyID = buffer.readInt();
-        packet.actionPayload = buffer.readCompoundTag();
+        packet.actionPayload = buffer.readNbt();
 
         return packet;
     }
@@ -36,7 +36,7 @@ public class ClientActionHolderPacket
     public static void encode(ClientActionHolderPacket packet, PacketByteBuf buffer)
     {
         buffer.writeInt(packet.replyID);
-        buffer.writeCompoundTag(packet.actionPayload);
+        buffer.writeNbt(packet.actionPayload);
     }
 
     public static void handleClient(ClientActionHolderPacket packet, PacketContext context)

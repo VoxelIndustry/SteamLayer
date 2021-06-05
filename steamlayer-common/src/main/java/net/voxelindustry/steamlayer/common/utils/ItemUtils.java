@@ -3,8 +3,8 @@ package net.voxelindustry.steamlayer.common.utils;
 import com.mojang.serialization.codecs.ListCodec;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.collection.DefaultedList;
 import org.apache.commons.lang3.StringUtils;
@@ -94,45 +94,44 @@ public class ItemUtils
 
     public static int drainPlayer(ServerPlayerEntity player, ItemStack stack)
     {
-        int removed = player.inventory.remove(candidate -> deepEquals(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.method_29281());
+        int removed = player.getInventory().remove(candidate -> deepEquals(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.getCraftingInput());
         player.currentScreenHandler.sendContentUpdates();
-        player.playerScreenHandler.onContentChanged(player.inventory);
-        player.updateCursorStack();
+        player.playerScreenHandler.onContentChanged(player.getInventory());
 
         return removed;
     }
 
-    public static CompoundTag saveAllItems(CompoundTag tag, DefaultedList<ItemStack> list)
+    public static NbtCompound saveAllItems(NbtCompound tag, DefaultedList<ItemStack> list)
     {
         if (list.size() > Byte.MAX_VALUE)
             throw new RuntimeException("Cannot save more than " + Byte.MAX_VALUE + " entries! size=" + list.size());
 
-        ListTag tagList = new ListTag();
+        NbtList tagList = new NbtList();
 
         for (int i = 0; i < list.size(); ++i)
         {
             ItemStack itemstack = list.get(i);
 
-            CompoundTag nbttagcompound = new CompoundTag();
+            NbtCompound nbttagcompound = new NbtCompound();
             nbttagcompound.putByte("Slot", (byte) i);
-            itemstack.toTag(nbttagcompound);
+            itemstack.writeNbt(nbttagcompound);
             tagList.add(nbttagcompound);
         }
         tag.put("Items", tagList);
         return tag;
     }
 
-    public static void loadAllItems(CompoundTag tag, DefaultedList<ItemStack> list)
+    public static void loadAllItems(NbtCompound tag, DefaultedList<ItemStack> list)
     {
-        ListTag tagList = tag.getList("Items", 10);
+        NbtList tagList = tag.getList("Items", 10);
 
         for (int i = 0; i < tagList.size(); ++i)
         {
-            CompoundTag compoundTag = tagList.getCompound(i);
-            int j = compoundTag.getByte("Slot") & 255;
+            NbtCompound NbtCompound = tagList.getCompound(i);
+            int j = NbtCompound.getByte("Slot") & 255;
 
             if (j >= 0 && j < list.size())
-                list.set(j, ItemStack.fromTag(compoundTag));
+                list.set(j, ItemStack.fromNbt(NbtCompound));
         }
     }
 }

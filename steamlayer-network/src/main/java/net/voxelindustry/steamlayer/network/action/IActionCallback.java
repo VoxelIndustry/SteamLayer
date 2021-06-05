@@ -1,9 +1,9 @@
 package net.voxelindustry.steamlayer.network.action;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 
 @FunctionalInterface
 public interface IActionCallback
 {
-    void call(CompoundTag response);
+    void call(NbtCompound response);
 }

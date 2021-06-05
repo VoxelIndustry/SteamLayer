@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -18,7 +18,7 @@ public class PartialTileSyncPacket extends Message
 {
     private BlockPos    pos;
     private Identifier  dimension;
-    private CompoundTag tag;
+    private NbtCompound tag;
     private Identifier  elementIdentifier;
 
     @Override
@@ -26,7 +26,7 @@ public class PartialTileSyncPacket extends Message
     {
         pos = buf.readBlockPos();
         dimension = buf.readIdentifier();
-        tag = buf.readCompoundTag();
+        tag = buf.readNbt();
         elementIdentifier = buf.readIdentifier();
     }
 
@@ -35,7 +35,7 @@ public class PartialTileSyncPacket extends Message
     {
         buf.writeBlockPos(pos);
         buf.writeIdentifier(dimension);
-        buf.writeCompoundTag(tag);
+        buf.writeNbt(tag);
         buf.writeIdentifier(elementIdentifier);
     }
 

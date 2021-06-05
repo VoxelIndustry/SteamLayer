@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -35,13 +35,13 @@ public class InventoryModule extends TileModule implements ISerializableModule
     }
 
     @Override
-    public void fromNBT(CompoundTag tag)
+    public void fromNBT(NbtCompound tag)
     {
         inventories.forEach((name, inv) -> inv.fromTag(tag.getCompound("Inv" + name)));
     }
 
     @Override
-    public CompoundTag toNBT(CompoundTag tag)
+    public NbtCompound toNBT(NbtCompound tag)
     {
         inventories.forEach((name, inv) -> tag.put("Inv" + name, inv.toTag()));
         return tag;
@@ -57,12 +57,12 @@ public class InventoryModule extends TileModule implements ISerializableModule
         inventories.put(name, inventory);
 
         inventory.onSlotChange(slot ->
-                               {
-                                   getModularTile().markDirty();
+        {
+            getModularTile().markDirty();
 
-                                   if (onSlotChangeEvents.containsKey(name) && slot != -1)
-                                       onSlotChangeEvents.get(name).accept(slot);
-                               });
+            if (onSlotChangeEvents.containsKey(name) && slot != -1)
+                onSlotChangeEvents.get(name).accept(slot);
+        });
         return this;
     }
 

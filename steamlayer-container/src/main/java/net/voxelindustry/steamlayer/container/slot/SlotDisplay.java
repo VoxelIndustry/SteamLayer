@@ -24,7 +24,12 @@ public class SlotDisplay extends ListenerSlot
     }
 
     @Override
-    public ItemStack onTakeItem(PlayerEntity player, ItemStack stack)
+    public void onTakeItem(PlayerEntity player, ItemStack stack)
+    {
+    }
+
+    @Override
+    public ItemStack takeStack(int amount)
     {
         return ItemStack.EMPTY;
     }

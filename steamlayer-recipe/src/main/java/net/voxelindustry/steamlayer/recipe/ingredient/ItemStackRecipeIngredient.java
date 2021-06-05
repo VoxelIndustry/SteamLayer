@@ -5,7 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -101,7 +101,7 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
 
         if (json.has("nbt"))
         {
-            CompoundTag tagCompound = CompoundTag.CODEC.parse(JsonOps.INSTANCE, json.getAsJsonObject("nbt"))
+            NbtCompound tagCompound = NbtCompound.CODEC.parse(JsonOps.INSTANCE, json.getAsJsonObject("nbt"))
                     .getOrThrow(false, SteamLayerConstants.LOGGER::error);
 
             ingredient.setTag(tagCompound);

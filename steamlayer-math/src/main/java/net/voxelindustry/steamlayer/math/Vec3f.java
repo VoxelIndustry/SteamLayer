@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
 
@@ -96,9 +95,9 @@ public class Vec3f
         return new Vec3f(x * scale, y * scale, z * scale);
     }
 
-    public Vector3f toVector3f()
+    public net.minecraft.util.math.Vec3f toVector3f()
     {
-        return new Vector3f(x, y, z);
+        return new net.minecraft.util.math.Vec3f(x, y, z);
     }
 
     public Vec3d toVector3d()
@@ -126,7 +125,7 @@ public class Vec3f
         return new Vec3f(x, y, z);
     }
 
-    public static Vec3f fromVector3f(Vector3f vector)
+    public static Vec3f fromVector3f(net.minecraft.util.math.Vec3f vector)
     {
         return immutable(vector.getX(), vector.getY(), vector.getZ());
     }
@@ -138,6 +137,6 @@ public class Vec3f
 
     public Quaternion getDegreesQuaternion(float angle)
     {
-        return new Quaternion(new Vector3f(x, y, z), angle, true);
+        return new Quaternion(new net.minecraft.util.math.Vec3f(x, y, z), angle, true);
     }
 }

@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.multiblock;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.tileentity.BlockEntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -29,7 +29,7 @@ public class TileMultiblockGag extends TileBase implements ITileMultiblock
     }
 
     @Override
-    public CompoundTag write(CompoundTag tag)
+    public NbtCompound write(NbtCompound tag)
     {
         tag.putInt("corePosX", corePos.getX());
         tag.putInt("corePosY", corePos.getY());
@@ -39,7 +39,7 @@ public class TileMultiblockGag extends TileBase implements ITileMultiblock
     }
 
     @Override
-    public void read(CompoundTag tag)
+    public void read(NbtCompound tag)
     {
         corePos = new BlockPos(tag.getInt("corePosX"), tag.getInt("corePosY"), tag.getInt("corePosZ"));
 

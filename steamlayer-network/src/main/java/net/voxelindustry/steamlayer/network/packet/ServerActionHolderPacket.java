@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import net.fabricmc.fabric.api.network.PacketContext;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -27,7 +27,7 @@ public class ServerActionHolderPacket
     private String actionName;
 
     @Setter
-    private CompoundTag actionPayload;
+    private NbtCompound actionPayload;
     private BlockPos    pos;
     private String      dimensionKey;
     private int         actionID;
@@ -54,7 +54,7 @@ public class ServerActionHolderPacket
         packet.expectAnswer = buffer.readBoolean();
 
         packet.actionName = buffer.readString();
-        packet.actionPayload = buffer.readCompoundTag();
+        packet.actionPayload = buffer.readNbt();
 
         return packet;
     }
@@ -67,14 +67,14 @@ public class ServerActionHolderPacket
         buffer.writeBoolean(packet.expectAnswer);
 
         buffer.writeString(packet.actionName);
-        buffer.writeCompoundTag(packet.actionPayload);
+        buffer.writeNbt(packet.actionPayload);
     }
 
     public static void handleServer(ServerActionHolderPacket packet, PacketContext context)
     {
         context.getTaskQueue().execute(() ->
         {
-            ServerWorld world = context.getPlayer().getServer().getWorld(RegistryKey.of(Registry.DIMENSION, new Identifier(packet.dimensionKey)));
+            ServerWorld world = context.getPlayer().getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, new Identifier(packet.dimensionKey)));
 
             ChunkPos chunkPos = new ChunkPos(packet.getPos());
 

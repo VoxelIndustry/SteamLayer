@@ -1,6 +1,6 @@
 plugins {
     id "com.jfrog.artifactory" version "4.16.1"
-    id "fabric-loom" version "0.4-SNAPSHOT"
+    id "fabric-loom" version "0.8-SNAPSHOT"
     id "maven-publish"
 }
 
@@ -14,10 +14,9 @@ allprojects {
     group = "net.voxelindustry"
 
     compileJava.options.encoding = 'UTF-8'
-    sourceCompatibility = targetCompatibility = "1.8"
-    compileJava {
-        sourceCompatibility = targetCompatibility = "1.8"
-    }
+
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 
     repositories {
         maven {
@@ -35,30 +34,25 @@ allprojects {
 
         compileOnly 'org.jetbrains:annotations:19.0.0'
 
-        compileOnly 'org.projectlombok:lombok:1.18.12'
-        annotationProcessor 'org.projectlombok:lombok:1.18.12'
+        compileOnly 'org.projectlombok:lombok:1.18.20'
+        annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
-        testCompile('org.junit.jupiter:junit-jupiter-api:5.6.1')
-        testCompile('org.mockito:mockito-core:3.3.3')
-        testCompile('org.mockito:mockito-junit-jupiter:3.3.3')
-        testCompile('org.assertj:assertj-core:3.15.0')
+        testImplementation('org.junit.jupiter:junit-jupiter-api:5.6.1')
+        testImplementation('org.mockito:mockito-core:3.3.3')
+        testImplementation('org.mockito:mockito-junit-jupiter:3.3.3')
+        testImplementation('org.assertj:assertj-core:3.15.0')
 
-        testRuntime('org.junit.jupiter:junit-jupiter-engine:5.6.1')
+        testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.6.1')
 
-        testCompileOnly 'org.projectlombok:lombok:1.18.12'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.12'
+        testCompileOnly 'org.projectlombok:lombok:1.18.20'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
     }
 
     processResources {
         inputs.property "version", project.version
 
-        from(sourceSets.main.resources.srcDirs) {
-            include "fabric.mod.json"
+        filesMatching("fabric.mod.json") {
             expand "version": project.version
-        }
-
-        from(sourceSets.main.resources.srcDirs) {
-            exclude "fabric.mod.json"
         }
     }
 
@@ -100,7 +94,6 @@ allprojects {
 archivesBaseName = "steamlayer"
 
 subprojects {
-    archivesBaseName = "${rootProject.archivesBaseName}-${project.name}"
 }
 
 project('steamlayer-common') {
@@ -114,10 +107,10 @@ project('steamlayer-test') {
     archivesBaseName = "steamlayer-test"
 
     dependencies {
-        compile('org.junit.jupiter:junit-jupiter-api:5.6.1')
-        compile('org.mockito:mockito-core:3.3.3')
-        compile('org.mockito:mockito-junit-jupiter:3.3.3')
-        compile('org.assertj:assertj-core:3.15.0')
+        implementation('org.junit.jupiter:junit-jupiter-api:5.6.1')
+        implementation('org.mockito:mockito-core:3.3.3')
+        implementation('org.mockito:mockito-junit-jupiter:3.3.3')
+        implementation('org.assertj:assertj-core:3.15.0')
     }
 }
 
@@ -125,7 +118,7 @@ project('steamlayer-inventory') {
     archivesBaseName = "steamlayer-inventory"
 
     dependencies {
-        compile project(':steamlayer-common')
+        api project(':steamlayer-common')
     }
 }
 
@@ -133,7 +126,7 @@ project('steamlayer-network') {
     archivesBaseName = "steamlayer-network"
 
     dependencies {
-        compile project(':steamlayer-common')
+        api project(':steamlayer-common')
     }
 }
 
@@ -141,8 +134,8 @@ project('steamlayer-container') {
     archivesBaseName = "steamlayer-container"
 
     dependencies {
-        compile project(':steamlayer-inventory')
-        compile project(':steamlayer-network')
+        api project(':steamlayer-inventory')
+        api project(':steamlayer-network')
     }
 }
 
@@ -150,10 +143,9 @@ project('steamlayer-tile') {
     archivesBaseName = "steamlayer-tile"
 
     dependencies {
-        compile project(':steamlayer-inventory')
-        compile project(':steamlayer-network')
-        compile 'org.hjson:hjson:3.0.0'
-        include 'org.hjson:hjson:3.0.0'
+        api project(':steamlayer-inventory')
+        api project(':steamlayer-network')
+        implementation include('org.hjson:hjson:3.0.0')
     }
 }
 
@@ -161,7 +153,7 @@ project('steamlayer-tile') {
     archivesBaseName = "steamlayer-multiblock"
 
     dependencies {
-        compile project(':tile')
+        implementation project(':tile')
     }
 }*/
 
@@ -169,7 +161,7 @@ project('steamlayer-grid') {
     archivesBaseName = "steamlayer-grid"
 
     dependencies {
-        compile project(':steamlayer-tile')
+        api project(':steamlayer-tile')
     }
 }
 
@@ -177,9 +169,9 @@ project('steamlayer-recipe') {
     archivesBaseName = "steamlayer-recipe"
 
     dependencies {
-        compile project(':steamlayer-common')
+        api project(':steamlayer-common')
 
-        testCompile project(':steamlayer-test')
+        testImplementation project(':steamlayer-test')
     }
 }
 
@@ -187,9 +179,9 @@ project('steamlayer-math') {
     archivesBaseName = "steamlayer-math"
 
     dependencies {
-        compile project(':steamlayer-common')
+        api project(':steamlayer-common')
 
-        testCompile project(':steamlayer-test')
+        testImplementation project(':steamlayer-test')
     }
 }
 
@@ -205,7 +197,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact(file("${project.buildDir}/libs/${rootProject.archivesBaseName}-${archivesBaseName}-${project.steamlayer_version}.jar")) {
+            artifact(file("${project.buildDir}/libs/${rootProject.archivesBaseName}-${project.steamlayer_version}.jar")) {
                 builtBy(remapJar)
             }
             pom.withXml {
@@ -234,3 +226,5 @@ dependencies {
         }
     }
 }
+
+subprojects.each { artifactoryPublish.dependsOn("${it.name}:artifactoryPublish") }

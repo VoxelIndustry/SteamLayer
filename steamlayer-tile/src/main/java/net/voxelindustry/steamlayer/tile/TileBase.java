@@ -2,10 +2,12 @@ package net.voxelindustry.steamlayer.tile;
 
 import lombok.Getter;
 import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
@@ -22,9 +24,9 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     @Getter
     private boolean isSyncQueued;
 
-    public TileBase(BlockEntityType<?> type)
+    public TileBase(BlockEntityType<?> type, BlockPos pos, BlockState state)
     {
-        super(type);
+        super(type, pos, state);
     }
 
     @Override
@@ -49,15 +51,15 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     }
 
     @Override
-    public void fromClientTag(CompoundTag tag)
+    public void fromClientTag(NbtCompound tag)
     {
-        fromTag(getCachedState(), tag);
+        readNbt(tag);
     }
 
     @Override
-    public CompoundTag toClientTag(CompoundTag tag)
+    public NbtCompound toClientTag(NbtCompound tag)
     {
-        return toTag(tag);
+        return writeNbt(tag);
     }
 
     @Override

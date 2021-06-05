@@ -3,7 +3,6 @@ package net.voxelindustry.steamlayer.recipe.vanilla;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public interface SteamLayerVanillaRecipeBridge extends Recipe<Inventory>
@@ -32,12 +31,6 @@ public interface SteamLayerVanillaRecipeBridge extends Recipe<Inventory>
     @Deprecated
     @Override
     default ItemStack getOutput()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    default DefaultedList<ItemStack> getRemainingStacks(Inventory inventory)
     {
         throw new UnsupportedOperationException();
     }

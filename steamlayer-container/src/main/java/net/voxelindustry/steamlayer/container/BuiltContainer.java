@@ -181,7 +181,7 @@ public class BuiltContainer extends ScreenHandler implements ISyncedContainer
                 }
             }
 
-            slot.onStackChanged(stackInSlot, originalStack);
+            slot.onQuickTransfer(stackInSlot, originalStack);
             if (stackInSlot.getCount() <= 0)
                 slot.setStack(ItemStack.EMPTY);
             slot.markDirty();

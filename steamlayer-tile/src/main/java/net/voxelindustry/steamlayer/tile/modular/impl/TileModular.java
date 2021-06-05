@@ -3,7 +3,8 @@ package net.voxelindustry.steamlayer.tile.modular.impl;
 import lombok.Getter;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.BlockPos;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.steamlayer.tile.descriptor.ModularTiles;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
@@ -22,9 +23,9 @@ public class TileModular extends TileBase implements IModularTile
     private TileDescriptor descriptor;
     private String         modid;
 
-    public TileModular(String modid, BlockEntityType<? extends TileModular> type, TileDescriptor descriptor)
+    public TileModular(String modid, BlockEntityType<?> type, BlockPos pos, BlockState state, TileDescriptor descriptor)
     {
-        super(type);
+        super(type, pos, state);
 
         this.descriptor = descriptor;
         this.modid = modid;
@@ -34,15 +35,15 @@ public class TileModular extends TileBase implements IModularTile
             reloadModules();
     }
 
-    public TileModular(BlockEntityType<? extends TileModular> type)
+    public TileModular(BlockEntityType<?> type, BlockPos pos, BlockState state)
     {
-        this(null, type, null);
+        this(null, type, pos, state, null);
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag)
+    public void readNbt(NbtCompound tag)
     {
-        super.fromTag(state, tag);
+        super.readNbt(tag);
 
         modid = tag.getString("modid");
         TileDescriptor previous = descriptor;
@@ -59,7 +60,7 @@ public class TileModular extends TileBase implements IModularTile
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag)
+    public NbtCompound writeNbt(NbtCompound tag)
     {
         if (descriptor != null)
             tag.putString("machineDescriptor", descriptor.getName());
@@ -68,9 +69,9 @@ public class TileModular extends TileBase implements IModularTile
         modules.values().forEach(module ->
         {
             if (module instanceof ISerializableModule)
-                tag.put(module.getName(), ((ISerializableModule) module).toNBT(new CompoundTag()));
+                tag.put(module.getName(), ((ISerializableModule) module).toNBT(new NbtCompound()));
         });
-        return super.toTag(tag);
+        return super.writeNbt(tag);
     }
 
     @Override

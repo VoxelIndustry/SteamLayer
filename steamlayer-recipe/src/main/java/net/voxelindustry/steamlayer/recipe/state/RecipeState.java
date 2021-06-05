@@ -4,7 +4,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -22,7 +22,7 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 
-public class RecipeState implements TagSerializable<CompoundTag>
+public class RecipeState implements TagSerializable<NbtCompound>
 {
     protected Multimap<Class<?>, RecipeIngredient<?>> inputs;
     protected Multimap<Class<?>, RecipeIngredient<?>> outputs;
@@ -197,9 +197,9 @@ public class RecipeState implements TagSerializable<CompoundTag>
     }
 
     @Override
-    public CompoundTag toTag()
+    public NbtCompound toTag()
     {
-        CompoundTag tag = new CompoundTag();
+        NbtCompound tag = new NbtCompound();
 
         tag.putInt("currentTime", currentTime);
         tag.putInt("recipeTime", recipeTime);
@@ -231,7 +231,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void consumedInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
+    private <T> void consumedInputForTypeToTag(NbtCompound tag, Class<T> typeClass, String identifier)
     {
         IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         Collection<T> consumedInputsForType = (Collection<T>) consumedInputs.get(typeClass);
@@ -240,13 +240,13 @@ public class RecipeState implements TagSerializable<CompoundTag>
         int index = 0;
         for (T input : consumedInputsForType)
         {
-            tag.put("consumedInputForType" + identifier + index, ingredientHandler.toTag(input, new CompoundTag()));
+            tag.put("consumedInputForType" + identifier + index, ingredientHandler.toTag(input, new NbtCompound()));
             index++;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void leftInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
+    private <T> void leftInputForTypeToTag(NbtCompound tag, Class<T> typeClass, String identifier)
     {
         IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         Collection<T> leftInputsForType = (Collection<T>) leftInputs.get(typeClass);
@@ -255,13 +255,13 @@ public class RecipeState implements TagSerializable<CompoundTag>
         int index = 0;
         for (T input : leftInputsForType)
         {
-            tag.put("leftInputForType" + identifier + index, ingredientHandler.toTag(input, new CompoundTag()));
+            tag.put("leftInputForType" + identifier + index, ingredientHandler.toTag(input, new NbtCompound()));
             index++;
         }
     }
 
     @Override
-    public void fromTag(CompoundTag tag)
+    public void fromTag(NbtCompound tag)
     {
         consumedInputs.clear();
         leftInputs.clear();
@@ -290,7 +290,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
         }
     }
 
-    private <T> void leftInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
+    private <T> void leftInputForTypeFromTag(NbtCompound tag, Class<T> typeClass, String identifier)
     {
         int leftInputForType = tag.getInt("leftInputForType" + identifier);
         IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
@@ -299,7 +299,7 @@ public class RecipeState implements TagSerializable<CompoundTag>
             leftInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("leftInputForType" + identifier + index)));
     }
 
-    private <T> void consumedInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
+    private <T> void consumedInputForTypeFromTag(NbtCompound tag, Class<T> typeClass, String identifier)
     {
         int consumedInputForType = tag.getInt("consumedInputForType" + identifier);
         IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);

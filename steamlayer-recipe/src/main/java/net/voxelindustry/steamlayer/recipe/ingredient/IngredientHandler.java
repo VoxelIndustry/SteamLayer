@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.recipe.ingredient;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 
 public interface IngredientHandler<T>
@@ -19,9 +19,9 @@ public interface IngredientHandler<T>
 
     T getEmpty();
 
-    CompoundTag toTag(T value, CompoundTag tag);
+    NbtCompound toTag(T value, NbtCompound tag);
 
-    T fromTag(CompoundTag tag);
+    T fromTag(NbtCompound tag);
 
     Identifier getIdentifier();
 }

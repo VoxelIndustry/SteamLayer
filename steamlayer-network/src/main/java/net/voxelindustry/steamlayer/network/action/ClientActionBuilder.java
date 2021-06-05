@@ -3,7 +3,7 @@ package net.voxelindustry.steamlayer.network.action;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.voxelindustry.steamlayer.network.packet.ClientActionHolderPacket;
 
@@ -13,13 +13,13 @@ public class ClientActionBuilder
 {
     private BlockEntity  sender;
     private PlayerEntity player;
-    private CompoundTag  payload;
+    private NbtCompound  payload;
     private int          replyID;
 
     public ClientActionBuilder(int replyID, BlockEntity sender)
     {
         this.sender = sender;
-        payload = new CompoundTag();
+        payload = new NbtCompound();
         this.replyID = replyID;
     }
 
@@ -67,7 +67,7 @@ public class ClientActionBuilder
 
     public ClientActionBuilder withItemStack(String key, ItemStack value)
     {
-        payload.put(key, value.toTag(new CompoundTag()));
+        payload.put(key, value.writeNbt(new NbtCompound()));
         return this;
     }
 

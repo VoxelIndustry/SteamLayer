@@ -9,8 +9,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.voxelindustry.steamlayer.common.utils.TagSerializable;
@@ -22,12 +21,12 @@ import java.util.function.Supplier;
 
 @Getter
 @Accessors(fluent = true)
-public class InventoryHandler implements Inventory, TagSerializable
+public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
 {
     @Setter
     private IntConsumer onSlotChange;
 
-    private Int2ObjectMap<Predicate<ItemStack>> slotFilters;
+    private final Int2ObjectMap<Predicate<ItemStack>> slotFilters;
 
     @Setter
     private Consumer<PlayerEntity> onOpen;
@@ -183,14 +182,14 @@ public class InventoryHandler implements Inventory, TagSerializable
     }
 
     @Override
-    public Tag toTag()
+    public NbtCompound toTag()
     {
-        return Inventories.toTag(new CompoundTag(), stacks);
+        return Inventories.writeNbt(new NbtCompound(), stacks);
     }
 
     @Override
-    public void fromTag(Tag tag)
+    public void fromTag(NbtCompound tag)
     {
-        Inventories.fromTag((CompoundTag) tag, stacks);
+        Inventories.readNbt(tag, stacks);
     }
 }

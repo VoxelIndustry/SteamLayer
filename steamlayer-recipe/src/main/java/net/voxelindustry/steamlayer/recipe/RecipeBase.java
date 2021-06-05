@@ -7,7 +7,7 @@ import com.google.common.collect.Multimaps;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.RecipeType;
@@ -109,7 +109,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         );
     }
 
-    public RecipeState createState(CompoundTag existingData)
+    public RecipeState createState(NbtCompound existingData)
     {
         RecipeState state = createState();
         state.fromTag(existingData);

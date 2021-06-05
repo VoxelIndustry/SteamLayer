@@ -3,7 +3,7 @@ package net.voxelindustry.steamlayer.network.tilesync;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.util.Identifier;
 
@@ -33,12 +33,12 @@ public class PartialTileSync
                     .resultOrPartial(log::error);
         }).ifPresent(tag ->
         {
-            new PartialTileSyncPacket(worldTile.getPos(), worldTile.getWorld().getRegistryKey().getValue(), (CompoundTag) tag, identifier)
+            new PartialTileSyncPacket(worldTile.getPos(), worldTile.getWorld().getRegistryKey().getValue(), (NbtCompound) tag, identifier)
                     .sendToTracking(worldTile);
         });
     }
 
-    public void receiveSync(PartialSyncedTile tile, Identifier elementIdentifier, CompoundTag tag)
+    public void receiveSync(PartialSyncedTile tile, Identifier elementIdentifier, NbtCompound tag)
     {
         tile.getSyncElementCodec(elementIdentifier)
                 .decode(NbtOps.INSTANCE, tag)

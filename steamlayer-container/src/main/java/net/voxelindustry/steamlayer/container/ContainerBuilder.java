@@ -91,7 +91,7 @@ public class ContainerBuilder
      */
     public ContainerPlayerInventoryBuilder player(PlayerEntity player)
     {
-        return new ContainerPlayerInventoryBuilder(this, player, player.inventory);
+        return new ContainerPlayerInventoryBuilder(this, player, player.getInventory());
     }
 
     public ContainerSyncBuilder sync()

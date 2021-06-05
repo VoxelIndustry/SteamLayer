@@ -3,7 +3,6 @@ package net.voxelindustry.steamlayer.container.sync;
 import lombok.Getter;
 import net.minecraft.network.PacketByteBuf;
 import org.apache.commons.lang3.Range;
-import sun.misc.SharedSecrets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -144,6 +143,6 @@ public class SyncedEnumListProperty<E extends Enum<E>> implements SyncedValue
 
         int count = buffer.readInt();
         for (int index = 0; index < count; index++)
-            stored.add(SharedSecrets.getJavaLangAccess().getEnumConstantsShared(enumClass)[buffer.readInt()]);
+            stored.add(enumClass.getEnumConstants()[buffer.readInt()]);
     }
 }

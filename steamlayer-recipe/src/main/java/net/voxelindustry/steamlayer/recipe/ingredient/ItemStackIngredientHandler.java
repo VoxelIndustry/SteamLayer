@@ -3,7 +3,7 @@ package net.voxelindustry.steamlayer.recipe.ingredient;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 
@@ -58,14 +58,14 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     }
 
     @Override
-    public CompoundTag toTag(ItemStack value, CompoundTag tag)
+    public NbtCompound toTag(ItemStack value, NbtCompound tag)
     {
-        return value.toTag(tag);
+        return value.writeNbt(tag);
     }
 
     @Override
-    public ItemStack fromTag(CompoundTag tag)
+    public ItemStack fromTag(NbtCompound tag)
     {
-        return ItemStack.fromTag(tag);
+        return ItemStack.fromNbt(tag);
     }
 }

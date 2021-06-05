@@ -9,7 +9,6 @@ import net.voxelindustry.steamlayer.container.sync.SyncedProperty;
 import net.voxelindustry.steamlayer.container.sync.SyncedValue;
 import net.voxelindustry.steamlayer.container.sync.SyncedWrappers;
 import org.apache.commons.lang3.Range;
-import sun.misc.SharedSecrets;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -211,8 +210,7 @@ public class ContainerSyncBuilder
     public <E extends Enum<E>> ContainerSyncBuilder syncEnum(Supplier<E> supplier, Consumer<E> consumer,
                                                              Class<E> enumClass, String name)
     {
-        syncInteger(() -> supplier.get().ordinal(), ordinal -> consumer.accept(SharedSecrets.getJavaLangAccess()
-                .getEnumConstantsShared(enumClass)[ordinal]), name);
+        syncInteger(() -> supplier.get().ordinal(), ordinal -> consumer.accept(enumClass.getEnumConstants()[ordinal]), name);
         return this;
     }
 

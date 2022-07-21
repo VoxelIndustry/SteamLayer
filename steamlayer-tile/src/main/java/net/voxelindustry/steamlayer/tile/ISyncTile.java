@@ -1,10 +1,10 @@
 package net.voxelindustry.steamlayer.tile;
 
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
-
-public interface ISyncTile extends BlockEntityClientSerializable
+public interface ISyncTile
 {
     void askServerSync();
+
+    void sync();
 
     void forceSync();
 

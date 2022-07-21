@@ -1,15 +1,14 @@
 package net.voxelindustry.steamlayer.tile;
 
 import lombok.Getter;
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.voxelindustry.steamlayer.network.NetworkHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
@@ -17,7 +16,7 @@ import net.voxelindustry.steamlayer.network.tilesync.PartialTileSyncRequestPacke
 
 import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.TILE_SYNC_REQUEST;
 
-public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTile, ILoadable, BlockEntityClientSerializable
+public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTile, ILoadable
 {
     @Getter
     private boolean isSyncLocked;
@@ -41,25 +40,25 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     }
 
     @Override
+    public NbtCompound toInitialChunkDataNbt()
+    {
+        return createNbt();
+    }
+
+    @Override
     public void forceSync()
     {
         if (world != null)
         {
-            NetworkHandler.sendTileToRange(this);
+            sync();
             isSyncQueued = false;
         }
     }
 
     @Override
-    public void fromClientTag(NbtCompound tag)
+    public BlockEntityUpdateS2CPacket toUpdatePacket()
     {
-        readNbt(tag);
-    }
-
-    @Override
-    public NbtCompound toClientTag(NbtCompound tag)
-    {
-        return writeNbt(tag);
+        return BlockEntityUpdateS2CPacket.create(this);
     }
 
     @Override

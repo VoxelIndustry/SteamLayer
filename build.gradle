@@ -1,6 +1,6 @@
 plugins {
-    id "com.jfrog.artifactory" version "4.16.1"
-    id "fabric-loom" version "0.8-SNAPSHOT"
+    id "com.jfrog.artifactory" version "4.24.23"
+    id "fabric-loom" version "0.10-SNAPSHOT"
     id "maven-publish"
 }
 
@@ -23,6 +23,7 @@ allprojects {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
+        mavenCentral()
     }
 
     dependencies {
@@ -32,20 +33,20 @@ allprojects {
 
         modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
 
-        compileOnly 'org.jetbrains:annotations:19.0.0'
+        compileOnly 'org.jetbrains:annotations:22.0.0'
 
-        compileOnly 'org.projectlombok:lombok:1.18.20'
-        annotationProcessor 'org.projectlombok:lombok:1.18.20'
+        compileOnly 'org.projectlombok:lombok:1.18.22'
+        annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
-        testImplementation('org.junit.jupiter:junit-jupiter-api:5.6.1')
-        testImplementation('org.mockito:mockito-core:3.3.3')
-        testImplementation('org.mockito:mockito-junit-jupiter:3.3.3')
-        testImplementation('org.assertj:assertj-core:3.15.0')
+        testImplementation('org.junit.jupiter:junit-jupiter-api:5.8.1')
+        testImplementation('org.mockito:mockito-core:4.0.0')
+        testImplementation('org.mockito:mockito-junit-jupiter:4.0.0')
+        testImplementation('org.assertj:assertj-core:3.21.0')
 
-        testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.6.1')
+        testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.8.1')
 
-        testCompileOnly 'org.projectlombok:lombok:1.18.20'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+        testCompileOnly 'org.projectlombok:lombok:1.18.22'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
     }
 
     processResources {
@@ -118,7 +119,7 @@ project('steamlayer-inventory') {
     archivesBaseName = "steamlayer-inventory"
 
     dependencies {
-        api project(':steamlayer-common')
+        api project(path: ':steamlayer-common', configuration: 'namedElements')
     }
 }
 
@@ -126,7 +127,7 @@ project('steamlayer-network') {
     archivesBaseName = "steamlayer-network"
 
     dependencies {
-        api project(':steamlayer-common')
+        api project(path: ':steamlayer-common', configuration: 'namedElements')
     }
 }
 
@@ -134,8 +135,8 @@ project('steamlayer-container') {
     archivesBaseName = "steamlayer-container"
 
     dependencies {
-        api project(':steamlayer-inventory')
-        api project(':steamlayer-network')
+        api project(path: ':steamlayer-inventory', configuration: 'namedElements')
+        api project(path: ':steamlayer-network', configuration: 'namedElements')
     }
 }
 
@@ -143,8 +144,8 @@ project('steamlayer-tile') {
     archivesBaseName = "steamlayer-tile"
 
     dependencies {
-        api project(':steamlayer-inventory')
-        api project(':steamlayer-network')
+        api project(path: ':steamlayer-inventory', configuration: 'namedElements')
+        api project(path: ':steamlayer-network', configuration: 'namedElements')
         implementation include('org.hjson:hjson:3.0.0')
     }
 }
@@ -161,7 +162,7 @@ project('steamlayer-grid') {
     archivesBaseName = "steamlayer-grid"
 
     dependencies {
-        api project(':steamlayer-tile')
+        api project(path: ':steamlayer-tile', configuration: 'namedElements')
     }
 }
 
@@ -169,9 +170,9 @@ project('steamlayer-recipe') {
     archivesBaseName = "steamlayer-recipe"
 
     dependencies {
-        api project(':steamlayer-common')
+        api project(path: ':steamlayer-common', configuration: 'namedElements')
 
-        testImplementation project(':steamlayer-test')
+        testImplementation project(path: ':steamlayer-test', configuration: 'namedElements')
     }
 }
 
@@ -179,9 +180,9 @@ project('steamlayer-math') {
     archivesBaseName = "steamlayer-math"
 
     dependencies {
-        api project(':steamlayer-common')
+        api project(path: ':steamlayer-common', configuration: 'namedElements')
 
-        testImplementation project(':steamlayer-test')
+        testImplementation project(path: ':steamlayer-test', configuration: 'namedElements')
     }
 }
 

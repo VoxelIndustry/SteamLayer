@@ -17,7 +17,7 @@ import java.util.HashMap;
 
 public class TileModular extends TileBase implements IModularTile
 {
-    private HashMap<Class<? extends TileModule>, TileModule> modules;
+    private final HashMap<Class<? extends TileModule>, TileModule> modules;
 
     @Getter
     private TileDescriptor descriptor;
@@ -60,7 +60,7 @@ public class TileModular extends TileBase implements IModularTile
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag)
+    protected void writeNbt(NbtCompound tag)
     {
         if (descriptor != null)
             tag.putString("machineDescriptor", descriptor.getName());
@@ -71,7 +71,7 @@ public class TileModular extends TileBase implements IModularTile
             if (module instanceof ISerializableModule)
                 tag.put(module.getName(), ((ISerializableModule) module).toNBT(new NbtCompound()));
         });
-        return super.writeNbt(tag);
+        super.writeNbt(tag);
     }
 
     @Override

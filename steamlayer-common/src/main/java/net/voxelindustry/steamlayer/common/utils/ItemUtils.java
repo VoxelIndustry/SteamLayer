@@ -1,21 +1,41 @@
 package net.voxelindustry.steamlayer.common.utils;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.ListCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.registry.Registry;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.Optional;
 
 public class ItemUtils
 {
-    public static final ListCodec<ItemStack> ITEMSTACK_LIST_CODEC = new ListCodec<>(ItemStack.CODEC);
+    // Mojang's codec does not handle empty ItemStack
+    public static final Codec<ItemStack>     FIXED_ITEMSTACK_CODEC = RecordCodecBuilder
+            .create(instance -> instance.group(
+                            Registry.ITEM.getCodec().optionalFieldOf("id")
+                                    .forGetter(stack -> Optional.ofNullable(stack.getItem())),
+                            Codec.INT.fieldOf("Count")
+                                    .forGetter(ItemStack::getCount),
+                            NbtCompound.CODEC.optionalFieldOf("tag")
+                                    .forGetter(stack -> Optional.ofNullable(stack.getNbt())))
+                    .apply(instance, (item, count, nbt) ->
+                    {
+                        var stack = new ItemStack(item.orElse(null), count);
+                        stack.setNbt(nbt.orElse(null));
+                        return stack;
+                    }));
+    public static final ListCodec<ItemStack> ITEMSTACK_LIST_CODEC  = new ListCodec<>(FIXED_ITEMSTACK_CODEC);
 
     public static boolean deepEquals(ItemStack a, ItemStack b)
     {
-        return a.isItemEqual(b) && ItemStack.areTagsEqual(a, b);
+        return a.isItemEqual(b) && ItemStack.areNbtEqual(a, b);
     }
 
     public static boolean equalsIgnoringTag(ItemStack a, ItemStack b)

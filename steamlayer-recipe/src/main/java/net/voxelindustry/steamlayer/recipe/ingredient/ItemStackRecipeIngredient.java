@@ -104,7 +104,7 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
             NbtCompound tagCompound = NbtCompound.CODEC.parse(JsonOps.INSTANCE, json.getAsJsonObject("nbt"))
                     .getOrThrow(false, SteamLayerConstants.LOGGER::error);
 
-            ingredient.setTag(tagCompound);
+            ingredient.setNbt(tagCompound);
         }
 
         return ingredient;

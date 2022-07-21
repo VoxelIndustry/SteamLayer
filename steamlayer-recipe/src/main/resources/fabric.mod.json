@@ -5,7 +5,6 @@
   "name": "SteamLayer (recipes)",
   "description": "Aggregate of shared libraries for the VoxelIndustry team",
   "version": "${version}",
-  "side": "universal",
   "custom": {
     "modmenu:api": true,
     "modmenu:parent": "steamlayer"

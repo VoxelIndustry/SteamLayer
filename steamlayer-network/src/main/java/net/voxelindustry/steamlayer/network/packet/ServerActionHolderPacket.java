@@ -3,16 +3,16 @@ package net.voxelindustry.steamlayer.network.packet;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import net.fabricmc.fabric.api.network.PacketContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.util.thread.ThreadExecutor;
 import net.voxelindustry.steamlayer.network.action.ActionSender;
 import net.voxelindustry.steamlayer.network.action.IActionReceiver;
 
@@ -70,26 +70,26 @@ public class ServerActionHolderPacket
         buffer.writeNbt(packet.actionPayload);
     }
 
-    public static void handleServer(ServerActionHolderPacket packet, PacketContext context)
+    public static void handleServer(ServerActionHolderPacket packet, PlayerEntity player, ThreadExecutor<? extends Runnable> threadExecutor)
     {
-        context.getTaskQueue().execute(() ->
+        threadExecutor.execute(() ->
         {
-            ServerWorld world = context.getPlayer().getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, new Identifier(packet.dimensionKey)));
+            var world = player.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, new Identifier(packet.dimensionKey)));
 
-            ChunkPos chunkPos = new ChunkPos(packet.getPos());
+            var chunkPos = new ChunkPos(packet.getPos());
 
-            if (world.isChunkLoaded(chunkPos.x, chunkPos.z))
+            if (!world.isChunkLoaded(chunkPos.x, chunkPos.z))
+                return;
+
+            var receiver = world.getBlockEntity(packet.getPos());
+
+            if (receiver instanceof IActionReceiver actionReceiver)
             {
-                BlockEntity receiver = world.getBlockEntity(packet.getPos());
+                var actionSender = new ActionSender(player, receiver, packet.getActionID());
+                actionReceiver.handle(actionSender, packet.getActionName(), packet.getActionPayload());
 
-                if (receiver instanceof IActionReceiver)
-                {
-                    ActionSender actionSender = new ActionSender(context.getPlayer(), receiver, packet.getActionID());
-                    ((IActionReceiver) receiver).handle(actionSender, packet.getActionName(),
-                            packet.getActionPayload());
-                    if (packet.isExpectAnswer() && !actionSender.isAnswered())
-                        actionSender.answer().send();
-                }
+                if (packet.isExpectAnswer() && !actionSender.isAnswered())
+                    actionSender.answer().send();
             }
         });
     }

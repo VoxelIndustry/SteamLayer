@@ -3,8 +3,7 @@ package net.voxelindustry.steamlayer.recipe;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.resource.ServerResourceManager;
-import net.minecraft.server.MinecraftServer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
 import net.voxelindustry.steamlayer.recipe.mixin.AccessorRecipeManager;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
@@ -23,14 +22,14 @@ public class SteamLayerRecipe implements ModInitializer
     @Override
     public void onInitialize()
     {
-        SERVER_STARTING.register(server -> recipeLoad((AccessorRecipeManager) server.getRecipeManager()));
-        END_DATA_PACK_RELOAD.register((serverResourceManager, success, success2) -> dataPackReload(success, success2));
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> recipeLoad((AccessorRecipeManager) server.getRecipeManager()));
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, dataPackContents, success) -> dataPackReload(server.getRecipeManager(), success));
     }
 
-    private void dataPackReload(ServerResourceManager serverResourceManager, boolean success)
+    private void dataPackReload(net.minecraft.recipe.RecipeManager recipeManager, boolean success)
     {
         if (success)
-            recipeLoad((AccessorRecipeManager) serverResourceManager.getRecipeManager());
+            recipeLoad((AccessorRecipeManager) recipeManager);
     }
 
     private void recipeLoad(AccessorRecipeManager recipeManager)
@@ -44,33 +43,5 @@ public class SteamLayerRecipe implements ModInitializer
     private <T extends RecipeBase> Collection<T> getRecipes(AccessorRecipeManager recipeManager, SteamLayerRecipeType<?> type)
     {
         return (Collection<T>) (Object) recipeManager.getAll(type).values();
-    }
-
-    //FIXME: Backported to 1.16 until 1.16.2 stable release
-
-    public static final Event<EndDataPackReload> END_DATA_PACK_RELOAD = EventFactory.createArrayBacked(EndDataPackReload.class, callbacks -> (server, serverResourceManager, success) ->
-    {
-        for (EndDataPackReload callback : callbacks)
-        {
-            callback.endDataPackReload(server, serverResourceManager, success);
-        }
-    });
-
-    public interface EndDataPackReload
-    {
-        void endDataPackReload(MinecraftServer server, ServerResourceManager serverResourceManager, boolean success);
-    }
-
-    public static final Event<ServerStarting> SERVER_STARTING = EventFactory.createArrayBacked(ServerStarting.class, callbacks -> server ->
-    {
-        for (ServerStarting callback : callbacks)
-        {
-            callback.onServerStarting(server);
-        }
-    });
-
-    public interface ServerStarting
-    {
-        void onServerStarting(MinecraftServer server);
     }
 }

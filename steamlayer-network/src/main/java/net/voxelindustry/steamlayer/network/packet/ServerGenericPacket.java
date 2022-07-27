@@ -1,8 +1,9 @@
 package net.voxelindustry.steamlayer.network.packet;
 
 import lombok.NoArgsConstructor;
-import net.fabricmc.fabric.api.network.PacketContext;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.thread.ThreadExecutor;
 
 @NoArgsConstructor
 public class ServerGenericPacket
@@ -39,8 +40,8 @@ public class ServerGenericPacket
         message.write(buffer);
     }
 
-    public void handleServer(PacketContext context)
+    public void handleServer(PlayerEntity player, ThreadExecutor<? extends Runnable> threadExecutor)
     {
-        context.getTaskQueue().execute(() -> message.handle(context.getPlayer()));
+        threadExecutor.execute(() -> message.handle(player));
     }
 }

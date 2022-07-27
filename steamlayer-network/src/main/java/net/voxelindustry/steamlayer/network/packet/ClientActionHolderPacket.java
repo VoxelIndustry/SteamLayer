@@ -2,9 +2,9 @@ package net.voxelindustry.steamlayer.network.packet;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import net.fabricmc.fabric.api.network.PacketContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.thread.ThreadExecutor;
 import net.voxelindustry.steamlayer.network.action.ActionManager;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,8 +39,8 @@ public class ClientActionHolderPacket
         buffer.writeNbt(packet.actionPayload);
     }
 
-    public static void handleClient(ClientActionHolderPacket packet, PacketContext context)
+    public static void handleClient(ClientActionHolderPacket packet, ThreadExecutor<? extends Runnable> threadExecutor)
     {
-        context.getTaskQueue().execute(() -> ActionManager.getInstance().triggerCallback(packet.replyID, packet.actionPayload));
+        threadExecutor.execute(() -> ActionManager.getInstance().triggerCallback(packet.replyID, packet.actionPayload));
     }
 }

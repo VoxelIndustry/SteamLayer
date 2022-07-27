@@ -16,13 +16,13 @@ public class SteamLayerNetwork implements ModInitializer
     public void onInitialize()
     {
         SteamLayerPacketHandler.registerServerBoundHandler(GENERIC_PACKET,
-                (buffer, context) -> new ServerGenericPacket().decode(buffer).handleServer(context));
+                (buffer, player, threadExecutor) -> new ServerGenericPacket().decode(buffer).handleServer(player, threadExecutor));
 
         SteamLayerPacketHandler.registerServerBoundHandler(SERVER_ACTION_HOLDER,
-                (buffer, context) -> ServerActionHolderPacket.handleServer(ServerActionHolderPacket.decode(buffer), context));
+                (buffer, player, threadExecutor) -> ServerActionHolderPacket.handleServer(ServerActionHolderPacket.decode(buffer), player, threadExecutor));
 
         SteamLayerPacketHandler.registerServerBoundHandler(TILE_SYNC_REQUEST,
-                (buffer, context) -> TileSyncRequestPacket.handleServer(TileSyncRequestPacket.decode(buffer), context));
+                (buffer, player, threadExecutor) -> TileSyncRequestPacket.handleServer(TileSyncRequestPacket.decode(buffer), player, threadExecutor));
 
         PacketHandler.getInstance().register(PartialTileSyncPacket.class);
         PacketHandler.getInstance().register(PartialTileSyncRequestPacket.class);

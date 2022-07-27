@@ -1,10 +1,9 @@
 package net.voxelindustry.steamlayer.network;
 
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.network.ClientSidePacketRegistry;
-import net.fabricmc.fabric.api.network.PacketContext;
-import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
-import net.fabricmc.fabric.api.server.PlayerStream;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
@@ -19,10 +18,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
+import net.voxelindustry.steamlayer.network.packet.PacketConsumer;
 
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class SteamLayerPacketHandler
@@ -40,9 +38,9 @@ public class SteamLayerPacketHandler
     }
 
 
-    public static void registerServerBoundHandler(Identifier identifier, BiConsumer<PacketByteBuf, PacketContext> consumer)
+    public static void registerServerBoundHandler(Identifier identifier, PacketConsumer consumer)
     {
-        ServerSidePacketRegistry.INSTANCE.register(identifier, (packetContext, packetByteBuf) -> consumer.accept(packetByteBuf, packetContext));
+        ServerPlayNetworking.registerGlobalReceiver(identifier, (server, playerEntity, channelHandler, packetByteBuf, responseSender) -> consumer.accept(packetByteBuf, playerEntity, server));
     }
 
     public static Packet<ClientPlayPacketListener> createClientBoundPacket(Identifier identifier, Consumer<PacketByteBuf> packetBufferConsumer)
@@ -52,9 +50,9 @@ public class SteamLayerPacketHandler
         return new CustomPayloadS2CPacket(identifier, buf);
     }
 
-    public static void registerClientBoundHandler(Identifier identifier, BiConsumer<PacketByteBuf, PacketContext> consumer)
+    public static void registerClientBoundHandler(Identifier identifier, PacketConsumer consumer)
     {
-        ClientSidePacketRegistry.INSTANCE.register(identifier, (packetContext, packetByteBuf) -> consumer.accept(packetByteBuf, packetContext));
+        ClientPlayNetworking.registerGlobalReceiver(identifier, (client, handler, packetByteBuf, responseSender) -> consumer.accept(packetByteBuf, client.player, client));
     }
 
     public static void sendToAll(Packet<?> packet, MinecraftServer server)
@@ -75,25 +73,25 @@ public class SteamLayerPacketHandler
 
     public static void sendToTracking(Packet<?> packet, BlockEntity tile)
     {
-        PlayerStream.watching(tile)
-                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+        PlayerLookup.tracking(tile)
+                .forEach(player -> sendToPlayer(packet, player));
     }
 
     public static void sendToTracking(Packet<?> packet, Entity entity)
     {
-        PlayerStream.watching(entity)
-                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+        PlayerLookup.tracking(entity)
+                .forEach(player -> sendToPlayer(packet, player));
     }
 
-    public static void sendToTracking(Packet<?> packet, World world, BlockPos pos)
+    public static void sendToTracking(Packet<?> packet, ServerWorld world, BlockPos pos)
     {
-        PlayerStream.watching(world, pos)
-                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+        PlayerLookup.tracking(world, pos)
+                .forEach(player -> sendToPlayer(packet, player));
     }
 
-    public static void sendToTracking(Packet<?> packet, World world, ChunkPos pos)
+    public static void sendToTracking(Packet<?> packet, ServerWorld world, ChunkPos pos)
     {
-        PlayerStream.watching(world, pos)
-                .forEach(player -> sendToPlayer(packet, (ServerPlayerEntity) player));
+        PlayerLookup.tracking(world, pos)
+                .forEach(player -> sendToPlayer(packet, player));
     }
 }

@@ -1,6 +1,6 @@
 plugins {
     id "com.jfrog.artifactory" version "4.24.23"
-    id "fabric-loom" version "0.10-SNAPSHOT"
+    id "fabric-loom" version "0.12-SNAPSHOT"
     id "maven-publish"
 }
 
@@ -15,8 +15,8 @@ allprojects {
 
     compileJava.options.encoding = 'UTF-8'
 
-    sourceCompatibility = JavaVersion.VERSION_16
-    targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 
     repositories {
         maven {
@@ -35,8 +35,8 @@ allprojects {
 
         compileOnly 'org.jetbrains:annotations:22.0.0'
 
-        compileOnly 'org.projectlombok:lombok:1.18.22'
-        annotationProcessor 'org.projectlombok:lombok:1.18.22'
+        compileOnly 'org.projectlombok:lombok:1.18.24'
+        annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
         testImplementation('org.junit.jupiter:junit-jupiter-api:5.8.1')
         testImplementation('org.mockito:mockito-core:4.0.0')
@@ -45,8 +45,8 @@ allprojects {
 
         testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.8.1')
 
-        testCompileOnly 'org.projectlombok:lombok:1.18.22'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
+        testCompileOnly 'org.projectlombok:lombok:1.18.24'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
     }
 
     processResources {

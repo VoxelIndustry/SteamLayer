@@ -2,11 +2,12 @@ package net.voxelindustry.steamlayer.network.packet;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import net.fabricmc.fabric.api.network.PacketContext;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.thread.ThreadExecutor;
 import net.voxelindustry.steamlayer.network.NetworkHandler;
 
 @AllArgsConstructor
@@ -31,17 +32,17 @@ public class TileSyncRequestPacket
         buffer.writeBlockPos(packet.pos);
     }
 
-    public static void handleServer(TileSyncRequestPacket packet, PacketContext context)
+    public static void handleServer(TileSyncRequestPacket packet, PlayerEntity player, ThreadExecutor<? extends Runnable> threadExecutor)
     {
-        context.getTaskQueue().execute(() ->
+        threadExecutor.execute(() ->
         {
-            ChunkPos chunkPos = new ChunkPos(packet.pos);
+            var chunkPos = new ChunkPos(packet.pos);
 
-            if (context.getPlayer().getEntityWorld().getRegistryKey().getValue().equals(packet.dimensionKey)
-                    && context.getPlayer().getEntityWorld().isChunkLoaded(chunkPos.x, chunkPos.z) &&
-                    context.getPlayer().getEntityWorld().getBlockEntity(packet.pos) != null)
-                NetworkHandler.sendTileToPlayer(context.getPlayer().getEntityWorld().getBlockEntity(packet.pos),
-                        (ServerPlayerEntity) context.getPlayer());
+            if (player.getEntityWorld().getRegistryKey().getValue().equals(packet.dimensionKey)
+                    && player.getEntityWorld().isChunkLoaded(chunkPos.x, chunkPos.z) &&
+                    player.getEntityWorld().getBlockEntity(packet.pos) != null)
+                NetworkHandler.sendTileToPlayer(player.getEntityWorld().getBlockEntity(packet.pos),
+                        (ServerPlayerEntity) player);
         });
     }
 }

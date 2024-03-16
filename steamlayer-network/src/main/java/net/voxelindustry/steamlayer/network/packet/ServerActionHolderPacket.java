@@ -7,11 +7,11 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.util.thread.ThreadExecutor;
 import net.voxelindustry.steamlayer.network.action.ActionSender;
 import net.voxelindustry.steamlayer.network.action.IActionReceiver;
@@ -74,7 +74,7 @@ public class ServerActionHolderPacket
     {
         threadExecutor.execute(() ->
         {
-            var world = player.getServer().getWorld(RegistryKey.of(Registry.WORLD_KEY, new Identifier(packet.dimensionKey)));
+            var world = player.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, new Identifier(packet.dimensionKey)));
 
             var chunkPos = new ChunkPos(packet.getPos());
 

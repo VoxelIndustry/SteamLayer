@@ -7,19 +7,20 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.registry.Registry;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public class ItemUtils
 {
     // Mojang's codec does not handle empty ItemStack
-    public static final Codec<ItemStack>     FIXED_ITEMSTACK_CODEC = RecordCodecBuilder
+    public static final Codec<ItemStack> FIXED_ITEMSTACK_CODEC = RecordCodecBuilder
             .create(instance -> instance.group(
-                            Registry.ITEM.getCodec().optionalFieldOf("id")
+                            Registries.ITEM.getCodec().optionalFieldOf("id")
                                     .forGetter(stack -> Optional.ofNullable(stack.getItem())),
                             Codec.INT.fieldOf("Count")
                                     .forGetter(ItemStack::getCount),
@@ -31,29 +32,16 @@ public class ItemUtils
                         stack.setNbt(nbt.orElse(null));
                         return stack;
                     }));
-    public static final ListCodec<ItemStack> ITEMSTACK_LIST_CODEC  = new ListCodec<>(FIXED_ITEMSTACK_CODEC);
+    public static final ListCodec<ItemStack> ITEMSTACK_LIST_CODEC = new ListCodec<>(FIXED_ITEMSTACK_CODEC);
 
-    public static boolean deepEquals(ItemStack a, ItemStack b)
+    public static boolean containsStack(Collection<ItemStack> stacks, ItemStack candidate)
     {
-        return a.isItemEqual(b) && ItemStack.areNbtEqual(a, b);
-    }
-
-    public static boolean equalsIgnoringTag(ItemStack a, ItemStack b)
-    {
-        return a.isItemEqual(b);
-    }
-
-    @Deprecated
-    public static boolean deepEqualsWithAmount(ItemStack a, ItemStack b)
-    {
-        return ItemStack.areEqual(a, b);
-    }
-
-    public static ItemStack copyWithSize(ItemStack stack, int amount)
-    {
-        ItemStack result = stack.copy();
-        result.setCount(1);
-        return result;
+        for (ItemStack stack : stacks)
+        {
+            if (ItemStack.canCombine(stack, candidate))
+                return true;
+        }
+        return false;
     }
 
     public static String getPrettyStackName(ItemStack stack)
@@ -61,13 +49,9 @@ public class ItemUtils
         return stack.getCount() + " " + StringUtils.capitalize(stack.getItem().toString());
     }
 
-    public static boolean canMergeStacks(ItemStack stack1, ItemStack stack2)
+    public static boolean canMerge(ItemStack dest, ItemStack from)
     {
-        if (stack1.isEmpty() || stack2.isEmpty())
-            return true;
-
-        return stack1.getCount() + stack2.getCount() <= stack1.getMaxCount()
-                && ItemUtils.deepEquals(stack1, stack2);
+        return ItemStack.canCombine(dest, from) && dest.getCount() + from.getCount() <= dest.getMaxCount();
     }
 
     public static int mergeStacks(ItemStack dest, ItemStack from, boolean doMerge)
@@ -81,7 +65,7 @@ public class ItemUtils
             }
             return 0;
         }
-        if ((ItemUtils.deepEquals(dest, from)))
+        if ((ItemStack.canCombine(dest, from)))
         {
             int merged = Math.min(dest.getMaxCount() - dest.getCount(), from.getCount());
             if (doMerge)
@@ -101,7 +85,7 @@ public class ItemUtils
         {
             ItemStack itemstack = player.getStack(i);
 
-            if (deepEquals && ItemUtils.deepEquals(stack, itemstack)
+            if (deepEquals && ItemStack.canCombine(stack, itemstack)
                     || !deepEquals && ItemStack.areItemsEqual(stack, itemstack))
             {
                 needed -= itemstack.getCount();
@@ -114,7 +98,7 @@ public class ItemUtils
 
     public static int drainPlayer(ServerPlayerEntity player, ItemStack stack)
     {
-        int removed = player.getInventory().remove(candidate -> deepEquals(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.getCraftingInput());
+        int removed = player.getInventory().remove(candidate -> ItemStack.canCombine(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.getCraftingInput());
         player.currentScreenHandler.sendContentUpdates();
         player.playerScreenHandler.onContentChanged(player.getInventory());
 

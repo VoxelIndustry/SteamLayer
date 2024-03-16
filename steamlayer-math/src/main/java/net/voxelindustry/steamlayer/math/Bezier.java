@@ -1,32 +1,36 @@
 package net.voxelindustry.steamlayer.math;
 
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
+
 public class Bezier
 {
-    public static Vec3f pointOfBezier4f(Vec3f[] controlPoints, float delta)
+    public static Vector3fc pointOfBezier4f(Vector3fc[] controlPoints, float delta)
     {
-        return new Vec3f(
+        return new Vector3f(
                 valueOfBezier4f(
-                        controlPoints[0].getX(),
-                        controlPoints[1].getX(),
-                        controlPoints[2].getX(),
-                        controlPoints[3].getX(),
+                        controlPoints[0].x(),
+                        controlPoints[1].x(),
+                        controlPoints[2].x(),
+                        controlPoints[3].x(),
                         delta),
                 valueOfBezier4f(
-                        controlPoints[0].getY(),
-                        controlPoints[1].getY(),
-                        controlPoints[2].getY(),
-                        controlPoints[3].getY(),
+                        controlPoints[0].y(),
+                        controlPoints[1].y(),
+                        controlPoints[2].y(),
+                        controlPoints[3].y(),
                         delta),
                 valueOfBezier4f(
-                        controlPoints[0].getZ(),
-                        controlPoints[1].getZ(),
-                        controlPoints[2].getZ(),
-                        controlPoints[3].getZ(),
+                        controlPoints[0].z(),
+                        controlPoints[1].z(),
+                        controlPoints[2].z(),
+                        controlPoints[3].z(),
                         delta));
     }
 
     public static float valueOfBezier4f(float value1, float value2, float value3, float value4, float delta)
     {
-        return ((1 - delta) * ((1 - delta) * ((1 - delta) * value1 + delta * value2) + delta * ((1 - delta) * value2 + delta * value3)) + delta * ((1 - delta) * ((1 - delta) * value2 + delta * value3) + delta * ((1 - delta) * value3 + delta * value4)));
+        var multiplied = (1 - delta) * value2 + delta * value3;
+        return ((1 - delta) * ((1 - delta) * ((1 - delta) * value1 + delta * value2) + delta * multiplied) + delta * ((1 - delta) * multiplied + delta * ((1 - delta) * value3 + delta * value4)));
     }
 }

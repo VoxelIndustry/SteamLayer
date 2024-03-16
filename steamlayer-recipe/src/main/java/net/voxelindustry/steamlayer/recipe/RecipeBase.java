@@ -6,11 +6,13 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.RecipeType;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.collection.DefaultedList;
@@ -178,5 +180,17 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
     public Identifier getId()
     {
         return identifier;
+    }
+
+    @Override
+    public ItemStack craft(Inventory inventory, DynamicRegistryManager registryManager)
+    {
+        return getRecipeOutput(ItemStack.class, 0).copy();
+    }
+
+    @Override
+    public ItemStack getOutput(DynamicRegistryManager registryManager)
+    {
+        return getRecipeOutput(ItemStack.class, 0);
     }
 }

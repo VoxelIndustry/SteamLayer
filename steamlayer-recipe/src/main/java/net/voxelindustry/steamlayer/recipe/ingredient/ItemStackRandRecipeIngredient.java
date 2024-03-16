@@ -6,7 +6,6 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.Range;
 
@@ -33,7 +32,7 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
     @Override
     public ItemStack getRaw()
     {
-        return ItemUtils.copyWithSize(ingredient, RandomUtils.nextInt(range.getMinimum(), range.getMaximum()));
+        return ingredient.copyWithCount(RandomUtils.nextInt(range.getMinimum(), range.getMaximum()));
     }
 
     @Override

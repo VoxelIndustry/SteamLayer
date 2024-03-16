@@ -14,7 +14,6 @@ import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.voxelindustry.steamlayer.common.container.ISyncedContainer;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.container.sync.ContainerSyncPacket;
 import net.voxelindustry.steamlayer.container.sync.ISyncCallback;
 import net.voxelindustry.steamlayer.container.sync.SyncedProperty;
@@ -144,7 +143,7 @@ public class BuiltContainer extends ScreenHandler implements ISyncedContainer
     }
 
     @Override
-    public ItemStack transferSlot(PlayerEntity player, int index)
+    public ItemStack quickMove(PlayerEntity player, int index)
     {
         ItemStack originalStack = ItemStack.EMPTY;
 
@@ -201,7 +200,7 @@ public class BuiltContainer extends ScreenHandler implements ISyncedContainer
             {
                 Slot slot = slots.get(slotIndex);
                 ItemStack stackInSlot = slot.getStack();
-                if (!stackInSlot.isEmpty() && ItemUtils.deepEquals(stackInSlot, stackToShift)
+                if (!stackInSlot.isEmpty() && ItemStack.canCombine(stackInSlot, stackToShift)
                         && slot.canInsert(stackToShift))
                 {
                     int resultingStackSize = stackInSlot.getCount() + stackToShift.getCount();
@@ -261,12 +260,12 @@ public class BuiltContainer extends ScreenHandler implements ISyncedContainer
     }
 
     @Override
-    public void close(PlayerEntity player)
+    public void onClosed(PlayerEntity player)
     {
-        super.close(player);
+        super.onClosed(player);
 
         if (closeEvent != null)
-            closeEvent.apply(this, player, player.world.isClient);
+            closeEvent.apply(this, player, player.getWorld().isClient);
 
         inventories.forEach(inventory ->
         {

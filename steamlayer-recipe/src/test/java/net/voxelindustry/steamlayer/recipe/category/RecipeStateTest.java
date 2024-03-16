@@ -2,7 +2,6 @@ package net.voxelindustry.steamlayer.recipe.category;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.test.SteamLayerExtension;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,7 @@ public class RecipeStateTest
         state.consumeSlotted(ItemStack.class, new ItemStack(Items.APPLE), 0);
 
         assertThat(state.getIngredientsLeft(ItemStack.class).get(0).isEmpty()).isTrue();
-        assertThat(ItemUtils.deepEquals(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
+        assertThat(ItemStack.canCombine(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
     }
 
     @Test
@@ -45,8 +44,8 @@ public class RecipeStateTest
 
         state.consumeSlotted(ItemStack.class, new ItemStack(Items.APPLE), 0);
 
-        assertThat(ItemUtils.deepEquals(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 2))).isTrue();
-        assertThat(ItemUtils.deepEquals(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
+        assertThat(ItemStack.canCombine(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 2))).isTrue();
+        assertThat(ItemStack.canCombine(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
     }
 
     @Test
@@ -63,7 +62,7 @@ public class RecipeStateTest
 
         state.consumeSlotless(ItemStack.class, new ItemStack(Items.POTATO));
 
-        assertThat(ItemUtils.deepEquals(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 3))).isTrue();
+        assertThat(ItemStack.canCombine(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 3))).isTrue();
         assertThat(state.getIngredientsLeft(ItemStack.class).get(1).isEmpty()).isTrue();
     }
 

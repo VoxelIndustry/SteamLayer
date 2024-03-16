@@ -3,7 +3,6 @@ package net.voxelindustry.steamlayer.container.sync;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
 
 import java.util.IdentityHashMap;
@@ -118,7 +117,7 @@ public class SyncedWrappers
             @Override
             public boolean areEquals(ItemStack first, ItemStack second)
             {
-                return ItemUtils.deepEquals(first, second);
+                return ItemStack.canCombine(first, second);
             }
 
             @Override
@@ -156,7 +155,7 @@ public class SyncedWrappers
                     return false;
                 for (int slot = 0; slot < first.size(); slot++)
                 {
-                    if (!ItemUtils.deepEqualsWithAmount(first.getStack(slot), second.getStack(slot)))
+                    if (!ItemStack.canCombine(first.getStack(slot), second.getStack(slot)))
                         return false;
                 }
                 return true;

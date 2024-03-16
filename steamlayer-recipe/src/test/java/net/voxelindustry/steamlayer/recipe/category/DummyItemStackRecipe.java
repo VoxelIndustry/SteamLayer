@@ -3,7 +3,9 @@ package net.voxelindustry.steamlayer.recipe.category;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Singular;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.util.Identifier;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
@@ -33,5 +35,17 @@ public class DummyItemStackRecipe extends RecipeBase
 
         this.inputs.putAll(ItemStack.class, inputStacks.stream().map(ItemStackRecipeIngredient::new).collect(Collectors.toList()));
         this.outputs.putAll(ItemStack.class, outputStacks.stream().map(ItemStackRecipeIngredient::new).collect(Collectors.toList()));
+    }
+
+    @Override
+    public ItemStack craft(Inventory inventory, DynamicRegistryManager registryManager)
+    {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public ItemStack getOutput(DynamicRegistryManager registryManager)
+    {
+        return ItemStack.EMPTY;
     }
 }

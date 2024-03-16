@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.network;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.Packet;
+import net.minecraft.network.packet.Packet;
 
 public class SteamLayerClientPacketHandler
 {

@@ -16,10 +16,10 @@ import net.voxelindustry.steamlayer.network.packet.Message;
 @AllArgsConstructor
 public class PartialTileSyncPacket extends Message
 {
-    private BlockPos    pos;
-    private Identifier  dimension;
+    private BlockPos pos;
+    private Identifier dimension;
     private NbtCompound tag;
-    private Identifier  elementIdentifier;
+    private Identifier elementIdentifier;
 
     @Override
     public void read(PacketByteBuf buf)
@@ -47,11 +47,12 @@ public class PartialTileSyncPacket extends Message
         if (!world.getRegistryKey().getValue().equals(dimension) || !world.isChunkLoaded(pos))
             return;
 
-        PartialSyncedTile tile = (PartialSyncedTile) world.getBlockEntity(pos);
+        var blockEntity = world.getBlockEntity(pos);
+        var tile = (PartialSyncedTile) blockEntity;
 
         if (tile == null)
             return;
 
-        PartialTileSync.receiveSync(tile, elementIdentifier, tag);
+        PartialTileSync.receiveSync(tile, blockEntity, elementIdentifier, tag);
     }
 }

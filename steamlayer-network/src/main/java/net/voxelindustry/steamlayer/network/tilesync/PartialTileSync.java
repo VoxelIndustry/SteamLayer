@@ -27,22 +27,26 @@ public class PartialTileSync
         Optional<TileSyncElement<Object>> syncElementOpt = (Optional<TileSyncElement<Object>>) (Object) syncedTile.getSyncElement(identifier);
 
         syncElementOpt.flatMap(syncElement ->
-        {
-            return syncElement.getCodec()
-                    .encodeStart(NbtOps.INSTANCE, syncElement)
-                    .resultOrPartial(log::error);
-        }).ifPresent(tag ->
+                syncElement.getCodec()
+                        .encodeStart(NbtOps.INSTANCE, syncElement)
+                        .resultOrPartial(error ->
+                        {
+                            throw new TileSyncException(worldTile.getClass(), worldTile, error);
+                        })).ifPresent(tag ->
         {
             new PartialTileSyncPacket(worldTile.getPos(), worldTile.getWorld().getRegistryKey().getValue(), (NbtCompound) tag, identifier)
                     .sendToTracking(worldTile);
         });
     }
 
-    public void receiveSync(PartialSyncedTile tile, Identifier elementIdentifier, NbtCompound tag)
+    public void receiveSync(PartialSyncedTile tile, BlockEntity worldTile, Identifier elementIdentifier, NbtCompound tag)
     {
         tile.getSyncElementCodec(elementIdentifier)
                 .decode(NbtOps.INSTANCE, tag)
-                .resultOrPartial(log::error)
+                .resultOrPartial(error ->
+                {
+                    throw new TileSyncException(worldTile.getClass(), worldTile, error);
+                })
                 .ifPresent(elementWithTag ->
                 {
                     tile.receiveSyncElement((TileSyncElement<?>) elementWithTag.getFirst());

@@ -7,17 +7,16 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.registry.Registry;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 
 public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
 {
     public static final Identifier ITEMSTACK_INGREDIENT = new Identifier(SteamLayerConstants.MODID, "itemstack_ingredient");
 
-    protected final int       quantity;
+    protected final int quantity;
     protected final ItemStack ingredient;
 
     protected final boolean strictTagComparing;
@@ -39,8 +38,8 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     public boolean match(ItemStack against)
     {
         if (strictTagComparing)
-            return ItemUtils.deepEquals(ingredient, against);
-        return ItemUtils.equalsIgnoringTag(ingredient, against);
+            return ItemStack.canCombine(ingredient, against);
+        return ItemStack.areItemsEqual(ingredient, against);
     }
 
     @Override
@@ -93,7 +92,7 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     public static ItemStack getItemStackFromJson(JsonObject json)
     {
         Identifier identifier = new Identifier(JsonHelper.getString(json, "item"));
-        Item item = Registry.ITEM.getOrEmpty(identifier).orElseThrow(() ->
+        Item item = Registries.ITEM.getOrEmpty(identifier).orElseThrow(() ->
                 new JsonSyntaxException("Unknown item '" + identifier + "'"));
         int quantity = JsonHelper.hasPrimitive(json, "quantity") ? JsonHelper.getInt(json, "quantity") : 1;
 

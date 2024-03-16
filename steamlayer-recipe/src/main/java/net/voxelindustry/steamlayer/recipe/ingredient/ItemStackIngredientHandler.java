@@ -23,7 +23,7 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     @Override
     public ItemStack accumulateCreate(ItemStack first, ItemStack second)
     {
-        return ItemUtils.copyWithSize(first, first.getCount() + second.getCount());
+        return first.copyWithCount(first.getCount() + second.getCount());
     }
 
     @Override
@@ -36,13 +36,13 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     @Override
     public ItemStack subtractCreate(ItemStack first, ItemStack second)
     {
-        return ItemUtils.copyWithSize(first, first.getCount() - second.getCount());
+        return first.copyWithCount(first.getCount() - second.getCount());
     }
 
     @Override
     public boolean canMerge(ItemStack first, ItemStack second)
     {
-        return ItemUtils.canMergeStacks(first, second);
+        return ItemUtils.canMerge(first, second);
     }
 
     @Override

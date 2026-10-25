@@ -5,6 +5,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.Range;
@@ -29,10 +30,17 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
         this.range = range;
     }
 
+    public ItemStackRandRecipeIngredient(ItemStackTemplate template, Range<Integer> range, boolean strictTagComparing)
+    {
+        super(template, strictTagComparing);
+
+        this.range = range;
+    }
+
     @Override
     public ItemStack getRaw()
     {
-        return ingredient.copyWithCount(RandomUtils.nextInt(range.getMinimum(), range.getMaximum()));
+        return stack().copyWithCount(RandomUtils.nextInt(range.getMinimum(), range.getMaximum()));
     }
 
     @Override
@@ -69,7 +77,7 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
         boolean strictTagComparing = json.has("strictTagComparing") && GsonHelper.getAsBoolean(json, "strictTagComparing");
         Range<Integer> range = Range.between(GsonHelper.getAsInt(json, "min"), GsonHelper.getAsInt(json, "max"));
 
-        return new ItemStackRandRecipeIngredient(getItemStackFromJson(json), range, strictTagComparing);
+        return new ItemStackRandRecipeIngredient(getTemplateFromJson(json), range, strictTagComparing);
     }
 
     public static JsonObject toJson(RecipeIngredient<?> ingredient)

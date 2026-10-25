@@ -10,6 +10,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
 
 public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
@@ -17,16 +18,27 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     public static final Identifier ITEMSTACK_INGREDIENT = Identifier.fromNamespaceAndPath(SteamLayerConstants.MODID, "itemstack_ingredient");
 
     protected final int quantity;
-    protected final ItemStack ingredient;
+    /**
+     * Recipes are parsed before item components are bound, the stack is only created on first use.
+     * Null for an empty ingredient.
+     */
+    protected final ItemStackTemplate template;
+    private ItemStack ingredient;
 
     protected final boolean strictTagComparing;
 
-    public ItemStackRecipeIngredient(ItemStack ingredient, boolean strictTagComparing)
+    public ItemStackRecipeIngredient(ItemStackTemplate template, boolean strictTagComparing)
     {
-        this.ingredient = ingredient;
+        this.template = template;
         quantity = 0;
 
         this.strictTagComparing = strictTagComparing;
+    }
+
+    public ItemStackRecipeIngredient(ItemStack ingredient, boolean strictTagComparing)
+    {
+        this(ingredient.isEmpty() ? null : ItemStackTemplate.fromNonEmptyStack(ingredient), strictTagComparing);
+        this.ingredient = ingredient;
     }
 
     public ItemStackRecipeIngredient(ItemStack ingredient)
@@ -34,19 +46,26 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
         this(ingredient, true);
     }
 
+    protected ItemStack stack()
+    {
+        if (ingredient == null)
+            ingredient = template == null ? ItemStack.EMPTY : template.create();
+        return ingredient;
+    }
+
     @Override
     public boolean match(ItemStack against)
     {
         if (strictTagComparing)
-            return ItemStack.isSameItemSameComponents(ingredient, against);
-        return ItemStack.isSameItem(ingredient, against);
+            return ItemStack.isSameItemSameComponents(stack(), against);
+        return ItemStack.isSameItem(stack(), against);
     }
 
     @Override
     public boolean matchWithQuantity(ItemStack against)
     {
-        if (!ingredient.isEmpty())
-            return ingredient.getCount() <= against.getCount() && match(against);
+        if (template != null)
+            return template.count() <= against.getCount() && match(against);
         else
             return quantity <= against.getCount();
     }
@@ -54,15 +73,15 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     @Override
     public int getQuantity()
     {
-        if (!ingredient.isEmpty())
-            return ingredient.getCount();
+        if (template != null)
+            return template.count();
         return quantity;
     }
 
     @Override
     public ItemStack getRaw()
     {
-        return ingredient.copy();
+        return stack().copy();
     }
 
     @Override
@@ -74,7 +93,7 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     @Override
     public void toBuffer(RegistryFriendlyByteBuf buffer)
     {
-        ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, ingredient);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, stack());
         buffer.writeBoolean(strictTagComparing);
     }
 
@@ -86,7 +105,7 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     public static ItemStackRecipeIngredient fromJson(JsonObject json)
     {
         boolean strictTagComparing = json.has("strictTagComparing") && GsonHelper.getAsBoolean(json, "strictTagComparing");
-        return new ItemStackRecipeIngredient(getItemStackFromJson(json), strictTagComparing);
+        return new ItemStackRecipeIngredient(getTemplateFromJson(json), strictTagComparing);
     }
 
     public static JsonObject toJson(RecipeIngredient<?> ingredient)
@@ -99,32 +118,31 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
         if (stackIngredient.strictTagComparing)
             json.addProperty("strictTagComparing", true);
 
-        var stack = stackIngredient.ingredient;
+        var template = stackIngredient.template;
 
-        json.add("item", BuiltInRegistries.ITEM.byNameCodec().encodeStart(JsonOps.INSTANCE, stack.getItem()).getOrThrow());
+        json.add("item", BuiltInRegistries.ITEM.byNameCodec().encodeStart(JsonOps.INSTANCE, template.item().value()).getOrThrow());
 
-        if (stack.getCount() > 1)
-            json.addProperty("quantity", stack.getCount());
+        if (template.count() > 1)
+            json.addProperty("quantity", template.count());
 
-        if (!stack.getComponentsPatch().isEmpty())
-            json.add("components", DataComponentPatch.CODEC.encodeStart(JsonOps.INSTANCE, stack.getComponentsPatch()).getOrThrow());
+        if (!template.components().isEmpty())
+            json.add("components", DataComponentPatch.CODEC.encodeStart(JsonOps.INSTANCE, template.components()).getOrThrow());
 
         return json;
     }
 
-    public static ItemStack getItemStackFromJson(JsonObject json)
+    public static ItemStackTemplate getTemplateFromJson(JsonObject json)
     {
         Identifier identifier = Identifier.parse(GsonHelper.getAsString(json, "item"));
         Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElseThrow(() ->
                 new JsonSyntaxException("Unknown item '" + identifier + "'"));
         int quantity = GsonHelper.isValidPrimitive(json, "quantity") ? GsonHelper.getAsInt(json, "quantity") : 1;
 
-        ItemStack ingredient = new ItemStack(item, quantity);
-
+        DataComponentPatch components = DataComponentPatch.EMPTY;
         if (json.has("components"))
-            ingredient.applyComponents(DataComponentPatch.CODEC.parse(JsonOps.INSTANCE, json.get("components"))
-                    .getOrThrow(JsonSyntaxException::new));
+            components = DataComponentPatch.CODEC.parse(JsonOps.INSTANCE, json.get("components"))
+                    .getOrThrow(JsonSyntaxException::new);
 
-        return ingredient;
+        return new ItemStackTemplate(item.builtInRegistryHolder(), quantity, components);
     }
 }

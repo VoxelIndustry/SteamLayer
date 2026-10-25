@@ -2,27 +2,27 @@ package net.voxelindustry.steamlayer.network.packet;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.voxelindustry.steamlayer.network.SteamLayerClientPacketHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 
 public abstract class Message
 {
-    public abstract void read(PacketByteBuf buf);
+    public abstract void read(FriendlyByteBuf buf);
 
-    public abstract void write(PacketByteBuf buf);
+    public abstract void write(FriendlyByteBuf buf);
 
-    public abstract void handle(PlayerEntity player);
+    public abstract void handle(Player player);
 
-    public void sendTo(ServerPlayerEntity player)
+    public void sendTo(ServerPlayer player)
     {
         SteamLayerPacketHandler.sendToPlayer(
                 SteamLayerPacketHandler.createClientBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
@@ -43,7 +43,7 @@ public abstract class Message
                 buffer -> new ClientGenericPacket(this).encode(buffer)), server);
     }
 
-    public void sendToDimension(ServerWorld world)
+    public void sendToDimension(ServerLevel world)
     {
         SteamLayerPacketHandler.sendToWorld(SteamLayerPacketHandler.createClientBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
                 buffer -> new ClientGenericPacket(this).encode(buffer)), world);
@@ -61,13 +61,13 @@ public abstract class Message
                 buffer -> new ClientGenericPacket(this).encode(buffer)), tile);
     }
 
-    public void sendToTracking(ServerWorld world, BlockPos pos)
+    public void sendToTracking(ServerLevel world, BlockPos pos)
     {
         SteamLayerPacketHandler.sendToTracking(SteamLayerPacketHandler.createClientBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
                 buffer -> new ClientGenericPacket(this).encode(buffer)), world, pos);
     }
 
-    public void sendToTracking(ServerWorld world, ChunkPos pos)
+    public void sendToTracking(ServerLevel world, ChunkPos pos)
     {
         SteamLayerPacketHandler.sendToTracking(SteamLayerPacketHandler.createClientBoundPacket(SteamLayerPacketHandler.GENERIC_PACKET,
                 buffer -> new ClientGenericPacket(this).encode(buffer)), world, pos);

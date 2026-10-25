@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.recipe.category;
 
 import lombok.Getter;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeManager;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
@@ -18,13 +18,13 @@ import static net.voxelindustry.steamlayer.recipe.SteamLayerRecipe.RECIPE_CATEGO
 @Getter
 public class RecipeCategory<R extends RecipeBase>
 {
-    private final Identifier              identifier;
+    private final ResourceLocation              identifier;
     private final SteamLayerRecipeType<R> type;
 
     private final List<R> recipes        = new ArrayList<>();
     private final List<R> vanillaRecipes = new ArrayList<>();
 
-    public RecipeCategory(Identifier identifier, SteamLayerRecipeType<R> type)
+    public RecipeCategory(ResourceLocation identifier, SteamLayerRecipeType<R> type)
     {
         this.identifier = identifier;
         this.type = type;
@@ -106,7 +106,7 @@ public class RecipeCategory<R extends RecipeBase>
         recipes.add(recipe);
     }
 
-    public Optional<R> getRecipe(Identifier identifier)
+    public Optional<R> getRecipe(ResourceLocation identifier)
     {
         return Stream.concat(recipes.stream(), vanillaRecipes.stream())
                 .filter(recipe -> recipe.getId().equals(identifier)).findFirst();

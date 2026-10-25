@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.recipe.ingredient;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 
 public abstract class RecipeIngredient<T>
 {
@@ -13,7 +13,7 @@ public abstract class RecipeIngredient<T>
 
     public abstract T getRaw();
 
-    public abstract Identifier getIdentifier();
+    public abstract ResourceLocation getIdentifier();
 
     /**
      * Static instance of this RecipeIngredient used for RecipeState storage.
@@ -33,5 +33,5 @@ public abstract class RecipeIngredient<T>
     //  I/O  //
     ///////////
 
-    public abstract void toBuffer(PacketByteBuf buffer);
+    public abstract void toBuffer(FriendlyByteBuf buffer);
 }

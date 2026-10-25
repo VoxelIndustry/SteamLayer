@@ -1,15 +1,14 @@
 package net.voxelindustry.steamlayer.container.slot;
 
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-
 import java.util.function.Predicate;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
 
 public class FilteredSlot extends ListenerSlot
 {
     private Predicate<ItemStack> filter;
 
-    public FilteredSlot(Inventory inventory, int index, int xPosition, int yPosition)
+    public FilteredSlot(Container inventory, int index, int xPosition, int yPosition)
     {
         super(inventory, index, xPosition, yPosition);
     }
@@ -21,7 +20,7 @@ public class FilteredSlot extends ListenerSlot
     }
 
     @Override
-    public boolean canInsert(ItemStack stack)
+    public boolean mayPlace(ItemStack stack)
     {
         return filter.test(stack);
     }

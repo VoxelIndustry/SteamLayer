@@ -2,18 +2,18 @@ package net.voxelindustry.steamlayer.recipe.ingredient;
 
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.Range;
 
 public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
 {
-    public static final Identifier ITEMSTACK_RAND_INGREDIENT = new Identifier(SteamLayerConstants.MODID, "itemstack_rand_ingredient");
+    public static final ResourceLocation ITEMSTACK_RAND_INGREDIENT = new ResourceLocation(SteamLayerConstants.MODID, "itemstack_rand_ingredient");
 
     private Range<Integer> range;
 
@@ -44,22 +44,22 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
     }
 
     @Override
-    public Identifier getIdentifier()
+    public ResourceLocation getIdentifier()
     {
         return ITEMSTACK_RAND_INGREDIENT;
     }
 
     @Override
-    public void toBuffer(PacketByteBuf buffer)
+    public void toBuffer(FriendlyByteBuf buffer)
     {
         super.toBuffer(buffer);
         buffer.writeInt(range.getMinimum());
         buffer.writeInt(range.getMaximum());
     }
 
-    public static ItemStackRandRecipeIngredient fromBuffer(PacketByteBuf buffer)
+    public static ItemStackRandRecipeIngredient fromBuffer(FriendlyByteBuf buffer)
     {
-        ItemStack stack = buffer.readItemStack();
+        ItemStack stack = buffer.readItem();
         boolean strictTagComparing = buffer.readBoolean();
         Range<Integer> range = Range.between(buffer.readInt(), buffer.readInt());
 
@@ -68,8 +68,8 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
 
     public static ItemStackRandRecipeIngredient fromJson(JsonObject json)
     {
-        boolean strictTagComparing = json.has("strictTagComparing") && JsonHelper.getBoolean(json, "strictTagComparing");
-        Range<Integer> range = Range.between(JsonHelper.getInt(json, "min"), JsonHelper.getInt(json, "max"));
+        boolean strictTagComparing = json.has("strictTagComparing") && GsonHelper.getAsBoolean(json, "strictTagComparing");
+        Range<Integer> range = Range.between(GsonHelper.getAsInt(json, "min"), GsonHelper.getAsInt(json, "max"));
 
         return new ItemStackRandRecipeIngredient(getItemStackFromJson(json), range, strictTagComparing);
     }
@@ -93,8 +93,8 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
         json.addProperty("min", stackIngredient.range.getMinimum());
         json.addProperty("max", stackIngredient.range.getMaximum());
 
-        if (stack.hasNbt())
-            json.add("nbt", NbtCompound.CODEC.encodeStart(JsonOps.INSTANCE, stack.getNbt()).getOrThrow(false, error ->
+        if (stack.hasTag())
+            json.add("nbt", CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, stack.getTag()).getOrThrow(false, error ->
             {
                 throw new RuntimeException(error);
             }));

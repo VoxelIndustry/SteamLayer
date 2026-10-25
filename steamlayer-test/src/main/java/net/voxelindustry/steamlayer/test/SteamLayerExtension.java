@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.test;
 
-import net.minecraft.Bootstrap;
 import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -17,8 +17,8 @@ public class SteamLayerExtension implements BeforeAllCallback, ExtensionContext.
             started = true;
 
             System.out.println("#######################################\nBootstrap Minecraft for test runner...");
-            SharedConstants.createGameVersion();
-            Bootstrap.initialize();
+            SharedConstants.tryDetectVersion();
+            Bootstrap.bootStrap();
             System.out.println("Bootstrap complete!\nVanilla data is now accessible" +
                     ".\n######################################");
         }

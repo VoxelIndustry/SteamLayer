@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.container.sync;
 
 import lombok.Getter;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import org.apache.commons.lang3.Range;
 
 import java.util.ArrayList;
@@ -128,7 +128,7 @@ public class SyncedListProperty<T> implements SyncedValue
     }
 
     @Override
-    public void write(PacketByteBuf buffer)
+    public void write(FriendlyByteBuf buffer)
     {
         buffer.writeInt(stored.size());
 
@@ -137,7 +137,7 @@ public class SyncedListProperty<T> implements SyncedValue
     }
 
     @Override
-    public void read(PacketByteBuf buffer)
+    public void read(FriendlyByteBuf buffer)
     {
         stored.clear();
 

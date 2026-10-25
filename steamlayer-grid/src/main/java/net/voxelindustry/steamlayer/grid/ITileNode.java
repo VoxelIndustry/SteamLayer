@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 
 public interface ITileNode<T extends CableGrid>
 {
@@ -13,7 +13,7 @@ public interface ITileNode<T extends CableGrid>
 
     boolean canConnect(int edge, ITileNode<?> to);
 
-    World getBlockWorld();
+    Level getBlockWorld();
 
     T createGrid(int nextID);
 

@@ -1,16 +1,16 @@
 package net.voxelindustry.steamlayer.container;
 
 import net.fabricmc.fabric.api.screenhandler.v1.ScreenHandlerRegistry.ExtendedClientHandlerFactory;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
 
 public class SteamLayerContainerFactory<T extends BuiltContainer> implements ExtendedClientHandlerFactory<T>
 {
     @Override
-    public T create(int syncID, PlayerInventory playerInventory, PacketByteBuf extraData)
+    public T create(int syncID, Inventory playerInventory, FriendlyByteBuf extraData)
     {
-        return (T) ((NamedScreenHandlerFactory) MinecraftClient.getInstance().world.getBlockEntity(extraData.readBlockPos())).createMenu(syncID, playerInventory, playerInventory.player);
+        return (T) ((MenuProvider) Minecraft.getInstance().level.getBlockEntity(extraData.readBlockPos())).createMenu(syncID, playerInventory, playerInventory.player);
     }
 }

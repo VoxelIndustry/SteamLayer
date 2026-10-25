@@ -1,10 +1,10 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.steamlayer.tile.descriptor.ModularTiles;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
@@ -41,9 +41,9 @@ public class TileModular extends TileBase implements IModularTile
     }
 
     @Override
-    public void readNbt(NbtCompound tag)
+    public void load(CompoundTag tag)
     {
-        super.readNbt(tag);
+        super.load(tag);
 
         modid = tag.getString("modid");
         TileDescriptor previous = descriptor;
@@ -60,7 +60,7 @@ public class TileModular extends TileBase implements IModularTile
     }
 
     @Override
-    protected void writeNbt(NbtCompound tag)
+    protected void saveAdditional(CompoundTag tag)
     {
         if (descriptor != null)
             tag.putString("machineDescriptor", descriptor.getName());
@@ -69,9 +69,9 @@ public class TileModular extends TileBase implements IModularTile
         modules.values().forEach(module ->
         {
             if (module instanceof ISerializableModule)
-                tag.put(module.getName(), ((ISerializableModule) module).toNBT(new NbtCompound()));
+                tag.put(module.getName(), ((ISerializableModule) module).toNBT(new CompoundTag()));
         });
-        super.writeNbt(tag);
+        super.saveAdditional(tag);
     }
 
     @Override

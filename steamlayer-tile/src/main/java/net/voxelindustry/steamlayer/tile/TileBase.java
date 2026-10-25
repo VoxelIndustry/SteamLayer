@@ -1,14 +1,14 @@
 package net.voxelindustry.steamlayer.tile;
 
 import lombok.Getter;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
@@ -34,21 +34,21 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
         SteamLayerPacketHandler.createServerBoundPacket(TILE_SYNC_REQUEST,
                 buffer -> TileSyncRequestPacket.encode(
                         new TileSyncRequestPacket(
-                                world.getRegistryKey().getValue().toString(),
-                                getPos()), buffer)
+                                level.dimension().location().toString(),
+                                getBlockPos()), buffer)
         );
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt()
+    public CompoundTag getUpdateTag()
     {
-        return createNbt();
+        return saveWithoutMetadata();
     }
 
     @Override
     public void forceSync()
     {
-        if (world != null)
+        if (level != null)
         {
             sync();
             isSyncQueued = false;
@@ -56,19 +56,19 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     }
 
     @Override
-    public BlockEntityUpdateS2CPacket toUpdatePacket()
+    public ClientboundBlockEntityDataPacket getUpdatePacket()
     {
-        return BlockEntityUpdateS2CPacket.create(this);
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
     public void sync()
     {
-        World world = getWorld();
-        if (world != null && !world.isClient())
+        Level world = getLevel();
+        if (world != null && !world.isClientSide())
         {
             if (!isSyncLocked())
-                ((ServerWorld) world).getChunkManager().markForUpdate(getPos());
+                ((ServerLevel) world).getChunkSource().blockChanged(getBlockPos());
             else
                 isSyncQueued = true;
         }
@@ -92,16 +92,16 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
 
     public boolean isServer()
     {
-        if (getWorld() != null)
-            return !getWorld().isClient();
+        if (getLevel() != null)
+            return !getLevel().isClientSide();
 
         return Thread.currentThread().getName().contains("Server");
     }
 
     public boolean isClient()
     {
-        if (getWorld() != null)
-            return getWorld().isClient();
+        if (getLevel() != null)
+            return getLevel().isClientSide();
 
         return !Thread.currentThread().getName().contains("Server");
     }
@@ -116,7 +116,7 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     public void clientLoad()
     {
         if (this instanceof PartialSyncedTile && ((PartialSyncedTile) this).syncOnLoad())
-            new PartialTileSyncRequestPacket(getPos(), getWorld().getRegistryKey().getValue(), ((PartialSyncedTile) this).getAllSyncElements())
+            new PartialTileSyncRequestPacket(getBlockPos(), getLevel().dimension().location(), ((PartialSyncedTile) this).getAllSyncElements())
                     .sendToServer();
     }
 }

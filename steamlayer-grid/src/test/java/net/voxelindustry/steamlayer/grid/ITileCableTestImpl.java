@@ -1,10 +1,9 @@
 package net.voxelindustry.steamlayer.grid;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
-
 import java.util.EnumMap;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.Level;
 
 public class ITileCableTestImpl implements ITileCable
 {
@@ -62,7 +61,7 @@ public class ITileCableTestImpl implements ITileCable
     }
 
     @Override
-    public World getBlockWorld()
+    public Level getBlockWorld()
     {
         return null;
     }

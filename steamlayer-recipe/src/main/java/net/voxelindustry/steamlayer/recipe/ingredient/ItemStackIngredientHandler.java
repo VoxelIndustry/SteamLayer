@@ -2,21 +2,21 @@ package net.voxelindustry.steamlayer.recipe.ingredient;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 
 @RequiredArgsConstructor
 public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
 {
     @Getter
-    private final Identifier identifier;
+    private final ResourceLocation identifier;
 
     @Override
     public ItemStack accumulateMutator(ItemStack first, ItemStack second)
     {
-        first.increment(second.getCount());
+        first.grow(second.getCount());
         return first;
     }
 
@@ -29,7 +29,7 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     @Override
     public ItemStack subtractMutator(ItemStack first, ItemStack second)
     {
-        first.decrement(second.getCount());
+        first.shrink(second.getCount());
         return first;
     }
 
@@ -58,14 +58,14 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     }
 
     @Override
-    public NbtCompound toTag(ItemStack value, NbtCompound tag)
+    public CompoundTag toTag(ItemStack value, CompoundTag tag)
     {
-        return value.writeNbt(tag);
+        return value.save(tag);
     }
 
     @Override
-    public ItemStack fromTag(NbtCompound tag)
+    public ItemStack fromTag(CompoundTag tag)
     {
-        return ItemStack.fromNbt(tag);
+        return ItemStack.of(tag);
     }
 }

@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.tile;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 
 public interface ITileInfoList
 {

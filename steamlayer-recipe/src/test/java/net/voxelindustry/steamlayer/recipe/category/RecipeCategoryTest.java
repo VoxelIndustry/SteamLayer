@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.recipe.category;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
 import net.voxelindustry.steamlayer.test.SteamLayerExtension;
@@ -25,13 +25,13 @@ public class RecipeCategoryTest
 
         ItemStack apple = new ItemStack(Items.APPLE);
         ItemStack potato = new ItemStack(Items.POTATO);
-        when(recipe.getRecipeInputs(ItemStack.class)).thenReturn(DefaultedList.copyOf(new ItemStackRecipeIngredient(ItemStack.EMPTY), new ItemStackRecipeIngredient(apple), new ItemStackRecipeIngredient(potato)));
+        when(recipe.getRecipeInputs(ItemStack.class)).thenReturn(NonNullList.of(new ItemStackRecipeIngredient(ItemStack.EMPTY), new ItemStackRecipeIngredient(apple), new ItemStackRecipeIngredient(potato)));
         when(recipe.hasInputType(ItemStack.class)).thenReturn(Boolean.TRUE);
 
         RecipeBase recipe2 = mock(RecipeBase.class);
         category.add(recipe2);
 
-        when(recipe2.getRecipeInputs(ItemStack.class)).thenReturn(DefaultedList.copyOf(new ItemStackRecipeIngredient(ItemStack.EMPTY), new ItemStackRecipeIngredient(potato)));
+        when(recipe2.getRecipeInputs(ItemStack.class)).thenReturn(NonNullList.of(new ItemStackRecipeIngredient(ItemStack.EMPTY), new ItemStackRecipeIngredient(potato)));
         when(recipe2.hasInputType(ItemStack.class)).thenReturn(Boolean.TRUE);
 
         assertThat(category.findRecipes(apple)).contains(recipe);

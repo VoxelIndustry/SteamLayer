@@ -1,8 +1,7 @@
 package net.voxelindustry.steamlayer.container.sync;
 
-import net.minecraft.network.PacketByteBuf;
-
 import java.util.Objects;
+import net.minecraft.network.FriendlyByteBuf;
 
 public abstract class SyncedWrapper<T>
 {
@@ -16,7 +15,7 @@ public abstract class SyncedWrapper<T>
         return original;
     }
 
-    public abstract void write(PacketByteBuf buffer, T value);
+    public abstract void write(FriendlyByteBuf buffer, T value);
 
-    public abstract T read(PacketByteBuf buffer);
+    public abstract T read(FriendlyByteBuf buffer);
 }

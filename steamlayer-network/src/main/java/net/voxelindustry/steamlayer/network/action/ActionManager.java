@@ -1,8 +1,7 @@
 package net.voxelindustry.steamlayer.network.action;
 
-import net.minecraft.nbt.NbtCompound;
-
 import java.util.HashMap;
+import net.minecraft.nbt.CompoundTag;
 
 public class ActionManager
 {
@@ -27,7 +26,7 @@ public class ActionManager
         callbackMap.put(actionID, callback);
     }
 
-    public void triggerCallback(int actionID, NbtCompound payload)
+    public void triggerCallback(int actionID, CompoundTag payload)
     {
         if (!callbackMap.containsKey(actionID))
             return;

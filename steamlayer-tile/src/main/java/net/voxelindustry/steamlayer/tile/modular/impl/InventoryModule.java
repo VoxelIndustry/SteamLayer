@@ -1,9 +1,9 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.Containers;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
 import net.voxelindustry.steamlayer.tile.modular.IModularTile;
 import net.voxelindustry.steamlayer.tile.modular.ISerializableModule;
@@ -35,13 +35,13 @@ public class InventoryModule extends TileModule implements ISerializableModule
     }
 
     @Override
-    public void fromNBT(NbtCompound tag)
+    public void fromNBT(CompoundTag tag)
     {
         inventories.forEach((name, inv) -> inv.fromTag(tag.getCompound("Inv" + name)));
     }
 
     @Override
-    public NbtCompound toNBT(NbtCompound tag)
+    public CompoundTag toNBT(CompoundTag tag)
     {
         inventories.forEach((name, inv) -> tag.put("Inv" + name, inv.toTag()));
         return tag;
@@ -58,7 +58,7 @@ public class InventoryModule extends TileModule implements ISerializableModule
 
         inventory.onSlotChange(slot ->
         {
-            getModularTile().markDirty();
+            getModularTile().setChanged();
 
             if (onSlotChangeEvents.containsKey(name) && slot != -1)
                 onSlotChangeEvents.get(name).accept(slot);
@@ -81,13 +81,13 @@ public class InventoryModule extends TileModule implements ISerializableModule
         return inventories.containsKey(name);
     }
 
-    public void dropAll(World world, BlockPos pos)
+    public void dropAll(Level world, BlockPos pos)
     {
         for (InventoryHandler inventory : inventories.values())
         {
             if (inventory.canDropContents())
             {
-                ItemScatterer.spawn(world, pos, inventory);
+                Containers.dropContents(world, pos, inventory);
             }
         }
     }

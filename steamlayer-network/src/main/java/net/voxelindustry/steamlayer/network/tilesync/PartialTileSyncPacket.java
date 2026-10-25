@@ -3,12 +3,12 @@ package net.voxelindustry.steamlayer.network.tilesync;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.steamlayer.network.packet.Message;
 
 @Log4j2
@@ -17,34 +17,34 @@ import net.voxelindustry.steamlayer.network.packet.Message;
 public class PartialTileSyncPacket extends Message
 {
     private BlockPos pos;
-    private Identifier dimension;
-    private NbtCompound tag;
-    private Identifier elementIdentifier;
+    private ResourceLocation dimension;
+    private CompoundTag tag;
+    private ResourceLocation elementIdentifier;
 
     @Override
-    public void read(PacketByteBuf buf)
+    public void read(FriendlyByteBuf buf)
     {
         pos = buf.readBlockPos();
-        dimension = buf.readIdentifier();
+        dimension = buf.readResourceLocation();
         tag = buf.readNbt();
-        elementIdentifier = buf.readIdentifier();
+        elementIdentifier = buf.readResourceLocation();
     }
 
     @Override
-    public void write(PacketByteBuf buf)
+    public void write(FriendlyByteBuf buf)
     {
         buf.writeBlockPos(pos);
-        buf.writeIdentifier(dimension);
+        buf.writeResourceLocation(dimension);
         buf.writeNbt(tag);
-        buf.writeIdentifier(elementIdentifier);
+        buf.writeResourceLocation(elementIdentifier);
     }
 
     @Override
-    public void handle(PlayerEntity player)
+    public void handle(Player player)
     {
-        World world = player.getEntityWorld();
+        Level world = player.getCommandSenderWorld();
 
-        if (!world.getRegistryKey().getValue().equals(dimension) || !world.isChunkLoaded(pos))
+        if (!world.dimension().location().equals(dimension) || !world.hasChunkAt(pos))
             return;
 
         var blockEntity = world.getBlockEntity(pos);

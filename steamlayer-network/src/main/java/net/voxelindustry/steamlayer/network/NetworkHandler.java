@@ -1,20 +1,20 @@
 package net.voxelindustry.steamlayer.network;
 
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 public class NetworkHandler
 {
-    public static void sendTileToPlayer(BlockEntity tile, ServerPlayerEntity player)
+    public static void sendTileToPlayer(BlockEntity tile, ServerPlayer player)
     {
-        if (!tile.getWorld().isClient)
+        if (!tile.getLevel().isClientSide)
         {
-            var packet = tile.toUpdatePacket();
+            var packet = tile.getUpdatePacket();
 
             if (packet == null)
                 return;
-            player.networkHandler.sendPacket(packet);
+            player.connection.send(packet);
         }
     }
 }

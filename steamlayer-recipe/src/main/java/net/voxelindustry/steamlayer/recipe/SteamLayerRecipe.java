@@ -26,7 +26,7 @@ public class SteamLayerRecipe implements ModInitializer
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, dataPackContents, success) -> dataPackReload(server.getRecipeManager(), success));
     }
 
-    private void dataPackReload(net.minecraft.recipe.RecipeManager recipeManager, boolean success)
+    private void dataPackReload(net.minecraft.world.item.crafting.RecipeManager recipeManager, boolean success)
     {
         if (success)
             recipeLoad((AccessorRecipeManager) recipeManager);

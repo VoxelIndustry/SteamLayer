@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.network;
 
 import net.fabricmc.api.ClientModInitializer;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.voxelindustry.steamlayer.network.packet.ClientActionHolderPacket;
 import net.voxelindustry.steamlayer.network.packet.ClientGenericPacket;
 
@@ -18,7 +18,7 @@ public class SteamLayerNetworkClient implements ClientModInitializer
                 {
                     var message = new ClientGenericPacket().decode(buffer).getMessage();
                     threadExecutor.execute(() ->
-                            message.handle(MinecraftClient.getInstance().player));
+                            message.handle(Minecraft.getInstance().player));
                 });
 
         SteamLayerPacketHandlerClient.registerClientBoundHandler(CLIENT_ACTION_HOLDER,

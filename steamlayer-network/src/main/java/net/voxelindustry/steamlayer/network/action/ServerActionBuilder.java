@@ -1,26 +1,27 @@
 package net.voxelindustry.steamlayer.network.action;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.voxelindustry.steamlayer.network.packet.ServerActionHolderPacket;
 
 import static net.voxelindustry.steamlayer.network.SteamLayerClientPacketHandler.sendToServer;
 import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.SERVER_ACTION_HOLDER;
 import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.createServerBoundPacket;
 
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
+
 public class ServerActionBuilder
 {
     private String actionKey;
 
     private BlockEntity              tile;
-    private NbtCompound              payload;
+    private CompoundTag              payload;
     private ServerActionHolderPacket packet;
 
     public ServerActionBuilder(String actionKey)
     {
         this.actionKey = actionKey;
-        payload = new NbtCompound();
+        payload = new CompoundTag();
     }
 
     public ServerActionBuilder toTile(BlockEntity tile)
@@ -62,7 +63,7 @@ public class ServerActionBuilder
 
     public ServerActionBuilder withItemStack(String key, ItemStack value)
     {
-        payload.put(key, value.writeNbt(new NbtCompound()));
+        payload.put(key, value.save(new CompoundTag()));
         return this;
     }
 

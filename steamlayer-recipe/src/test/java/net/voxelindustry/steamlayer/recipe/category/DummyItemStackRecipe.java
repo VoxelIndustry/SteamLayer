@@ -3,10 +3,10 @@ package net.voxelindustry.steamlayer.recipe.category;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Singular;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
@@ -28,7 +28,7 @@ public class DummyItemStackRecipe extends RecipeBase
     public DummyItemStackRecipe(List<ItemStack> inputs, List<ItemStack> outputs, int time)
     {
         super(new SteamLayerRecipeType<>((type, identifier) -> new DummyItemStackRecipe(null, null, 0)),
-                new Identifier("steamlayer", "testrecipe"));
+                new ResourceLocation("steamlayer", "testrecipe"));
         inputStacks = inputs;
         outputStacks = outputs;
         this.time = time;
@@ -38,13 +38,13 @@ public class DummyItemStackRecipe extends RecipeBase
     }
 
     @Override
-    public ItemStack craft(Inventory inventory, DynamicRegistryManager registryManager)
+    public ItemStack assemble(Container inventory, RegistryAccess registryManager)
     {
         return ItemStack.EMPTY;
     }
 
     @Override
-    public ItemStack getOutput(DynamicRegistryManager registryManager)
+    public ItemStack getResultItem(RegistryAccess registryManager)
     {
         return ItemStack.EMPTY;
     }

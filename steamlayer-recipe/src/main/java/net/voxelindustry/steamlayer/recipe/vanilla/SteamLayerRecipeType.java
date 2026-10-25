@@ -1,25 +1,25 @@
 package net.voxelindustry.steamlayer.recipe.vanilla;
 
 import com.google.gson.JsonObject;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 
 import java.util.function.BiFunction;
 
 public class SteamLayerRecipeType<R extends RecipeBase> implements RecipeType<R>, RecipeSerializer<R>
 {
-    private final BiFunction<SteamLayerRecipeType<R>, Identifier, R> recipeCreator;
+    private final BiFunction<SteamLayerRecipeType<R>, ResourceLocation, R> recipeCreator;
 
-    public SteamLayerRecipeType(BiFunction<SteamLayerRecipeType<R>, Identifier, R> recipeCreator)
+    public SteamLayerRecipeType(BiFunction<SteamLayerRecipeType<R>, ResourceLocation, R> recipeCreator)
     {
         this.recipeCreator = recipeCreator;
     }
 
     @Override
-    public R read(Identifier id, JsonObject json)
+    public R fromJson(ResourceLocation id, JsonObject json)
     {
         R createdRecipe = recipeCreator.apply(this, id);
         createdRecipe.fromJson(json);
@@ -27,7 +27,7 @@ public class SteamLayerRecipeType<R extends RecipeBase> implements RecipeType<R>
     }
 
     @Override
-    public R read(Identifier id, PacketByteBuf buf)
+    public R fromNetwork(ResourceLocation id, FriendlyByteBuf buf)
     {
         R createdRecipe = recipeCreator.apply(this, id);
         createdRecipe.fromByteBuf(buf);
@@ -35,7 +35,7 @@ public class SteamLayerRecipeType<R extends RecipeBase> implements RecipeType<R>
     }
 
     @Override
-    public void write(PacketByteBuf buf, R recipe)
+    public void toNetwork(FriendlyByteBuf buf, R recipe)
     {
         recipe.toByteBuf(buf);
     }

@@ -1,8 +1,7 @@
 package net.voxelindustry.steamlayer.common.tick;
 
-import net.minecraft.world.World;
-
 import java.util.WeakHashMap;
+import net.minecraft.world.level.Level;
 
 public class ClientTickCounter
 {
@@ -15,19 +14,19 @@ public class ClientTickCounter
         return instance;
     }
 
-    private final WeakHashMap<World, Long> tickCounters;
+    private final WeakHashMap<Level, Long> tickCounters;
 
     private ClientTickCounter()
     {
         tickCounters = new WeakHashMap<>();
     }
 
-    public void tick(World world)
+    public void tick(Level world)
     {
         tickCounters.compute(world, (existing, counter) -> counter == null ? 0 : counter + 1);
     }
 
-    public long getCount(World world)
+    public long getCount(Level world)
     {
         Long counter = tickCounters.get(world);
 

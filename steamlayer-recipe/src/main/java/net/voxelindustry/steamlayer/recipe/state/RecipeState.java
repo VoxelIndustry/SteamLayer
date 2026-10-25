@@ -4,11 +4,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import lombok.Getter;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.steamlayer.common.utils.TagSerializable;
 import net.voxelindustry.steamlayer.recipe.IngredientManager;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 
-public class RecipeState implements TagSerializable<NbtCompound>
+public class RecipeState implements TagSerializable<CompoundTag>
 {
     protected Multimap<Class<?>, RecipeIngredient<?>> inputs;
     protected Multimap<Class<?>, RecipeIngredient<?>> outputs;
@@ -79,7 +79,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
         return currentTime >= recipeTime;
     }
 
-    public void complete(World world, BlockPos pos, LivingEntity crafter)
+    public void complete(Level world, BlockPos pos, LivingEntity crafter)
     {
         recipe.onCraft(world, pos, this, crafter);
     }
@@ -215,9 +215,9 @@ public class RecipeState implements TagSerializable<NbtCompound>
     }
 
     @Override
-    public NbtCompound toTag()
+    public CompoundTag toTag()
     {
-        var tag = new NbtCompound();
+        var tag = new CompoundTag();
 
         tag.putString("recipeNamespace", recipe.getId().getNamespace());
         tag.putString("recipePath", recipe.getId().getPath());
@@ -252,7 +252,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void consumedInputForTypeToTag(NbtCompound tag, Class<T> typeClass, String identifier)
+    private <T> void consumedInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
         var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         var consumedInputsForType = (Collection<T>) consumedInputs.get(typeClass);
@@ -261,13 +261,13 @@ public class RecipeState implements TagSerializable<NbtCompound>
         int index = 0;
         for (T input : consumedInputsForType)
         {
-            tag.put("consumedInputForType" + identifier + index, ingredientHandler.toTag(input, new NbtCompound()));
+            tag.put("consumedInputForType" + identifier + index, ingredientHandler.toTag(input, new CompoundTag()));
             index++;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void leftInputForTypeToTag(NbtCompound tag, Class<T> typeClass, String identifier)
+    private <T> void leftInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
         var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
         var leftInputsForType = (Collection<T>) leftInputs.get(typeClass);
@@ -276,14 +276,14 @@ public class RecipeState implements TagSerializable<NbtCompound>
         int index = 0;
         for (T input : leftInputsForType)
         {
-            tag.put("leftInputForType" + identifier + index, ingredientHandler.toTag(input, new NbtCompound()));
+            tag.put("leftInputForType" + identifier + index, ingredientHandler.toTag(input, new CompoundTag()));
             index++;
         }
     }
 
-    public static <RECIPE extends RecipeBase> RecipeState fromTag(RecipeCategory<RECIPE> category, NbtCompound tag)
+    public static <RECIPE extends RecipeBase> RecipeState fromTag(RecipeCategory<RECIPE> category, CompoundTag tag)
     {
-        var recipe = category.getRecipe(Identifier.of(tag.getString("recipeNamespace"), tag.getString("recipePath")));
+        var recipe = category.getRecipe(ResourceLocation.tryBuild(tag.getString("recipeNamespace"), tag.getString("recipePath")));
 
         if (recipe.isEmpty())
             return null;
@@ -294,7 +294,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
     }
 
     @Override
-    public void fromTag(NbtCompound tag)
+    public void fromTag(CompoundTag tag)
     {
         consumedInputs.clear();
         leftInputs.clear();
@@ -307,7 +307,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
         for (int index = 0; index < leftInputTypesCount; index++)
         {
             var identifier = tag.getString("leftInputType" + index);
-            var handlerType = IngredientManager.getIngredientHandlerClass(new Identifier(identifier));
+            var handlerType = IngredientManager.getIngredientHandlerClass(new ResourceLocation(identifier));
 
             leftInputForTypeFromTag(tag, handlerType, identifier);
         }
@@ -317,13 +317,13 @@ public class RecipeState implements TagSerializable<NbtCompound>
         for (int index = 0; index < consumedInputTypesCount; index++)
         {
             var identifier = tag.getString("consumedInputType" + index);
-            var handlerType = IngredientManager.getIngredientHandlerClass(new Identifier(identifier));
+            var handlerType = IngredientManager.getIngredientHandlerClass(new ResourceLocation(identifier));
 
             consumedInputForTypeFromTag(tag, handlerType, identifier);
         }
     }
 
-    private <T> void leftInputForTypeFromTag(NbtCompound tag, Class<T> typeClass, String identifier)
+    private <T> void leftInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
         var leftInputForType = tag.getInt("leftInputForType" + identifier);
         var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
@@ -332,7 +332,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
             leftInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("leftInputForType" + identifier + index)));
     }
 
-    private <T> void consumedInputForTypeFromTag(NbtCompound tag, Class<T> typeClass, String identifier)
+    private <T> void consumedInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
     {
         var consumedInputForType = tag.getInt("consumedInputForType" + identifier);
         var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);

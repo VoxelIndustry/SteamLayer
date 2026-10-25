@@ -1,44 +1,44 @@
 package net.voxelindustry.steamlayer.inventory;
 
 import lombok.Getter;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 @Getter
-public class MappedInventoryHandler implements Inventory
+public class MappedInventoryHandler implements Container
 {
-    private final Inventory compose;
+    private final Container compose;
     private final int[]     slots;
 
-    public MappedInventoryHandler(Inventory compose, int[] slots)
+    public MappedInventoryHandler(Container compose, int[] slots)
     {
         this.compose = compose;
         this.slots = slots;
     }
 
     @Override
-    public void setStack(int slot, ItemStack stack)
+    public void setItem(int slot, ItemStack stack)
     {
         validateSlotIndex(slot);
 
-        compose.setStack(map(slot), stack);
+        compose.setItem(map(slot), stack);
     }
 
     @Override
-    public void markDirty()
+    public void setChanged()
     {
-        compose.markDirty();
+        compose.setChanged();
     }
 
     @Override
-    public boolean canPlayerUse(PlayerEntity player)
+    public boolean stillValid(Player player)
     {
-        return compose.canPlayerUse(player);
+        return compose.stillValid(player);
     }
 
     @Override
-    public int size()
+    public int getContainerSize()
     {
         return slots.length;
     }
@@ -50,31 +50,31 @@ public class MappedInventoryHandler implements Inventory
     }
 
     @Override
-    public ItemStack getStack(int slot)
+    public ItemStack getItem(int slot)
     {
         validateSlotIndex(slot);
-        return compose.getStack(map(slot));
+        return compose.getItem(map(slot));
     }
 
     @Override
-    public ItemStack removeStack(int slot, int amount)
+    public ItemStack removeItem(int slot, int amount)
     {
         validateSlotIndex(slot);
-        return compose.removeStack(map(slot), amount);
+        return compose.removeItem(map(slot), amount);
     }
 
     @Override
-    public ItemStack removeStack(int slot)
+    public ItemStack removeItemNoUpdate(int slot)
     {
         validateSlotIndex(slot);
-        return compose.removeStack(map(slot));
+        return compose.removeItemNoUpdate(map(slot));
     }
 
     @Override
-    public boolean isValid(int slot, ItemStack stack)
+    public boolean canPlaceItem(int slot, ItemStack stack)
     {
         validateSlotIndex(slot);
-        return compose.isValid(map(slot), stack);
+        return compose.canPlaceItem(map(slot), stack);
     }
 
     private int map(int slot)
@@ -89,9 +89,9 @@ public class MappedInventoryHandler implements Inventory
     }
 
     @Override
-    public void clear()
+    public void clearContent()
     {
         for (int slot : slots)
-            compose.removeStack(slot);
+            compose.removeItemNoUpdate(slot);
     }
 }

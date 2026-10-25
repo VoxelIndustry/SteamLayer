@@ -1,20 +1,19 @@
 package net.voxelindustry.steamlayer.network.tilesync;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.util.Identifier;
-
 import java.util.Collection;
 import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
 
 public interface PartialSyncedTile
 {
-    Optional<TileSyncElement<?>> getSyncElement(Identifier identifier);
+    Optional<TileSyncElement<?>> getSyncElement(ResourceLocation identifier);
 
     void receiveSyncElement(TileSyncElement<?> element);
 
-    Codec<?> getSyncElementCodec(Identifier identifier);
+    Codec<?> getSyncElementCodec(ResourceLocation identifier);
 
-    Collection<Identifier> getAllSyncElements();
+    Collection<ResourceLocation> getAllSyncElements();
 
     default boolean syncOnLoad()
     {

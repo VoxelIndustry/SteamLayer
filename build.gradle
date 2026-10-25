@@ -1,17 +1,20 @@
 plugins {
-    id "fabric-loom" version "1.5.+"
+    id "net.fabricmc.fabric-loom-remap" version "${loom_version}"
     id "maven-publish"
 }
 
 allprojects {
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
-    apply plugin: 'fabric-loom'
+    apply plugin: 'net.fabricmc.fabric-loom-remap'
 
     version = project.steamlayer_version
     group = "net.voxelindustry"
 
-    compileJava.options.encoding = 'UTF-8'
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 17
+    }
 
     java {
         // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
@@ -40,18 +43,24 @@ allprojects {
 
         compileOnly 'org.jetbrains:annotations:22.0.0'
 
-        compileOnly 'org.projectlombok:lombok:1.18.24'
-        annotationProcessor 'org.projectlombok:lombok:1.18.24'
+        compileOnly "org.projectlombok:lombok:${rootProject.lombok_version}"
+        annotationProcessor "org.projectlombok:lombok:${rootProject.lombok_version}"
 
-        testImplementation('org.junit.jupiter:junit-jupiter-api:5.8.1')
-        testImplementation('org.mockito:mockito-core:4.0.0')
-        testImplementation('org.mockito:mockito-junit-jupiter:4.0.0')
-        testImplementation('org.assertj:assertj-core:3.21.0')
+        testImplementation(platform('org.junit:junit-bom:5.13.4'))
+        testImplementation('org.junit.jupiter:junit-jupiter')
+        testImplementation('org.mockito:mockito-core:5.20.0')
+        testImplementation('org.mockito:mockito-junit-jupiter:5.20.0')
+        testImplementation('org.assertj:assertj-core:3.27.6')
 
-        testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.8.1')
+        testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 
-        testCompileOnly 'org.projectlombok:lombok:1.18.24'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+        testCompileOnly "org.projectlombok:lombok:${rootProject.lombok_version}"
+        testAnnotationProcessor "org.projectlombok:lombok:${rootProject.lombok_version}"
+    }
+
+    test {
+        useJUnitPlatform()
+        failOnNoDiscoveredTests = false
     }
 
     processResources {
@@ -90,31 +99,32 @@ allprojects {
     tasks.publish.dependsOn build
 }
 
-archivesBaseName = "steamlayer"
+base.archivesName = "steamlayer"
 
 subprojects {
 }
 
 project('steamlayer-common') {
-    archivesBaseName = "steamlayer-common"
+    base.archivesName = "steamlayer-common"
 
     dependencies {
     }
 }
 
 project('steamlayer-test') {
-    archivesBaseName = "steamlayer-test"
+    base.archivesName = "steamlayer-test"
 
     dependencies {
-        implementation('org.junit.jupiter:junit-jupiter-api:5.6.1')
-        implementation('org.mockito:mockito-core:3.3.3')
-        implementation('org.mockito:mockito-junit-jupiter:3.3.3')
-        implementation('org.assertj:assertj-core:3.15.0')
+        implementation(platform('org.junit:junit-bom:5.13.4'))
+        implementation('org.junit.jupiter:junit-jupiter-api')
+        implementation('org.mockito:mockito-core:5.20.0')
+        implementation('org.mockito:mockito-junit-jupiter:5.20.0')
+        implementation('org.assertj:assertj-core:3.27.6')
     }
 }
 
 project('steamlayer-inventory') {
-    archivesBaseName = "steamlayer-inventory"
+    base.archivesName = "steamlayer-inventory"
 
     dependencies {
         api project(path: ':steamlayer-common', configuration: 'namedElements')
@@ -122,7 +132,7 @@ project('steamlayer-inventory') {
 }
 
 project('steamlayer-network') {
-    archivesBaseName = "steamlayer-network"
+    base.archivesName = "steamlayer-network"
 
     dependencies {
         api project(path: ':steamlayer-common', configuration: 'namedElements')
@@ -130,7 +140,7 @@ project('steamlayer-network') {
 }
 
 project('steamlayer-container') {
-    archivesBaseName = "steamlayer-container"
+    base.archivesName = "steamlayer-container"
 
     dependencies {
         api project(path: ':steamlayer-inventory', configuration: 'namedElements')
@@ -139,7 +149,7 @@ project('steamlayer-container') {
 }
 
 project('steamlayer-tile') {
-    archivesBaseName = "steamlayer-tile"
+    base.archivesName = "steamlayer-tile"
 
     dependencies {
         api project(path: ':steamlayer-inventory', configuration: 'namedElements')
@@ -149,7 +159,7 @@ project('steamlayer-tile') {
 }
 
 /*project('multiblock') {
-    archivesBaseName = "steamlayer-multiblock"
+    base.archivesName = "steamlayer-multiblock"
 
     dependencies {
         implementation project(':tile')
@@ -157,7 +167,7 @@ project('steamlayer-tile') {
 }*/
 
 project('steamlayer-grid') {
-    archivesBaseName = "steamlayer-grid"
+    base.archivesName = "steamlayer-grid"
 
     dependencies {
         api project(path: ':steamlayer-tile', configuration: 'namedElements')
@@ -165,22 +175,24 @@ project('steamlayer-grid') {
 }
 
 project('steamlayer-recipe') {
-    archivesBaseName = "steamlayer-recipe"
+    base.archivesName = "steamlayer-recipe"
 
     dependencies {
         api project(path: ':steamlayer-common', configuration: 'namedElements')
 
         testImplementation project(path: ':steamlayer-test', configuration: 'namedElements')
+        testImplementation "net.fabricmc:fabric-loader-junit:${rootProject.loader_version}"
     }
 }
 
 project('steamlayer-math') {
-    archivesBaseName = "steamlayer-math"
+    base.archivesName = "steamlayer-math"
 
     dependencies {
         api project(path: ':steamlayer-common', configuration: 'namedElements')
 
         testImplementation project(path: ':steamlayer-test', configuration: 'namedElements')
+        testImplementation "net.fabricmc:fabric-loader-junit:${rootProject.loader_version}"
     }
 }
 

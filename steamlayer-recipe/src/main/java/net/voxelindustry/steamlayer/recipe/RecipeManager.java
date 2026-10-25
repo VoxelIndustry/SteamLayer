@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.recipe;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 
@@ -13,7 +13,7 @@ import static java.util.stream.Collectors.toList;
 
 public class RecipeManager
 {
-    private static final Map<ResourceLocation, RecipeCategory<?>> RECIPES = new HashMap<>();
+    private static final Map<Identifier, RecipeCategory<?>> RECIPES = new HashMap<>();
 
     public static <R extends RecipeBase> RecipeCategory<R> addCategory(RecipeCategory<R> category)
     {
@@ -21,9 +21,9 @@ public class RecipeManager
         return category;
     }
 
-    public static <R extends RecipeBase> SteamLayerRecipeType<R> addRecipeType(SteamLayerRecipeType<R> type, ResourceLocation identifier)
+    public static <R extends RecipeBase> SteamLayerRecipeType<R> addRecipeType(SteamLayerRecipeType<R> type, Identifier identifier)
     {
-        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, identifier, type);
+        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, identifier, type.getSerializer());
         Registry.register(BuiltInRegistries.RECIPE_TYPE, identifier, type);
         return type;
     }
@@ -33,7 +33,7 @@ public class RecipeManager
         return RECIPES.values();
     }
 
-    public static RecipeCategory<?> getCategory(ResourceLocation category)
+    public static RecipeCategory<?> getCategory(Identifier category)
     {
         return RECIPES.get(category);
     }
@@ -52,7 +52,7 @@ public class RecipeManager
      *                   instance
      * @return the result of the match
      */
-    public static <T> boolean inputMatchWithoutCount(ResourceLocation categoryID, int recipeSlot, T ingredient)
+    public static <T> boolean inputMatchWithoutCount(Identifier categoryID, int recipeSlot, T ingredient)
     {
         RecipeCategory<?> category = RecipeManager.RECIPES.get(categoryID);
         return category != null && category.inputMatchWithoutCount(recipeSlot, ingredient);
@@ -73,7 +73,7 @@ public class RecipeManager
      *                   instance
      * @return the result of the match
      */
-    public static <T> boolean inputMatchWithCount(ResourceLocation categoryID, int recipeSlot, T ingredient)
+    public static <T> boolean inputMatchWithCount(Identifier categoryID, int recipeSlot, T ingredient)
     {
         RecipeCategory<?> category = RecipeManager.RECIPES.get(categoryID);
         return category != null && category.inputMatchWithCount(recipeSlot, ingredient);
@@ -92,12 +92,12 @@ public class RecipeManager
      * @return an Optional containing the found recipe or null in case of failure
      */
     @SuppressWarnings("unchecked")
-    public static Optional<RecipeBase> findRecipe(ResourceLocation categoryID, Object... inputs)
+    public static Optional<RecipeBase> findRecipe(Identifier categoryID, Object... inputs)
     {
         return Optional.ofNullable(RecipeManager.RECIPES.get(categoryID)).flatMap(category -> (Optional<RecipeBase>) category.findOneRecipe(inputs));
     }
 
-    public static List<RecipeBase> findRecipesWithoutCount(ResourceLocation categoryID, Object... inputs)
+    public static List<RecipeBase> findRecipesWithoutCount(Identifier categoryID, Object... inputs)
     {
         RecipeCategory<?> category = RecipeManager.RECIPES.get(categoryID);
         if (category != null)

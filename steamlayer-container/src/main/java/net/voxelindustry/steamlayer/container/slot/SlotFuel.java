@@ -1,16 +1,16 @@
 package net.voxelindustry.steamlayer.container.slot;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 
 public class SlotFuel extends FilteredSlot
 {
     public SlotFuel(Container inventory, int index, int x, int y)
     {
         super(inventory, index, x, y);
-        setFilter(stack -> AbstractFurnaceBlockEntity.isFuel(stack) || SlotFuel.isBucket(stack));
+        setFilter(stack -> stack.has(DataComponents.COOKING_FUEL) || SlotFuel.isBucket(stack));
     }
 
     @Override

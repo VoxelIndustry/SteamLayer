@@ -1,9 +1,10 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Containers;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.inventory.InventoryHandler;
 import net.voxelindustry.steamlayer.tile.modular.IModularTile;
 import net.voxelindustry.steamlayer.tile.modular.ISerializableModule;
@@ -35,16 +36,15 @@ public class InventoryModule extends TileModule implements ISerializableModule
     }
 
     @Override
-    public void fromNBT(CompoundTag tag)
+    public void load(ValueInput input)
     {
-        inventories.forEach((name, inv) -> inv.fromTag(tag.getCompound("Inv" + name)));
+        inventories.forEach((name, inv) -> inv.load(input.childOrEmpty("Inv" + name)));
     }
 
     @Override
-    public CompoundTag toNBT(CompoundTag tag)
+    public void save(ValueOutput output)
     {
-        inventories.forEach((name, inv) -> tag.put("Inv" + name, inv.toTag()));
-        return tag;
+        inventories.forEach((name, inv) -> inv.save(output.child("Inv" + name)));
     }
 
     public void addBasic(int slotCount)

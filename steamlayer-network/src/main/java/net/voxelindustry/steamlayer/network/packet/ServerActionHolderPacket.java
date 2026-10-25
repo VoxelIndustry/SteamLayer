@@ -8,7 +8,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -38,7 +38,7 @@ public class ServerActionHolderPacket
     public ServerActionHolderPacket(BlockEntity to, String name)
     {
         actionName = name;
-        dimensionKey = to.getLevel().dimension().location().toString();
+        dimensionKey = to.getLevel().dimension().identifier().toString();
         pos = to.getBlockPos();
 
         actionID = previousActionID.getAndUpdate(previous -> previous > 32765 ? 0 : previous + 1);
@@ -74,11 +74,11 @@ public class ServerActionHolderPacket
     {
         threadExecutor.execute(() ->
         {
-            var world = player.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(packet.dimensionKey)));
+            var world = player.level().getServer().getLevel(ResourceKey.create(Registries.DIMENSION, Identifier.parse(packet.dimensionKey)));
 
-            var chunkPos = new ChunkPos(packet.getPos());
+            var chunkPos = ChunkPos.containing(packet.getPos());
 
-            if (!world.hasChunk(chunkPos.x, chunkPos.z))
+            if (!world.hasChunk(chunkPos.x(), chunkPos.z()))
                 return;
 
             var receiver = world.getBlockEntity(packet.getPos());

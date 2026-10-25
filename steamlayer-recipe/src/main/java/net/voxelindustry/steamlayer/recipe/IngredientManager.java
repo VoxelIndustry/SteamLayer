@@ -3,8 +3,8 @@ package net.voxelindustry.steamlayer.recipe;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.gson.JsonObject;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.recipe.ingredient.IngredientHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackIngredientHandler;
@@ -20,16 +20,16 @@ import java.util.function.Function;
 public class IngredientManager
 {
     private static final Map<Class<?>, IngredientHandler<?>> INGREDIENT_HANDLERS = new IdentityHashMap<>();
-    private static final BiMap<ResourceLocation, Class<?>> INGREDIENT_TYPES = HashBiMap.create();
+    private static final BiMap<Identifier, Class<?>> INGREDIENT_TYPES = HashBiMap.create();
 
-    private static final Map<ResourceLocation, Function<FriendlyByteBuf, RecipeIngredient<?>>> INGREDIENT_INSTANCE_FROM_BUFFER = new HashMap<>();
-    private static final Map<ResourceLocation, Function<JsonObject, RecipeIngredient<?>>> INGREDIENT_INSTANCE_FROM_JSON = new HashMap<>();
+    private static final Map<Identifier, Function<RegistryFriendlyByteBuf, RecipeIngredient<?>>> INGREDIENT_INSTANCE_FROM_BUFFER = new HashMap<>();
+    private static final Map<Identifier, Function<JsonObject, RecipeIngredient<?>>> INGREDIENT_INSTANCE_FROM_JSON = new HashMap<>();
 
-    private static final Map<ResourceLocation, Function<RecipeIngredient<?>, JsonObject>> INGREDIENT_INSTANCE_TO_JSON = new HashMap<>();
+    private static final Map<Identifier, Function<RecipeIngredient<?>, JsonObject>> INGREDIENT_INSTANCE_TO_JSON = new HashMap<>();
 
     static
     {
-        ResourceLocation itemStackIdentifier = new ResourceLocation("minecraft", "itemstack");
+        Identifier itemStackIdentifier = Identifier.fromNamespaceAndPath("minecraft", "itemstack");
         INGREDIENT_TYPES.put(itemStackIdentifier, ItemStack.class);
         INGREDIENT_HANDLERS.put(ItemStack.class, new ItemStackIngredientHandler(itemStackIdentifier));
 
@@ -50,27 +50,27 @@ public class IngredientManager
         return ingredientHandler;
     }
 
-    public static RecipeIngredient<?> getIngredientInstanceFromJSON(ResourceLocation identifier, JsonObject object)
+    public static RecipeIngredient<?> getIngredientInstanceFromJSON(Identifier identifier, JsonObject object)
     {
         return INGREDIENT_INSTANCE_FROM_JSON.get(identifier).apply(object);
     }
 
-    public static JsonObject getIngredientInstanceToJSON(ResourceLocation identifier, RecipeIngredient<?> ingredient)
+    public static JsonObject getIngredientInstanceToJSON(Identifier identifier, RecipeIngredient<?> ingredient)
     {
         return INGREDIENT_INSTANCE_TO_JSON.get(identifier).apply(ingredient);
     }
 
-    public static RecipeIngredient<?> getIngredientInstanceFromBuffer(ResourceLocation identifier, FriendlyByteBuf buffer)
+    public static RecipeIngredient<?> getIngredientInstanceFromBuffer(Identifier identifier, RegistryFriendlyByteBuf buffer)
     {
         return INGREDIENT_INSTANCE_FROM_BUFFER.get(identifier).apply(buffer);
     }
 
-    public static <T> ResourceLocation getIngredientHandlerIdentifier(Class<T> ingredientType)
+    public static <T> Identifier getIngredientHandlerIdentifier(Class<T> ingredientType)
     {
         return INGREDIENT_TYPES.inverse().get(ingredientType);
     }
 
-    public static Class<?> getIngredientHandlerClass(ResourceLocation identifier)
+    public static Class<?> getIngredientHandlerClass(Identifier identifier)
     {
         return INGREDIENT_TYPES.get(identifier);
     }

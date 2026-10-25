@@ -1,5 +1,6 @@
 package net.voxelindustry.steamlayer.network.action;
 
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.network.packet.ClientActionHolderPacket;
 
 import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.*;
@@ -68,7 +69,7 @@ public class ClientActionBuilder
 
     public ClientActionBuilder withItemStack(String key, ItemStack value)
     {
-        payload.put(key, value.save(new CompoundTag()));
+        payload.put(key, ItemUtils.saveStack(value, sender.getLevel().registryAccess()));
         return this;
     }
 

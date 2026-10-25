@@ -2,6 +2,7 @@ package net.voxelindustry.steamlayer.tile;
 
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -9,6 +10,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.voxelindustry.steamlayer.network.SteamLayerClientPacketHandler;
 import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 import net.voxelindustry.steamlayer.network.packet.TileSyncRequestPacket;
 import net.voxelindustry.steamlayer.network.tilesync.PartialSyncedTile;
@@ -31,18 +33,18 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     @Override
     public void askServerSync()
     {
-        SteamLayerPacketHandler.createServerBoundPacket(TILE_SYNC_REQUEST,
+        SteamLayerClientPacketHandler.sendToServer(SteamLayerPacketHandler.createServerBoundPacket(TILE_SYNC_REQUEST,
                 buffer -> TileSyncRequestPacket.encode(
                         new TileSyncRequestPacket(
-                                level.dimension().location().toString(),
+                                level.dimension().identifier().toString(),
                                 getBlockPos()), buffer)
-        );
+        ));
     }
 
     @Override
-    public CompoundTag getUpdateTag()
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries)
     {
-        return saveWithoutMetadata();
+        return saveWithoutMetadata(registries);
     }
 
     @Override
@@ -116,7 +118,7 @@ public class TileBase extends BlockEntity implements ITileInfoProvider, ISyncTil
     public void clientLoad()
     {
         if (this instanceof PartialSyncedTile && ((PartialSyncedTile) this).syncOnLoad())
-            new PartialTileSyncRequestPacket(getBlockPos(), getLevel().dimension().location(), ((PartialSyncedTile) this).getAllSyncElements())
+            new PartialTileSyncRequestPacket(getBlockPos(), getLevel().dimension().identifier(), ((PartialSyncedTile) this).getAllSyncElements())
                     .sendToServer();
     }
 }

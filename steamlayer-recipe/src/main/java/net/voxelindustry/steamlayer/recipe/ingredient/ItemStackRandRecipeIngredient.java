@@ -1,10 +1,8 @@
 package net.voxelindustry.steamlayer.recipe.ingredient;
 
 import com.google.gson.JsonObject;
-import com.mojang.serialization.JsonOps;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
@@ -13,7 +11,7 @@ import org.apache.commons.lang3.Range;
 
 public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
 {
-    public static final ResourceLocation ITEMSTACK_RAND_INGREDIENT = new ResourceLocation(SteamLayerConstants.MODID, "itemstack_rand_ingredient");
+    public static final Identifier ITEMSTACK_RAND_INGREDIENT = Identifier.fromNamespaceAndPath(SteamLayerConstants.MODID, "itemstack_rand_ingredient");
 
     private Range<Integer> range;
 
@@ -44,22 +42,22 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
     }
 
     @Override
-    public ResourceLocation getIdentifier()
+    public Identifier getIdentifier()
     {
         return ITEMSTACK_RAND_INGREDIENT;
     }
 
     @Override
-    public void toBuffer(FriendlyByteBuf buffer)
+    public void toBuffer(RegistryFriendlyByteBuf buffer)
     {
         super.toBuffer(buffer);
         buffer.writeInt(range.getMinimum());
         buffer.writeInt(range.getMaximum());
     }
 
-    public static ItemStackRandRecipeIngredient fromBuffer(FriendlyByteBuf buffer)
+    public static ItemStackRandRecipeIngredient fromBuffer(RegistryFriendlyByteBuf buffer)
     {
-        ItemStack stack = buffer.readItem();
+        ItemStack stack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
         boolean strictTagComparing = buffer.readBoolean();
         Range<Integer> range = Range.between(buffer.readInt(), buffer.readInt());
 
@@ -76,29 +74,11 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
 
     public static JsonObject toJson(RecipeIngredient<?> ingredient)
     {
-        var stackIngredient = ((ItemStackRandRecipeIngredient) ingredient);
+        var json = ItemStackRecipeIngredient.toJson(ingredient);
+        var range = ((ItemStackRandRecipeIngredient) ingredient).range;
 
-        var json = new JsonObject();
-
-        if (stackIngredient.strictTagComparing)
-            json.addProperty("strictTagComparing", true);
-
-        var stack = stackIngredient.ingredient;
-
-        json.addProperty("item", stack.getItem().toString());
-
-        if (stack.getCount() > 1)
-            json.addProperty("quantity", stack.getCount());
-
-        json.addProperty("min", stackIngredient.range.getMinimum());
-        json.addProperty("max", stackIngredient.range.getMaximum());
-
-        if (stack.hasTag())
-            json.add("nbt", CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, stack.getTag()).getOrThrow(false, error ->
-            {
-                throw new RuntimeException(error);
-            }));
-
+        json.addProperty("min", range.getMinimum());
+        json.addProperty("max", range.getMaximum());
         return json;
     }
 }

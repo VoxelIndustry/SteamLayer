@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.network.packet;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 @Getter
 @NoArgsConstructor
@@ -17,7 +17,7 @@ public class ClientGenericPacket
         packetID = PacketHandler.getInstance().getID(message.getClass());
     }
 
-    public ClientGenericPacket decode(FriendlyByteBuf buffer)
+    public ClientGenericPacket decode(RegistryFriendlyByteBuf buffer)
     {
         packetID = buffer.readInt();
 
@@ -34,7 +34,7 @@ public class ClientGenericPacket
         return this;
     }
 
-    public void encode(FriendlyByteBuf buffer)
+    public void encode(RegistryFriendlyByteBuf buffer)
     {
         buffer.writeInt(packetID);
         message.write(buffer);

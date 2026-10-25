@@ -1,6 +1,6 @@
 package net.voxelindustry.steamlayer.container.sync;
 
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 public interface SyncedValue
 {
@@ -10,7 +10,7 @@ public interface SyncedValue
 
     void update();
 
-    void write(FriendlyByteBuf buffer);
+    void write(RegistryFriendlyByteBuf buffer);
 
-    void read(FriendlyByteBuf buffer);
+    void read(RegistryFriendlyByteBuf buffer);
 }

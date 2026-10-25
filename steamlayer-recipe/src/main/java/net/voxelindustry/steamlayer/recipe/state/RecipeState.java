@@ -5,11 +5,11 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
-import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.recipe.IngredientManager;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 
-public class RecipeState implements TagSerializable<CompoundTag>
+public class RecipeState
 {
     protected Multimap<Class<?>, RecipeIngredient<?>> inputs;
     protected Multimap<Class<?>, RecipeIngredient<?>> outputs;
@@ -214,130 +214,102 @@ public class RecipeState implements TagSerializable<CompoundTag>
         return IngredientManager.getIngredientHandler(typeClass).getEmpty();
     }
 
-    @Override
-    public CompoundTag toTag()
+    public void save(ValueOutput output)
     {
-        var tag = new CompoundTag();
+        output.putString("recipeNamespace", recipe.getId().getNamespace());
+        output.putString("recipePath", recipe.getId().getPath());
 
-        tag.putString("recipeNamespace", recipe.getId().getNamespace());
-        tag.putString("recipePath", recipe.getId().getPath());
+        output.putInt("currentTime", currentTime);
+        output.putInt("recipeTime", recipeTime);
 
-        tag.putInt("currentTime", currentTime);
-        tag.putInt("recipeTime", recipeTime);
-
-        tag.putInt("leftInputTypesCount", leftInputs.keySet().size());
+        output.putInt("leftInputTypesCount", leftInputs.keySet().size());
 
         int index = 0;
         for (var typeClass : leftInputs.keySet())
         {
             var identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
-            tag.putString("leftInputType" + index, identifier);
+            output.putString("leftInputType" + index, identifier);
 
-            leftInputForTypeToTag(tag, typeClass, identifier);
+            saveInputsForType(output, leftInputs, "leftInputForType", typeClass, identifier);
             index++;
         }
 
-        tag.putInt("consumedInputTypesCount", consumedInputs.keySet().size());
+        output.putInt("consumedInputTypesCount", consumedInputs.keySet().size());
         index = 0;
         for (var typeClass : consumedInputs.keySet())
         {
             var identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
-            tag.putString("consumedInputType" + index, identifier);
+            output.putString("consumedInputType" + index, identifier);
 
-            consumedInputForTypeToTag(tag, typeClass, identifier);
-            index++;
-        }
-
-        return tag;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> void consumedInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
-    {
-        var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-        var consumedInputsForType = (Collection<T>) consumedInputs.get(typeClass);
-
-        tag.putInt("consumedInputForType" + identifier, consumedInputsForType.size());
-        int index = 0;
-        for (T input : consumedInputsForType)
-        {
-            tag.put("consumedInputForType" + identifier + index, ingredientHandler.toTag(input, new CompoundTag()));
+            saveInputsForType(output, consumedInputs, "consumedInputForType", typeClass, identifier);
             index++;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void leftInputForTypeToTag(CompoundTag tag, Class<T> typeClass, String identifier)
+    private <T> void saveInputsForType(ValueOutput output, Multimap<Class<?>, ?> inputs, String prefix, Class<T> typeClass, String identifier)
     {
         var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-        var leftInputsForType = (Collection<T>) leftInputs.get(typeClass);
+        var inputsForType = (Collection<T>) inputs.get(typeClass);
 
-        tag.putInt("leftInputForType" + identifier, leftInputsForType.size());
+        output.putInt(prefix + identifier, inputsForType.size());
         int index = 0;
-        for (T input : leftInputsForType)
+        for (T input : inputsForType)
         {
-            tag.put("leftInputForType" + identifier + index, ingredientHandler.toTag(input, new CompoundTag()));
+            ingredientHandler.save(input, output.child(prefix + identifier + index));
             index++;
         }
     }
 
-    public static <RECIPE extends RecipeBase> RecipeState fromTag(RecipeCategory<RECIPE> category, CompoundTag tag)
+    public static <RECIPE extends RecipeBase> RecipeState load(RecipeCategory<RECIPE> category, ValueInput input)
     {
-        var recipe = category.getRecipe(ResourceLocation.tryBuild(tag.getString("recipeNamespace"), tag.getString("recipePath")));
+        var recipeId = Identifier.tryBuild(input.getStringOr("recipeNamespace", ""), input.getStringOr("recipePath", ""));
+        var recipe = recipeId == null ? Optional.<RECIPE>empty() : category.getRecipe(recipeId);
 
         if (recipe.isEmpty())
             return null;
 
         var state = recipe.get().createState();
-        state.fromTag(tag);
+        state.load(input);
         return state;
     }
 
-    @Override
-    public void fromTag(CompoundTag tag)
+    public void load(ValueInput input)
     {
         consumedInputs.clear();
         leftInputs.clear();
 
-        currentTime = tag.getInt("currentTime");
-        recipeTime = tag.getInt("recipeTime");
+        currentTime = input.getIntOr("currentTime", 0);
+        recipeTime = input.getIntOr("recipeTime", 0);
 
-        var leftInputTypesCount = tag.getInt("leftInputTypesCount");
+        var leftInputTypesCount = input.getIntOr("leftInputTypesCount", 0);
 
         for (int index = 0; index < leftInputTypesCount; index++)
         {
-            var identifier = tag.getString("leftInputType" + index);
-            var handlerType = IngredientManager.getIngredientHandlerClass(new ResourceLocation(identifier));
+            var identifier = input.getStringOr("leftInputType" + index, "");
+            var handlerType = IngredientManager.getIngredientHandlerClass(Identifier.parse(identifier));
 
-            leftInputForTypeFromTag(tag, handlerType, identifier);
+            loadInputsForType(input, leftInputs, "leftInputForType", handlerType, identifier);
         }
 
-        var consumedInputTypesCount = tag.getInt("consumedInputTypesCount");
+        var consumedInputTypesCount = input.getIntOr("consumedInputTypesCount", 0);
 
         for (int index = 0; index < consumedInputTypesCount; index++)
         {
-            var identifier = tag.getString("consumedInputType" + index);
-            var handlerType = IngredientManager.getIngredientHandlerClass(new ResourceLocation(identifier));
+            var identifier = input.getStringOr("consumedInputType" + index, "");
+            var handlerType = IngredientManager.getIngredientHandlerClass(Identifier.parse(identifier));
 
-            consumedInputForTypeFromTag(tag, handlerType, identifier);
+            loadInputsForType(input, consumedInputs, "consumedInputForType", handlerType, identifier);
         }
     }
 
-    private <T> void leftInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
+    @SuppressWarnings("unchecked")
+    private <T> void loadInputsForType(ValueInput input, Multimap<Class<?>, ?> inputs, String prefix, Class<T> typeClass, String identifier)
     {
-        var leftInputForType = tag.getInt("leftInputForType" + identifier);
+        var count = input.getIntOr(prefix + identifier, 0);
         var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
 
-        for (int index = 0; index < leftInputForType; index++)
-            leftInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("leftInputForType" + identifier + index)));
-    }
-
-    private <T> void consumedInputForTypeFromTag(CompoundTag tag, Class<T> typeClass, String identifier)
-    {
-        var consumedInputForType = tag.getInt("consumedInputForType" + identifier);
-        var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-
-        for (int index = 0; index < consumedInputForType; index++)
-            consumedInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("consumedInputForType" + identifier + index)));
+        for (int index = 0; index < count; index++)
+            ((Multimap<Class<?>, T>) inputs).put(typeClass, ingredientHandler.load(input.childOrEmpty(prefix + identifier + index)));
     }
 }

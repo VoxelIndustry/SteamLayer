@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.container.sync;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import org.apache.commons.lang3.Range;
 
 import java.lang.reflect.Array;
@@ -121,7 +121,7 @@ public class SyncedArrayProperty<T> implements SyncedValue
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer)
+    public void write(RegistryFriendlyByteBuf buffer)
     {
         buffer.writeInt(stored.length);
 
@@ -130,7 +130,7 @@ public class SyncedArrayProperty<T> implements SyncedValue
     }
 
     @Override
-    public void read(FriendlyByteBuf buffer)
+    public void read(RegistryFriendlyByteBuf buffer)
     {
         int count = buffer.readInt();
         if (stored == null)

@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.tile.descriptor;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.steamlayer.tile.descriptor.adapter.ITileComponentTypeAdapter;
 import net.voxelindustry.steamlayer.tile.descriptor.adapter.TileDescriptorTypeAdapter;
 import org.apache.commons.io.IOUtils;
@@ -46,7 +46,7 @@ public class ModularTiles
     private Map<String, TileDescriptor>                               tiles    = new HashMap<>();
     private Map<Class<? extends ITileComponent>, Set<TileDescriptor>> subLists = new IdentityHashMap<>();
 
-    private List<ResourceLocation> toLoad = new ArrayList<>();
+    private List<Identifier> toLoad = new ArrayList<>();
 
     private ModularTiles(String modid)
     {
@@ -83,7 +83,7 @@ public class ModularTiles
         toLoad.forEach(rsl -> tiles.put(rsl.getPath(), loadTile(rsl)));
     }
 
-    public void addTile(ResourceLocation rsl)
+    public void addTile(Identifier rsl)
     {
         toLoad.add(rsl);
     }
@@ -130,7 +130,7 @@ public class ModularTiles
         return preload;
     }
 
-    private TileDescriptor loadTile(ResourceLocation rsl)
+    private TileDescriptor loadTile(Identifier rsl)
     {
         TileDescriptor descriptor = null;
         InputStream stream = ModularTiles.class

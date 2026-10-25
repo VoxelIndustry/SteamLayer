@@ -1,45 +1,37 @@
 package net.voxelindustry.steamlayer.common.utils;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.ListCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Collection;
-import java.util.Optional;
-import net.minecraft.core.NonNullList;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Collection;
+import java.util.List;
 
 public class ItemUtils
 {
-    // Mojang's codec does not handle empty ItemStack
-    public static final Codec<ItemStack> FIXED_ITEMSTACK_CODEC = RecordCodecBuilder
-            .create(instance -> instance.group(
-                            BuiltInRegistries.ITEM.byNameCodec().optionalFieldOf("id")
-                                    .forGetter(stack -> Optional.ofNullable(stack.getItem())),
-                            Codec.INT.fieldOf("Count")
-                                    .forGetter(ItemStack::getCount),
-                            CompoundTag.CODEC.optionalFieldOf("tag")
-                                    .forGetter(stack -> Optional.ofNullable(stack.getTag())))
-                    .apply(instance, (item, count, nbt) ->
-                    {
-                        var stack = new ItemStack(item.orElse(Items.AIR), count);
-                        stack.setTag(nbt.orElse(null));
-                        return stack;
-                    }));
-    public static final ListCodec<ItemStack> ITEMSTACK_LIST_CODEC = new ListCodec<>(FIXED_ITEMSTACK_CODEC);
+    public static final Codec<ItemStack>       FIXED_ITEMSTACK_CODEC = ItemStack.OPTIONAL_CODEC;
+    public static final Codec<List<ItemStack>> ITEMSTACK_LIST_CODEC  = ItemStack.OPTIONAL_CODEC.listOf();
+
+    public static Tag saveStack(ItemStack stack, HolderLookup.Provider registries)
+    {
+        return ItemStack.OPTIONAL_CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), stack).getOrThrow();
+    }
+
+    public static ItemStack loadStack(Tag tag, HolderLookup.Provider registries)
+    {
+        return ItemStack.OPTIONAL_CODEC.parse(registries.createSerializationContext(NbtOps.INSTANCE), tag).result().orElse(ItemStack.EMPTY);
+    }
 
     public static boolean containsStack(Collection<ItemStack> stacks, ItemStack candidate)
     {
         for (ItemStack stack : stacks)
         {
-            if (ItemStack.isSameItemSameTags(stack, candidate))
+            if (ItemStack.isSameItemSameComponents(stack, candidate))
                 return true;
         }
         return false;
@@ -52,7 +44,7 @@ public class ItemUtils
 
     public static boolean canMerge(ItemStack dest, ItemStack from)
     {
-        return ItemStack.isSameItemSameTags(dest, from) && dest.getCount() + from.getCount() <= dest.getMaxStackSize();
+        return ItemStack.isSameItemSameComponents(dest, from) && dest.getCount() + from.getCount() <= dest.getMaxStackSize();
     }
 
     public static int mergeStacks(ItemStack dest, ItemStack from, boolean doMerge)
@@ -66,7 +58,7 @@ public class ItemUtils
             }
             return 0;
         }
-        if ((ItemStack.isSameItemSameTags(dest, from)))
+        if ((ItemStack.isSameItemSameComponents(dest, from)))
         {
             int merged = Math.min(dest.getMaxStackSize() - dest.getCount(), from.getCount());
             if (doMerge)
@@ -86,7 +78,7 @@ public class ItemUtils
         {
             ItemStack itemstack = player.getItem(i);
 
-            if (deepEquals && ItemStack.isSameItemSameTags(stack, itemstack)
+            if (deepEquals && ItemStack.isSameItemSameComponents(stack, itemstack)
                     || !deepEquals && ItemStack.isSameItem(stack, itemstack))
             {
                 needed -= itemstack.getCount();
@@ -99,44 +91,10 @@ public class ItemUtils
 
     public static int drainPlayer(ServerPlayer player, ItemStack stack)
     {
-        int removed = player.getInventory().clearOrCountMatchingItems(candidate -> ItemStack.isSameItemSameTags(stack, candidate), Integer.MAX_VALUE, player.inventoryMenu.getCraftSlots());
+        int removed = player.getInventory().clearOrCountMatchingItems(candidate -> ItemStack.isSameItemSameComponents(stack, candidate), false, Integer.MAX_VALUE, player.inventoryMenu.getCraftSlots());
         player.containerMenu.broadcastChanges();
         player.inventoryMenu.slotsChanged(player.getInventory());
 
         return removed;
-    }
-
-    public static CompoundTag saveAllItems(CompoundTag tag, NonNullList<ItemStack> list)
-    {
-        if (list.size() > Byte.MAX_VALUE)
-            throw new RuntimeException("Cannot save more than " + Byte.MAX_VALUE + " entries! size=" + list.size());
-
-        ListTag tagList = new ListTag();
-
-        for (int i = 0; i < list.size(); ++i)
-        {
-            ItemStack itemstack = list.get(i);
-
-            CompoundTag nbttagcompound = new CompoundTag();
-            nbttagcompound.putByte("Slot", (byte) i);
-            itemstack.save(nbttagcompound);
-            tagList.add(nbttagcompound);
-        }
-        tag.put("Items", tagList);
-        return tag;
-    }
-
-    public static void loadAllItems(CompoundTag tag, NonNullList<ItemStack> list)
-    {
-        ListTag tagList = tag.getList("Items", 10);
-
-        for (int i = 0; i < tagList.size(); ++i)
-        {
-            CompoundTag NbtCompound = tagList.getCompound(i);
-            int j = NbtCompound.getByte("Slot") & 255;
-
-            if (j >= 0 && j < list.size())
-                list.set(j, ItemStack.of(NbtCompound));
-        }
     }
 }

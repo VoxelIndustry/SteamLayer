@@ -1,7 +1,8 @@
 package net.voxelindustry.steamlayer.recipe.ingredient;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.resources.Identifier;
 
 public interface IngredientHandler<T>
 {
@@ -19,9 +20,9 @@ public interface IngredientHandler<T>
 
     T getEmpty();
 
-    CompoundTag toTag(T value, CompoundTag tag);
+    void save(T value, ValueOutput output);
 
-    T fromTag(CompoundTag tag);
+    T load(ValueInput input);
 
-    ResourceLocation getIdentifier();
+    Identifier getIdentifier();
 }

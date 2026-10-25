@@ -3,7 +3,7 @@ package net.voxelindustry.steamlayer.network.packet;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,9 +16,9 @@ import net.voxelindustry.steamlayer.network.SteamLayerPacketHandler;
 
 public abstract class Message
 {
-    public abstract void read(FriendlyByteBuf buf);
+    public abstract void read(RegistryFriendlyByteBuf buf);
 
-    public abstract void write(FriendlyByteBuf buf);
+    public abstract void write(RegistryFriendlyByteBuf buf);
 
     public abstract void handle(Player player);
 

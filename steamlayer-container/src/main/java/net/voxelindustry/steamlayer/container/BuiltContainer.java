@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
@@ -135,7 +135,7 @@ public class BuiltContainer extends AbstractContainerMenu implements ISyncedCont
     public void updateProperty(int id, ByteBuf buffer)
     {
         SyncedValue property = syncablesValues.get(id);
-        property.read(new FriendlyByteBuf(buffer));
+        property.read(new RegistryFriendlyByteBuf(buffer, player.registryAccess()));
         property.update();
 
         if (syncCallbacks != null && syncCallbacks.containsKey(property))
@@ -200,7 +200,7 @@ public class BuiltContainer extends AbstractContainerMenu implements ISyncedCont
             {
                 Slot slot = slots.get(slotIndex);
                 ItemStack stackInSlot = slot.getItem();
-                if (!stackInSlot.isEmpty() && ItemStack.isSameItemSameTags(stackInSlot, stackToShift)
+                if (!stackInSlot.isEmpty() && ItemStack.isSameItemSameComponents(stackInSlot, stackToShift)
                         && slot.mayPlace(stackToShift))
                 {
                     int resultingStackSize = stackInSlot.getCount() + stackToShift.getCount();
@@ -265,7 +265,7 @@ public class BuiltContainer extends AbstractContainerMenu implements ISyncedCont
         super.removed(player);
 
         if (closeEvent != null)
-            closeEvent.apply(this, player, player.level().isClientSide);
+            closeEvent.apply(this, player, player.level().isClientSide());
 
         inventories.forEach(inventory ->
         {

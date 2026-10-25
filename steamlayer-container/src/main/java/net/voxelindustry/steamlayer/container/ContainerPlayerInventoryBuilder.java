@@ -2,7 +2,6 @@ package net.voxelindustry.steamlayer.container;
 
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -199,7 +198,7 @@ public class ContainerPlayerInventoryBuilder
                                                            EquipmentSlot slotType)
         {
             parent.parent.slots.add(new FilteredSlot(parent.inventory, index, xStart, yStart)
-                    .setFilter(stack -> Mob.getEquipmentSlotForItem(stack) == slotType));
+                    .setFilter(stack -> parent.player.getEquipmentSlotForItem(stack) == slotType));
             return this;
         }
 

@@ -7,12 +7,13 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.entity.ContainerUser;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -21,7 +22,7 @@ import java.util.function.Supplier;
 
 @Getter
 @Accessors(fluent = true)
-public class InventoryHandler implements Container, TagSerializable<CompoundTag>
+public class InventoryHandler implements Container
 {
     @Setter
     private IntConsumer onSlotChange;
@@ -128,16 +129,16 @@ public class InventoryHandler implements Container, TagSerializable<CompoundTag>
     }
 
     @Override
-    public void startOpen(Player player)
+    public void startOpen(ContainerUser user)
     {
-        if (onOpen != null)
+        if (onOpen != null && user.getLivingEntity() instanceof Player player)
             onOpen.accept(player);
     }
 
     @Override
-    public void stopOpen(Player player)
+    public void stopOpen(ContainerUser user)
     {
-        if (onClose != null)
+        if (onClose != null && user.getLivingEntity() instanceof Player player)
             onClose.accept(player);
     }
 
@@ -181,15 +182,13 @@ public class InventoryHandler implements Container, TagSerializable<CompoundTag>
         setChanged();
     }
 
-    @Override
-    public CompoundTag toTag()
+    public void save(ValueOutput output)
     {
-        return ContainerHelper.saveAllItems(new CompoundTag(), stacks);
+        ContainerHelper.saveAllItems(output, stacks);
     }
 
-    @Override
-    public void fromTag(CompoundTag tag)
+    public void load(ValueInput input)
     {
-        ContainerHelper.loadAllItems(tag, stacks);
+        ContainerHelper.loadAllItems(input, stacks);
     }
 }

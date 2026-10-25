@@ -4,9 +4,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -14,7 +14,7 @@ import net.voxelindustry.steamlayer.common.SteamLayerConstants;
 
 public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
 {
-    public static final ResourceLocation ITEMSTACK_INGREDIENT = new ResourceLocation(SteamLayerConstants.MODID, "itemstack_ingredient");
+    public static final Identifier ITEMSTACK_INGREDIENT = Identifier.fromNamespaceAndPath(SteamLayerConstants.MODID, "itemstack_ingredient");
 
     protected final int quantity;
     protected final ItemStack ingredient;
@@ -38,7 +38,7 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     public boolean match(ItemStack against)
     {
         if (strictTagComparing)
-            return ItemStack.isSameItemSameTags(ingredient, against);
+            return ItemStack.isSameItemSameComponents(ingredient, against);
         return ItemStack.isSameItem(ingredient, against);
     }
 
@@ -66,21 +66,21 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     }
 
     @Override
-    public ResourceLocation getIdentifier()
+    public Identifier getIdentifier()
     {
         return ITEMSTACK_INGREDIENT;
     }
 
     @Override
-    public void toBuffer(FriendlyByteBuf buffer)
+    public void toBuffer(RegistryFriendlyByteBuf buffer)
     {
-        buffer.writeItem(ingredient);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, ingredient);
         buffer.writeBoolean(strictTagComparing);
     }
 
-    public static ItemStackRecipeIngredient fromBuffer(FriendlyByteBuf buffer)
+    public static ItemStackRecipeIngredient fromBuffer(RegistryFriendlyByteBuf buffer)
     {
-        return new ItemStackRecipeIngredient(buffer.readItem(), buffer.readBoolean());
+        return new ItemStackRecipeIngredient(ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer), buffer.readBoolean());
     }
 
     public static ItemStackRecipeIngredient fromJson(JsonObject json)
@@ -101,36 +101,29 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
 
         var stack = stackIngredient.ingredient;
 
-        json.add("item", BuiltInRegistries.ITEM.byNameCodec().encodeStart(JsonOps.INSTANCE, stack.getItem()).get().left().get());
+        json.add("item", BuiltInRegistries.ITEM.byNameCodec().encodeStart(JsonOps.INSTANCE, stack.getItem()).getOrThrow());
 
         if (stack.getCount() > 1)
             json.addProperty("quantity", stack.getCount());
 
-        if (stack.hasTag())
-            json.add("nbt", CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, stack.getTag()).getOrThrow(false, error ->
-            {
-                throw new RuntimeException(error);
-            }));
+        if (!stack.getComponentsPatch().isEmpty())
+            json.add("components", DataComponentPatch.CODEC.encodeStart(JsonOps.INSTANCE, stack.getComponentsPatch()).getOrThrow());
 
         return json;
     }
 
     public static ItemStack getItemStackFromJson(JsonObject json)
     {
-        ResourceLocation identifier = new ResourceLocation(GsonHelper.getAsString(json, "item"));
+        Identifier identifier = Identifier.parse(GsonHelper.getAsString(json, "item"));
         Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElseThrow(() ->
                 new JsonSyntaxException("Unknown item '" + identifier + "'"));
         int quantity = GsonHelper.isValidPrimitive(json, "quantity") ? GsonHelper.getAsInt(json, "quantity") : 1;
 
         ItemStack ingredient = new ItemStack(item, quantity);
 
-        if (json.has("nbt"))
-        {
-            CompoundTag tagCompound = CompoundTag.CODEC.parse(JsonOps.INSTANCE, json.getAsJsonObject("nbt"))
-                    .getOrThrow(false, SteamLayerConstants.LOGGER::error);
-
-            ingredient.setTag(tagCompound);
-        }
+        if (json.has("components"))
+            ingredient.applyComponents(DataComponentPatch.CODEC.parse(JsonOps.INSTANCE, json.get("components"))
+                    .getOrThrow(JsonSyntaxException::new));
 
         return ingredient;
     }

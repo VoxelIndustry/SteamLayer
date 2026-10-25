@@ -2,8 +2,9 @@ package net.voxelindustry.steamlayer.recipe.ingredient;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 
@@ -11,7 +12,7 @@ import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
 {
     @Getter
-    private final ResourceLocation identifier;
+    private final Identifier identifier;
 
     @Override
     public ItemStack accumulateMutator(ItemStack first, ItemStack second)
@@ -58,14 +59,14 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     }
 
     @Override
-    public CompoundTag toTag(ItemStack value, CompoundTag tag)
+    public void save(ItemStack value, ValueOutput output)
     {
-        return value.save(tag);
+        output.store("stack", ItemStack.OPTIONAL_CODEC, value);
     }
 
     @Override
-    public ItemStack fromTag(CompoundTag tag)
+    public ItemStack load(ValueInput input)
     {
-        return ItemStack.of(tag);
+        return input.read("stack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
     }
 }

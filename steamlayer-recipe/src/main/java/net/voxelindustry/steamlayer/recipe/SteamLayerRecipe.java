@@ -5,8 +5,6 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
-import net.voxelindustry.steamlayer.recipe.mixin.AccessorRecipeManager;
-import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 
 import java.util.Collection;
 
@@ -22,26 +20,32 @@ public class SteamLayerRecipe implements ModInitializer
     @Override
     public void onInitialize()
     {
-        ServerLifecycleEvents.SERVER_STARTING.register(server -> recipeLoad((AccessorRecipeManager) server.getRecipeManager()));
-        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, dataPackContents, success) -> dataPackReload(server.getRecipeManager(), success));
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> recipeLoad(server.getRecipeManager()));
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) ->
+        {
+            if (success)
+                recipeLoad(server.getRecipeManager());
+        });
     }
 
-    private void dataPackReload(net.minecraft.world.item.crafting.RecipeManager recipeManager, boolean success)
+    private void recipeLoad(net.minecraft.world.item.crafting.RecipeManager recipeManager)
     {
-        if (success)
-            recipeLoad((AccessorRecipeManager) recipeManager);
-    }
-
-    private void recipeLoad(AccessorRecipeManager recipeManager)
-    {
-        Collection<RecipeCategory<?>> categories = RecipeManager.getCategories();
-
-        categories.forEach(category -> category.replaceVanillaRecipes(getRecipes(recipeManager, category.getType())));
+        RecipeManager.getCategories().forEach(category -> loadCategory(recipeManager, category));
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends RecipeBase> Collection<T> getRecipes(AccessorRecipeManager recipeManager, SteamLayerRecipeType<?> type)
+    private <R extends RecipeBase> void loadCategory(net.minecraft.world.item.crafting.RecipeManager recipeManager, RecipeCategory<R> category)
     {
-        return (Collection<T>) (Object) recipeManager.getAll(type).values();
+        Collection<R> recipes = recipeManager.getRecipes().stream()
+                .filter(holder -> holder.value().getType() == category.getType())
+                .map(holder ->
+                {
+                    var recipe = (R) holder.value();
+                    recipe.setId(holder.id().identifier());
+                    return recipe;
+                })
+                .toList();
+
+        category.replaceVanillaRecipes(recipes);
     }
 }

@@ -1,5 +1,6 @@
 package net.voxelindustry.steamlayer.network.action;
 
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 import net.voxelindustry.steamlayer.network.packet.ServerActionHolderPacket;
 
 import static net.voxelindustry.steamlayer.network.SteamLayerClientPacketHandler.sendToServer;
@@ -63,7 +64,9 @@ public class ServerActionBuilder
 
     public ServerActionBuilder withItemStack(String key, ItemStack value)
     {
-        payload.put(key, value.save(new CompoundTag()));
+        if (tile == null)
+            throw new IllegalStateException("Action target is null! Use toTile(BlockEntity) before adding an ItemStack");
+        payload.put(key, ItemUtils.saveStack(value, tile.getLevel().registryAccess()));
         return this;
     }
 

@@ -27,7 +27,7 @@ public class RecipeStateTest
         state.consumeSlotted(ItemStack.class, new ItemStack(Items.APPLE), 0);
 
         assertThat(state.getIngredientsLeft(ItemStack.class).get(0).isEmpty()).isTrue();
-        assertThat(ItemStack.isSameItemSameTags(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
+        assertThat(ItemStack.isSameItemSameComponents(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
     }
 
     @Test
@@ -44,8 +44,8 @@ public class RecipeStateTest
 
         state.consumeSlotted(ItemStack.class, new ItemStack(Items.APPLE), 0);
 
-        assertThat(ItemStack.isSameItemSameTags(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 2))).isTrue();
-        assertThat(ItemStack.isSameItemSameTags(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
+        assertThat(ItemStack.isSameItemSameComponents(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 2))).isTrue();
+        assertThat(ItemStack.isSameItemSameComponents(state.getIngredientsLeft(ItemStack.class).get(1), new ItemStack(Items.POTATO))).isTrue();
     }
 
     @Test
@@ -62,7 +62,7 @@ public class RecipeStateTest
 
         state.consumeSlotless(ItemStack.class, new ItemStack(Items.POTATO));
 
-        assertThat(ItemStack.isSameItemSameTags(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 3))).isTrue();
+        assertThat(ItemStack.isSameItemSameComponents(state.getIngredientsLeft(ItemStack.class).get(0), new ItemStack(Items.APPLE, 3))).isTrue();
         assertThat(state.getIngredientsLeft(ItemStack.class).get(1).isEmpty()).isTrue();
     }
 

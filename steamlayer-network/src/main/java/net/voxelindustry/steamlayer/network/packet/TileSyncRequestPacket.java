@@ -36,12 +36,12 @@ public class TileSyncRequestPacket
     {
         threadExecutor.execute(() ->
         {
-            var chunkPos = new ChunkPos(packet.pos);
+            var chunkPos = ChunkPos.containing(packet.pos);
 
-            if (player.getCommandSenderWorld().dimension().location().equals(packet.dimensionKey)
-                    && player.getCommandSenderWorld().hasChunk(chunkPos.x, chunkPos.z) &&
-                    player.getCommandSenderWorld().getBlockEntity(packet.pos) != null)
-                NetworkHandler.sendTileToPlayer(player.getCommandSenderWorld().getBlockEntity(packet.pos),
+            if (player.level().dimension().identifier().toString().equals(packet.dimensionKey)
+                    && player.level().hasChunk(chunkPos.x(), chunkPos.z()) &&
+                    player.level().getBlockEntity(packet.pos) != null)
+                NetworkHandler.sendTileToPlayer(player.level().getBlockEntity(packet.pos),
                         (ServerPlayer) player);
         });
     }

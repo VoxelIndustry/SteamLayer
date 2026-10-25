@@ -1,11 +1,11 @@
 package net.voxelindustry.steamlayer.network.tilesync;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public interface TileSyncElement<SELF>
 {
-    ResourceLocation getIdentifier();
+    Identifier getIdentifier();
 
     Codec<SELF> getCodec();
 }

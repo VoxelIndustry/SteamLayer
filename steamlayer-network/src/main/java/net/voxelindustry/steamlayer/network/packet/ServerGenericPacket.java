@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.network.packet;
 
 import lombok.NoArgsConstructor;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
 
@@ -17,7 +17,7 @@ public class ServerGenericPacket
         packetID = PacketHandler.getInstance().getID(message.getClass());
     }
 
-    public ServerGenericPacket decode(FriendlyByteBuf buffer)
+    public ServerGenericPacket decode(RegistryFriendlyByteBuf buffer)
     {
         packetID = buffer.readInt();
 
@@ -34,7 +34,7 @@ public class ServerGenericPacket
         return this;
     }
 
-    public void encode(FriendlyByteBuf buffer)
+    public void encode(RegistryFriendlyByteBuf buffer)
     {
         buffer.writeInt(packetID);
         message.write(buffer);

@@ -5,8 +5,8 @@ import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.voxelindustry.steamlayer.network.packet.Message;
@@ -17,34 +17,34 @@ import net.voxelindustry.steamlayer.network.packet.Message;
 public class PartialTileSyncPacket extends Message
 {
     private BlockPos pos;
-    private ResourceLocation dimension;
+    private Identifier dimension;
     private CompoundTag tag;
-    private ResourceLocation elementIdentifier;
+    private Identifier elementIdentifier;
 
     @Override
-    public void read(FriendlyByteBuf buf)
+    public void read(RegistryFriendlyByteBuf buf)
     {
         pos = buf.readBlockPos();
-        dimension = buf.readResourceLocation();
+        dimension = buf.readIdentifier();
         tag = buf.readNbt();
-        elementIdentifier = buf.readResourceLocation();
+        elementIdentifier = buf.readIdentifier();
     }
 
     @Override
-    public void write(FriendlyByteBuf buf)
+    public void write(RegistryFriendlyByteBuf buf)
     {
         buf.writeBlockPos(pos);
-        buf.writeResourceLocation(dimension);
+        buf.writeIdentifier(dimension);
         buf.writeNbt(tag);
-        buf.writeResourceLocation(elementIdentifier);
+        buf.writeIdentifier(elementIdentifier);
     }
 
     @Override
     public void handle(Player player)
     {
-        Level world = player.getCommandSenderWorld();
+        Level world = player.level();
 
-        if (!world.dimension().location().equals(dimension) || !world.hasChunkAt(pos))
+        if (!world.dimension().identifier().equals(dimension) || !world.hasChunkAt(pos))
             return;
 
         var blockEntity = world.getBlockEntity(pos);

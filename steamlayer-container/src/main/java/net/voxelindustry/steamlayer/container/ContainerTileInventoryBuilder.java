@@ -121,7 +121,7 @@ public class ContainerTileInventoryBuilder
     /**
      * Add a fuel-only slot to the slot list of the current {@code IInventory}
      * <p>
-     * The builtin filter will query {@link net.minecraft.world.level.block.entity.FurnaceBlockEntity#isFuel(ItemStack)} with
+     * The builtin filter will query the {@link net.minecraft.core.component.DataComponents#COOKING_FUEL} component with
      * the exception of allowing buckets for vanilla behavior compatibility.
      *
      * @param index the index this slot will use to communicate with the inventory.

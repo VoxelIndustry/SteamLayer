@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.container.sync;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import org.apache.commons.lang3.Range;
 
 import java.util.ArrayList;
@@ -128,7 +128,7 @@ public class SyncedEnumListProperty<E extends Enum<E>> implements SyncedValue
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer)
+    public void write(RegistryFriendlyByteBuf buffer)
     {
         buffer.writeInt(stored.size());
 
@@ -137,7 +137,7 @@ public class SyncedEnumListProperty<E extends Enum<E>> implements SyncedValue
     }
 
     @Override
-    public void read(FriendlyByteBuf buffer)
+    public void read(RegistryFriendlyByteBuf buffer)
     {
         stored.clear();
 

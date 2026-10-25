@@ -1,16 +1,15 @@
 package net.voxelindustry.steamlayer.network;
 
-import io.netty.buffer.Unpooled;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
-import net.minecraft.network.protocol.game.ServerGamePacketListener;
-import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload.Type;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,34 +18,55 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
 import net.voxelindustry.steamlayer.network.packet.PacketConsumer;
+import net.voxelindustry.steamlayer.network.packet.SteamLayerPayload;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class SteamLayerPacketHandler
 {
-    public static final ResourceLocation TILE_SYNC_REQUEST    = new ResourceLocation(SteamLayerConstants.MODID, "tile_sync.request");
-    public static final ResourceLocation GENERIC_PACKET       = new ResourceLocation(SteamLayerConstants.MODID, "genericpacket");
-    public static final ResourceLocation SERVER_ACTION_HOLDER = new ResourceLocation(SteamLayerConstants.MODID, "server_action.holder");
-    public static final ResourceLocation CLIENT_ACTION_HOLDER = new ResourceLocation(SteamLayerConstants.MODID, "client_action.holder");
+    private static final Map<Identifier, Type<SteamLayerPayload>> CHANNELS = new HashMap<>();
 
-    public static Packet<ServerGamePacketListener> createServerBoundPacket(ResourceLocation identifier, Consumer<FriendlyByteBuf> packetBufferConsumer)
+    public static final Identifier TILE_SYNC_REQUEST    = registerChannel("tile_sync.request");
+    public static final Identifier GENERIC_PACKET       = registerChannel("genericpacket");
+    public static final Identifier SERVER_ACTION_HOLDER = registerChannel("server_action.holder");
+    public static final Identifier CLIENT_ACTION_HOLDER = registerChannel("client_action.holder");
+
+    private static Identifier registerChannel(String name)
     {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-        packetBufferConsumer.accept(buf);
-        return new ServerboundCustomPayloadPacket(identifier, buf);
+        var identifier = Identifier.fromNamespaceAndPath(SteamLayerConstants.MODID, name);
+        var type = new Type<SteamLayerPayload>(identifier);
+        var codec = SteamLayerPayload.codec(type);
+
+        PayloadTypeRegistry.serverboundPlay().register(type, codec);
+        PayloadTypeRegistry.clientboundPlay().register(type, codec);
+        CHANNELS.put(identifier, type);
+        return identifier;
     }
 
-
-    public static void registerServerBoundHandler(ResourceLocation identifier, PacketConsumer consumer)
+    public static Type<SteamLayerPayload> getChannelType(Identifier identifier)
     {
-        ServerPlayNetworking.registerGlobalReceiver(identifier, (server, playerEntity, channelHandler, packetByteBuf, responseSender) -> consumer.accept(packetByteBuf, playerEntity, server));
+        var type = CHANNELS.get(identifier);
+        if (type == null)
+            throw new IllegalArgumentException("Unknown SteamLayer channel " + identifier);
+        return type;
     }
 
-    public static Packet<ClientGamePacketListener> createClientBoundPacket(ResourceLocation identifier, Consumer<FriendlyByteBuf> packetBufferConsumer)
+    public static Packet<?> createServerBoundPacket(Identifier identifier, Consumer<RegistryFriendlyByteBuf> packetBufferConsumer)
     {
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-        packetBufferConsumer.accept(buf);
-        return new ClientboundCustomPayloadPacket(identifier, buf);
+        return new ServerboundCustomPayloadPacket(SteamLayerPayload.outgoing(getChannelType(identifier), packetBufferConsumer));
+    }
+
+    public static void registerServerBoundHandler(Identifier identifier, PacketConsumer consumer)
+    {
+        ServerPlayNetworking.registerGlobalReceiver(getChannelType(identifier),
+                (payload, context) -> consumer.accept(payload.read(context.player().registryAccess()), context.player(), context.server()));
+    }
+
+    public static Packet<?> createClientBoundPacket(Identifier identifier, Consumer<RegistryFriendlyByteBuf> packetBufferConsumer)
+    {
+        return new ClientboundCustomPayloadPacket(SteamLayerPayload.outgoing(getChannelType(identifier), packetBufferConsumer));
     }
 
     public static void sendToAll(Packet<?> packet, MinecraftServer server)

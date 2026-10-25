@@ -10,6 +10,11 @@
       "badges": [ "library" ]
     }
   },
+  "depends": {
+    "minecraft": "~26.3",
+    "fabricloader": ">=0.20.1",
+    "java": ">=25"
+  },
   "authors": [
     {
       "name": "Ourten",

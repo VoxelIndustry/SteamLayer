@@ -7,21 +7,22 @@ import com.google.common.collect.Multimaps;
 import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.GsonHelper;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerVanillaRecipeBridge;
+
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,14 +32,14 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 {
     private final SteamLayerRecipeType<? extends RecipeBase> recipeType;
 
-    private final ResourceLocation identifier;
+    private Identifier identifier;
 
     protected final Multimap<Class<?>, RecipeIngredient<?>> inputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
     protected final Multimap<Class<?>, RecipeIngredient<?>> outputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
 
     protected RecipeCallback onCraft;
 
-    protected RecipeBase(SteamLayerRecipeType<? extends RecipeBase> recipeType, ResourceLocation identifier)
+    protected RecipeBase(SteamLayerRecipeType<? extends RecipeBase> recipeType, Identifier identifier)
     {
         this.recipeType = recipeType;
         this.identifier = identifier;
@@ -111,10 +112,10 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         );
     }
 
-    public RecipeState createState(CompoundTag existingData)
+    public RecipeState createState(ValueInput existingData)
     {
         var state = createState();
-        state.fromTag(existingData);
+        state.load(existingData);
         return state;
     }
 
@@ -156,13 +157,13 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         json.add("outputs", RecipeSerializerHelper.ingredientMultimapToJson(outputs));
     }
 
-    public void fromByteBuf(FriendlyByteBuf buffer)
+    public void fromByteBuf(RegistryFriendlyByteBuf buffer)
     {
         RecipeSerializerHelper.ingredientMultimapFromByteBuf(buffer, inputs);
         RecipeSerializerHelper.ingredientMultimapFromByteBuf(buffer, outputs);
     }
 
-    public void toByteBuf(FriendlyByteBuf buffer)
+    public void toByteBuf(RegistryFriendlyByteBuf buffer)
     {
         RecipeSerializerHelper.ingredientMultimapToByteBuf(buffer, inputs);
         RecipeSerializerHelper.ingredientMultimapToByteBuf(buffer, outputs);
@@ -172,7 +173,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
     @SuppressWarnings("unchecked")
     public RecipeSerializer<RecipeBase> getSerializer()
     {
-        return (RecipeSerializer<RecipeBase>) recipeType;
+        return (RecipeSerializer<RecipeBase>) recipeType.getSerializer();
     }
 
     @Override
@@ -182,21 +183,23 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         return (RecipeType<RecipeBase>) recipeType;
     }
 
-    @Override
-    public ResourceLocation getId()
+    public Identifier getId()
     {
         return identifier;
     }
 
-    @Override
-    public ItemStack assemble(Container inventory, RegistryAccess registryManager)
+    /**
+     * Recipes decoded from datapacks do not know their identifier, it is assigned by SteamLayer once they are loaded.
+     */
+    @ApiStatus.Internal
+    public void setId(Identifier identifier)
     {
-        return getRecipeOutput(ItemStack.class, 0).copy();
+        this.identifier = identifier;
     }
 
     @Override
-    public ItemStack getResultItem(RegistryAccess registryManager)
+    public ItemStack assemble(RecipeInput input)
     {
-        return getRecipeOutput(ItemStack.class, 0);
+        return getRecipeOutput(ItemStack.class, 0).copy();
     }
 }

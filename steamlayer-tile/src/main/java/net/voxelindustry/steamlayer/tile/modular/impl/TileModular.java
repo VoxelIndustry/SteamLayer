@@ -2,9 +2,10 @@ package net.voxelindustry.steamlayer.tile.modular.impl;
 
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.tile.TileBase;
 import net.voxelindustry.steamlayer.tile.descriptor.ModularTiles;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
@@ -41,37 +42,37 @@ public class TileModular extends TileBase implements IModularTile
     }
 
     @Override
-    public void load(CompoundTag tag)
+    protected void loadAdditional(ValueInput input)
     {
-        super.load(tag);
+        super.loadAdditional(input);
 
-        modid = tag.getString("modid");
+        modid = input.getStringOr("modid", modid);
         TileDescriptor previous = descriptor;
-        descriptor = ModularTiles.instance(modid).get(tag.getString("tileDescriptor"));
+        descriptor = input.getString("tileDescriptor").map(ModularTiles.instance(modid)::get).orElse(descriptor);
 
         if (previous == null && descriptor != null)
             reloadModules();
 
         modules.values().forEach(module ->
         {
-            if (module instanceof ISerializableModule)
-                ((ISerializableModule) module).fromNBT(tag.getCompound(module.getName()));
+            if (module instanceof ISerializableModule serializableModule)
+                serializableModule.load(input.childOrEmpty(module.getName()));
         });
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag)
+    protected void saveAdditional(ValueOutput output)
     {
         if (descriptor != null)
-            tag.putString("machineDescriptor", descriptor.getName());
+            output.putString("tileDescriptor", descriptor.getName());
 
-        tag.putString("modid", modid);
+        output.putString("modid", modid);
         modules.values().forEach(module ->
         {
-            if (module instanceof ISerializableModule)
-                tag.put(module.getName(), ((ISerializableModule) module).toNBT(new CompoundTag()));
+            if (module instanceof ISerializableModule serializableModule)
+                serializableModule.save(output.child(module.getName()));
         });
-        super.saveAdditional(tag);
+        super.saveAdditional(output);
     }
 
     @Override

@@ -8,7 +8,7 @@ public class NetworkHandler
 {
     public static void sendTileToPlayer(BlockEntity tile, ServerPlayer player)
     {
-        if (!tile.getLevel().isClientSide)
+        if (!tile.getLevel().isClientSide())
         {
             var packet = tile.getUpdatePacket();
 

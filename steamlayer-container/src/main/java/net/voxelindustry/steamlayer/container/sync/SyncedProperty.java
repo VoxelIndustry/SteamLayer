@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.container.sync;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -71,13 +71,13 @@ public class SyncedProperty<T> implements SyncedValue
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer)
+    public void write(RegistryFriendlyByteBuf buffer)
     {
         wrapper.write(buffer, stored);
     }
 
     @Override
-    public void read(FriendlyByteBuf buffer)
+    public void read(RegistryFriendlyByteBuf buffer)
     {
         stored = wrapper.read(buffer);
     }

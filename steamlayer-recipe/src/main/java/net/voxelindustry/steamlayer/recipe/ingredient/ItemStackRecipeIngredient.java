@@ -3,31 +3,42 @@ package net.voxelindustry.steamlayer.recipe.ingredient;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.voxelindustry.steamlayer.common.SteamLayerConstants;
-import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 
 public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
 {
-    public static final Identifier ITEMSTACK_INGREDIENT = new Identifier(SteamLayerConstants.MODID, "itemstack_ingredient");
+    public static final Identifier ITEMSTACK_INGREDIENT = Identifier.fromNamespaceAndPath(SteamLayerConstants.MODID, "itemstack_ingredient");
 
-    protected final int       quantity;
-    protected final ItemStack ingredient;
+    protected final int quantity;
+    /**
+     * Recipes are parsed before item components are bound, the stack is only created on first use.
+     * Null for an empty ingredient.
+     */
+    protected final ItemStackTemplate template;
+    private ItemStack ingredient;
 
     protected final boolean strictTagComparing;
 
-    public ItemStackRecipeIngredient(ItemStack ingredient, boolean strictTagComparing)
+    public ItemStackRecipeIngredient(ItemStackTemplate template, boolean strictTagComparing)
     {
-        this.ingredient = ingredient;
+        this.template = template;
         quantity = 0;
 
         this.strictTagComparing = strictTagComparing;
+    }
+
+    public ItemStackRecipeIngredient(ItemStack ingredient, boolean strictTagComparing)
+    {
+        this(ingredient.isEmpty() ? null : ItemStackTemplate.fromNonEmptyStack(ingredient), strictTagComparing);
+        this.ingredient = ingredient;
     }
 
     public ItemStackRecipeIngredient(ItemStack ingredient)
@@ -35,19 +46,26 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
         this(ingredient, true);
     }
 
+    protected ItemStack stack()
+    {
+        if (ingredient == null)
+            ingredient = template == null ? ItemStack.EMPTY : template.create();
+        return ingredient;
+    }
+
     @Override
     public boolean match(ItemStack against)
     {
         if (strictTagComparing)
-            return ItemUtils.deepEquals(ingredient, against);
-        return ItemUtils.equalsIgnoringTag(ingredient, against);
+            return ItemStack.isSameItemSameComponents(stack(), against);
+        return ItemStack.isSameItem(stack(), against);
     }
 
     @Override
     public boolean matchWithQuantity(ItemStack against)
     {
-        if (!ingredient.isEmpty())
-            return ingredient.getCount() <= against.getCount() && match(against);
+        if (template != null)
+            return template.count() <= against.getCount() && match(against);
         else
             return quantity <= against.getCount();
     }
@@ -55,15 +73,15 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     @Override
     public int getQuantity()
     {
-        if (!ingredient.isEmpty())
-            return ingredient.getCount();
+        if (template != null)
+            return template.count();
         return quantity;
     }
 
     @Override
     public ItemStack getRaw()
     {
-        return ingredient.copy();
+        return stack().copy();
     }
 
     @Override
@@ -73,40 +91,58 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
     }
 
     @Override
-    public void toBuffer(PacketByteBuf buffer)
+    public void toBuffer(RegistryFriendlyByteBuf buffer)
     {
-        buffer.writeItemStack(ingredient);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, stack());
         buffer.writeBoolean(strictTagComparing);
     }
 
-    public static ItemStackRecipeIngredient fromBuffer(PacketByteBuf buffer)
+    public static ItemStackRecipeIngredient fromBuffer(RegistryFriendlyByteBuf buffer)
     {
-        return new ItemStackRecipeIngredient(buffer.readItemStack(), buffer.readBoolean());
+        return new ItemStackRecipeIngredient(ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer), buffer.readBoolean());
     }
 
     public static ItemStackRecipeIngredient fromJson(JsonObject json)
     {
-        boolean strictTagComparing = json.has("strictTagComparing") && JsonHelper.getBoolean(json, "strictTagComparing");
-        return new ItemStackRecipeIngredient(getItemStackFromJson(json), strictTagComparing);
+        boolean strictTagComparing = json.has("strictTagComparing") && GsonHelper.getAsBoolean(json, "strictTagComparing");
+        return new ItemStackRecipeIngredient(getTemplateFromJson(json), strictTagComparing);
     }
 
-    public static ItemStack getItemStackFromJson(JsonObject json)
+    public static JsonObject toJson(RecipeIngredient<?> ingredient)
     {
-        Identifier identifier = new Identifier(JsonHelper.getString(json, "item"));
-        Item item = Registry.ITEM.getOrEmpty(identifier).orElseThrow(() ->
+        var stackIngredient = ((ItemStackRecipeIngredient) ingredient);
+
+        var json = new JsonObject();
+
+        json.addProperty("identifier", ingredient.getIdentifier().toString());
+        if (stackIngredient.strictTagComparing)
+            json.addProperty("strictTagComparing", true);
+
+        var template = stackIngredient.template;
+
+        json.add("item", BuiltInRegistries.ITEM.byNameCodec().encodeStart(JsonOps.INSTANCE, template.item().value()).getOrThrow());
+
+        if (template.count() > 1)
+            json.addProperty("quantity", template.count());
+
+        if (!template.components().isEmpty())
+            json.add("components", DataComponentPatch.CODEC.encodeStart(JsonOps.INSTANCE, template.components()).getOrThrow());
+
+        return json;
+    }
+
+    public static ItemStackTemplate getTemplateFromJson(JsonObject json)
+    {
+        Identifier identifier = Identifier.parse(GsonHelper.getAsString(json, "item"));
+        Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElseThrow(() ->
                 new JsonSyntaxException("Unknown item '" + identifier + "'"));
-        int quantity = JsonHelper.hasPrimitive(json, "quantity") ? JsonHelper.getInt(json, "quantity") : 1;
+        int quantity = GsonHelper.isValidPrimitive(json, "quantity") ? GsonHelper.getAsInt(json, "quantity") : 1;
 
-        ItemStack ingredient = new ItemStack(item, quantity);
+        DataComponentPatch components = DataComponentPatch.EMPTY;
+        if (json.has("components"))
+            components = DataComponentPatch.CODEC.parse(JsonOps.INSTANCE, json.get("components"))
+                    .getOrThrow(JsonSyntaxException::new);
 
-        if (json.has("nbt"))
-        {
-            NbtCompound tagCompound = NbtCompound.CODEC.parse(JsonOps.INSTANCE, json.getAsJsonObject("nbt"))
-                    .getOrThrow(false, SteamLayerConstants.LOGGER::error);
-
-            ingredient.setNbt(tagCompound);
-        }
-
-        return ingredient;
+        return new ItemStackTemplate(item.builtInRegistryHolder(), quantity, components);
     }
 }

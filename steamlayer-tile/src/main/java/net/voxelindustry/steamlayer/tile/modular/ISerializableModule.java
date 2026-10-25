@@ -1,10 +1,11 @@
 package net.voxelindustry.steamlayer.tile.modular;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public interface ISerializableModule
 {
-    void fromNBT(NbtCompound tag);
+    void load(ValueInput input);
 
-    NbtCompound toNBT(NbtCompound tag);
+    void save(ValueOutput output);
 }

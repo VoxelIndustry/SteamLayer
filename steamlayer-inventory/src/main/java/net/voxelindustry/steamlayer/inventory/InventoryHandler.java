@@ -5,14 +5,15 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.BlockPos;
-import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.Container;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.entity.ContainerUser;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -21,7 +22,7 @@ import java.util.function.Supplier;
 
 @Getter
 @Accessors(fluent = true)
-public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
+public class InventoryHandler implements Container
 {
     @Setter
     private IntConsumer onSlotChange;
@@ -29,9 +30,9 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
     private final Int2ObjectMap<Predicate<ItemStack>> slotFilters;
 
     @Setter
-    private Consumer<PlayerEntity> onOpen;
+    private Consumer<Player> onOpen;
     @Setter
-    private Consumer<PlayerEntity> onClose;
+    private Consumer<Player> onClose;
 
     @Setter
     private Supplier<BlockPos> posSupplier;
@@ -40,7 +41,7 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
     @Setter
     private boolean canDropContents = true;
 
-    private final DefaultedList<ItemStack> stacks;
+    private final NonNullList<ItemStack> stacks;
 
     public InventoryHandler()
     {
@@ -49,10 +50,10 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
 
     public InventoryHandler(int size)
     {
-        this(DefaultedList.ofSize(size, ItemStack.EMPTY));
+        this(NonNullList.withSize(size, ItemStack.EMPTY));
     }
 
-    public InventoryHandler(DefaultedList<ItemStack> stacks)
+    public InventoryHandler(NonNullList<ItemStack> stacks)
     {
         this.stacks = stacks;
 
@@ -60,7 +61,7 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
     }
 
     @Override
-    public int size()
+    public int getContainerSize()
     {
         return stacks.size();
     }
@@ -75,15 +76,15 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
     }
 
     @Override
-    public ItemStack getStack(int slot)
+    public ItemStack getItem(int slot)
     {
         return stacks.get(slot);
     }
 
     @Override
-    public ItemStack removeStack(int slot, int amount)
+    public ItemStack removeItem(int slot, int amount)
     {
-        ItemStack stack = Inventories.splitStack(stacks, slot, amount);
+        ItemStack stack = ContainerHelper.removeItem(stacks, slot, amount);
         if (!stack.isEmpty())
             onContentsChanged(slot);
 
@@ -91,14 +92,14 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
     }
 
     @Override
-    public ItemStack removeStack(int slot)
+    public ItemStack removeItemNoUpdate(int slot)
     {
-        ItemStack removed = removeStack(slot, getStack(slot).getCount());
+        ItemStack removed = removeItem(slot, getItem(slot).getCount());
         return removed;
     }
 
     @Override
-    public void setStack(int slot, ItemStack stack)
+    public void setItem(int slot, ItemStack stack)
     {
         stacks.set(slot, stack);
 
@@ -106,43 +107,43 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
     }
 
     @Override
-    public int getMaxCountPerStack()
+    public int getMaxStackSize()
     {
         // FIXME : When an api allowing insert/extract is made. Fall back to the slotLimits map
         return 64;
     }
 
     @Override
-    public void markDirty()
+    public void setChanged()
     {
     }
 
     @Override
-    public boolean canPlayerUse(PlayerEntity player)
+    public boolean stillValid(Player player)
     {
         if (posSupplier == null)
             return true;
 
         BlockPos pos = posSupplier.get();
-        return player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64;
+        return player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64;
     }
 
     @Override
-    public void onOpen(PlayerEntity player)
+    public void startOpen(ContainerUser user)
     {
-        if (onOpen != null)
+        if (onOpen != null && user.getLivingEntity() instanceof Player player)
             onOpen.accept(player);
     }
 
     @Override
-    public void onClose(PlayerEntity player)
+    public void stopOpen(ContainerUser user)
     {
-        if (onClose != null)
+        if (onClose != null && user.getLivingEntity() instanceof Player player)
             onClose.accept(player);
     }
 
     @Override
-    public boolean isValid(int slot, ItemStack stack)
+    public boolean canPlaceItem(int slot, ItemStack stack)
     {
         if (!slotFilters.isEmpty() && slotFilters.containsKey(slot))
             return slotFilters.get(slot).test(stack);
@@ -150,7 +151,7 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
     }
 
     @Override
-    public void clear()
+    public void clearContent()
     {
         stacks.forEach(stack -> stack.setCount(0));
         notifySlotChange();
@@ -178,18 +179,16 @@ public class InventoryHandler implements Inventory, TagSerializable<NbtCompound>
         if (onSlotChange != null)
             onSlotChange.accept(slot);
 
-        markDirty();
+        setChanged();
     }
 
-    @Override
-    public NbtCompound toTag()
+    public void save(ValueOutput output)
     {
-        return Inventories.writeNbt(new NbtCompound(), stacks);
+        ContainerHelper.saveAllItems(output, stacks);
     }
 
-    @Override
-    public void fromTag(NbtCompound tag)
+    public void load(ValueInput input)
     {
-        Inventories.readNbt(tag, stacks);
+        ContainerHelper.loadAllItems(input, stacks);
     }
 }

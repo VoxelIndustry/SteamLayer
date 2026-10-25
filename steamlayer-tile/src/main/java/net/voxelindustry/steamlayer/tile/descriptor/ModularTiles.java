@@ -2,7 +2,7 @@ package net.voxelindustry.steamlayer.tile.descriptor;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.steamlayer.tile.descriptor.adapter.ITileComponentTypeAdapter;
 import net.voxelindustry.steamlayer.tile.descriptor.adapter.TileDescriptorTypeAdapter;
 import org.apache.commons.io.IOUtils;

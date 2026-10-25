@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.common.utils;
 
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.Tag;
 
-public interface TagSerializable<T extends NbtElement>
+public interface TagSerializable<T extends Tag>
 {
     T toTag();
 

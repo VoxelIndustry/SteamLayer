@@ -1,59 +1,40 @@
 package net.voxelindustry.steamlayer.common.utils;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.ListCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Optional;
+import java.util.Collection;
+import java.util.List;
 
 public class ItemUtils
 {
-    // Mojang's codec does not handle empty ItemStack
-    public static final Codec<ItemStack>     FIXED_ITEMSTACK_CODEC = RecordCodecBuilder
-            .create(instance -> instance.group(
-                            Registry.ITEM.getCodec().optionalFieldOf("id")
-                                    .forGetter(stack -> Optional.ofNullable(stack.getItem())),
-                            Codec.INT.fieldOf("Count")
-                                    .forGetter(ItemStack::getCount),
-                            NbtCompound.CODEC.optionalFieldOf("tag")
-                                    .forGetter(stack -> Optional.ofNullable(stack.getNbt())))
-                    .apply(instance, (item, count, nbt) ->
-                    {
-                        var stack = new ItemStack(item.orElse(null), count);
-                        stack.setNbt(nbt.orElse(null));
-                        return stack;
-                    }));
-    public static final ListCodec<ItemStack> ITEMSTACK_LIST_CODEC  = new ListCodec<>(FIXED_ITEMSTACK_CODEC);
+    public static final Codec<ItemStack>       FIXED_ITEMSTACK_CODEC = ItemStack.OPTIONAL_CODEC;
+    public static final Codec<List<ItemStack>> ITEMSTACK_LIST_CODEC  = ItemStack.OPTIONAL_CODEC.listOf();
 
-    public static boolean deepEquals(ItemStack a, ItemStack b)
+    public static Tag saveStack(ItemStack stack, HolderLookup.Provider registries)
     {
-        return a.isItemEqual(b) && ItemStack.areNbtEqual(a, b);
+        return ItemStack.OPTIONAL_CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), stack).getOrThrow();
     }
 
-    public static boolean equalsIgnoringTag(ItemStack a, ItemStack b)
+    public static ItemStack loadStack(Tag tag, HolderLookup.Provider registries)
     {
-        return a.isItemEqual(b);
+        return ItemStack.OPTIONAL_CODEC.parse(registries.createSerializationContext(NbtOps.INSTANCE), tag).result().orElse(ItemStack.EMPTY);
     }
 
-    @Deprecated
-    public static boolean deepEqualsWithAmount(ItemStack a, ItemStack b)
+    public static boolean containsStack(Collection<ItemStack> stacks, ItemStack candidate)
     {
-        return ItemStack.areEqual(a, b);
-    }
-
-    public static ItemStack copyWithSize(ItemStack stack, int amount)
-    {
-        ItemStack result = stack.copy();
-        result.setCount(1);
-        return result;
+        for (ItemStack stack : stacks)
+        {
+            if (ItemStack.isSameItemSameComponents(stack, candidate))
+                return true;
+        }
+        return false;
     }
 
     public static String getPrettyStackName(ItemStack stack)
@@ -61,13 +42,9 @@ public class ItemUtils
         return stack.getCount() + " " + StringUtils.capitalize(stack.getItem().toString());
     }
 
-    public static boolean canMergeStacks(ItemStack stack1, ItemStack stack2)
+    public static boolean canMerge(ItemStack dest, ItemStack from)
     {
-        if (stack1.isEmpty() || stack2.isEmpty())
-            return true;
-
-        return stack1.getCount() + stack2.getCount() <= stack1.getMaxCount()
-                && ItemUtils.deepEquals(stack1, stack2);
+        return ItemStack.isSameItemSameComponents(dest, from) && dest.getCount() + from.getCount() <= dest.getMaxStackSize();
     }
 
     public static int mergeStacks(ItemStack dest, ItemStack from, boolean doMerge)
@@ -76,33 +53,33 @@ public class ItemUtils
         {
             if (doMerge)
             {
-                dest.increment(from.getCount());
+                dest.grow(from.getCount());
                 from.setCount(0);
             }
             return 0;
         }
-        if ((ItemUtils.deepEquals(dest, from)))
+        if ((ItemStack.isSameItemSameComponents(dest, from)))
         {
-            int merged = Math.min(dest.getMaxCount() - dest.getCount(), from.getCount());
+            int merged = Math.min(dest.getMaxStackSize() - dest.getCount(), from.getCount());
             if (doMerge)
             {
-                dest.increment(merged);
-                from.decrement(merged);
+                dest.grow(merged);
+                from.shrink(merged);
             }
             return merged;
         }
         return from.getCount();
     }
 
-    public static boolean hasPlayerEnough(PlayerInventory player, ItemStack stack, boolean deepEquals)
+    public static boolean hasPlayerEnough(Inventory player, ItemStack stack, boolean deepEquals)
     {
         int needed = stack.getCount();
-        for (int i = 0; i < player.size(); ++i)
+        for (int i = 0; i < player.getContainerSize(); ++i)
         {
-            ItemStack itemstack = player.getStack(i);
+            ItemStack itemstack = player.getItem(i);
 
-            if (deepEquals && ItemUtils.deepEquals(stack, itemstack)
-                    || !deepEquals && ItemStack.areItemsEqual(stack, itemstack))
+            if (deepEquals && ItemStack.isSameItemSameComponents(stack, itemstack)
+                    || !deepEquals && ItemStack.isSameItem(stack, itemstack))
             {
                 needed -= itemstack.getCount();
                 if (needed <= 0)
@@ -112,46 +89,12 @@ public class ItemUtils
         return false;
     }
 
-    public static int drainPlayer(ServerPlayerEntity player, ItemStack stack)
+    public static int drainPlayer(ServerPlayer player, ItemStack stack)
     {
-        int removed = player.getInventory().remove(candidate -> deepEquals(stack, candidate), Integer.MAX_VALUE, player.playerScreenHandler.getCraftingInput());
-        player.currentScreenHandler.sendContentUpdates();
-        player.playerScreenHandler.onContentChanged(player.getInventory());
+        int removed = player.getInventory().clearOrCountMatchingItems(candidate -> ItemStack.isSameItemSameComponents(stack, candidate), false, Integer.MAX_VALUE, player.inventoryMenu.getCraftSlots());
+        player.containerMenu.broadcastChanges();
+        player.inventoryMenu.slotsChanged(player.getInventory());
 
         return removed;
-    }
-
-    public static NbtCompound saveAllItems(NbtCompound tag, DefaultedList<ItemStack> list)
-    {
-        if (list.size() > Byte.MAX_VALUE)
-            throw new RuntimeException("Cannot save more than " + Byte.MAX_VALUE + " entries! size=" + list.size());
-
-        NbtList tagList = new NbtList();
-
-        for (int i = 0; i < list.size(); ++i)
-        {
-            ItemStack itemstack = list.get(i);
-
-            NbtCompound nbttagcompound = new NbtCompound();
-            nbttagcompound.putByte("Slot", (byte) i);
-            itemstack.writeNbt(nbttagcompound);
-            tagList.add(nbttagcompound);
-        }
-        tag.put("Items", tagList);
-        return tag;
-    }
-
-    public static void loadAllItems(NbtCompound tag, DefaultedList<ItemStack> list)
-    {
-        NbtList tagList = tag.getList("Items", 10);
-
-        for (int i = 0; i < tagList.size(); ++i)
-        {
-            NbtCompound NbtCompound = tagList.getCompound(i);
-            int j = NbtCompound.getByte("Slot") & 255;
-
-            if (j >= 0 && j < list.size())
-                list.set(j, ItemStack.fromNbt(NbtCompound));
-        }
     }
 }

@@ -1,9 +1,9 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
 import net.voxelindustry.steamlayer.container.sync.SyncedValue;
 import org.apache.commons.lang3.Range;
@@ -27,10 +27,10 @@ import java.util.function.Predicate;
  */
 public class ContainerBuilder
 {
-    private final ScreenHandlerType<BuiltContainer> type;
+    private final MenuType<BuiltContainer> type;
 
-    private final PlayerEntity            player;
-    private       Predicate<PlayerEntity> canInteract = player -> true;
+    private final Player            player;
+    private       Predicate<Player> canInteract = player -> true;
 
     final List<ListenerSlot>   slots;
     final List<Range<Integer>> playerInventoryRanges, tileInventoryRanges;
@@ -41,7 +41,7 @@ public class ContainerBuilder
     List<SyncedValue>        syncs;
     Map<String, SyncedValue> namedSyncs;
 
-    List<Inventory> inventories;
+    List<Container> inventories;
     BlockEntity     mainTile;
 
     /**
@@ -56,7 +56,7 @@ public class ContainerBuilder
      * @param type   the ContainerType corresponding to the produced Container to be used as an identifier.
      * @param player the player instance to which the Container is to be attached.
      */
-    public ContainerBuilder(ScreenHandlerType<BuiltContainer> type, PlayerEntity player)
+    public ContainerBuilder(MenuType<BuiltContainer> type, Player player)
     {
         this.type = type;
         this.player = player;
@@ -74,10 +74,10 @@ public class ContainerBuilder
      * Use this method to configure a custom interact predicate.
      * The vanilla behavior is to check the distance between the opened tile and the player.
      *
-     * @param canInteract predicate consuming an {@link PlayerEntity} instance provided by the {@link BuiltContainer}
+     * @param canInteract predicate consuming an {@link Player} instance provided by the {@link BuiltContainer}
      * @return a reference to this {@code ContainerBuilder} to resume the "Builder" pattern
      */
-    public ContainerBuilder interact(Predicate<PlayerEntity> canInteract)
+    public ContainerBuilder interact(Predicate<Player> canInteract)
     {
         this.canInteract = canInteract;
         return this;
@@ -89,7 +89,7 @@ public class ContainerBuilder
      * @param player the inventory of the player to base this container on.
      * @return a {@link ContainerPlayerInventoryBuilder} marked as child of this builder
      */
-    public ContainerPlayerInventoryBuilder player(PlayerEntity player)
+    public ContainerPlayerInventoryBuilder player(Player player)
     {
         return new ContainerPlayerInventoryBuilder(this, player, player.getInventory());
     }

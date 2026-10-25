@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.network.action;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 public interface IActionReceiver
 {
-    void handle(ActionSender sender, String actionID, NbtCompound payload);
+    void handle(ActionSender sender, String actionID, CompoundTag payload);
 }

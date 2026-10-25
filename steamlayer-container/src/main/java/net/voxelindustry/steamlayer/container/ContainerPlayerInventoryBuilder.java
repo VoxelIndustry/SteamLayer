@@ -1,25 +1,24 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
 import org.apache.commons.lang3.Range;
 
 public class ContainerPlayerInventoryBuilder
 {
-    private final PlayerEntity     player;
-    private final PlayerInventory  inventory;
+    private final Player     player;
+    private final Inventory  inventory;
     private final ContainerBuilder parent;
     private       Range<Integer>   main;
     private       Range<Integer>   hotbar;
     private       Range<Integer>   armor;
 
-    ContainerPlayerInventoryBuilder(ContainerBuilder parent, PlayerEntity player, PlayerInventory inventory)
+    ContainerPlayerInventoryBuilder(ContainerBuilder parent, Player player, Inventory inventory)
     {
         this.inventory = inventory;
         this.player = player;
@@ -111,7 +110,7 @@ public class ContainerPlayerInventoryBuilder
      * @param inventory an Inventory to use as main inventory
      * @return the inventory builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder tile(Inventory inventory)
+    public ContainerTileInventoryBuilder tile(Container inventory)
     {
         noTile();
         return new ContainerTileInventoryBuilder(parent, inventory);
@@ -132,7 +131,7 @@ public class ContainerPlayerInventoryBuilder
      * @param inventory an Inventory to use as main inventory
      * @return the inventory builder {@link ContainerTileInventoryBuilder} to resume the "Builder" pattern
      */
-    public ContainerTileInventoryBuilder tile(BlockEntity tile, Inventory inventory)
+    public ContainerTileInventoryBuilder tile(BlockEntity tile, Container inventory)
     {
         noTile();
         parent.mainTile = tile;
@@ -199,28 +198,28 @@ public class ContainerPlayerInventoryBuilder
                                                            EquipmentSlot slotType)
         {
             parent.parent.slots.add(new FilteredSlot(parent.inventory, index, xStart, yStart)
-                    .setFilter(stack -> MobEntity.getPreferredEquipmentSlot(stack) == slotType));
+                    .setFilter(stack -> parent.player.getEquipmentSlotForItem(stack) == slotType));
             return this;
         }
 
         public ContainerPlayerArmorInventoryBuilder helmet(int xStart, int yStart)
         {
-            return armor(parent.inventory.size() - 2, xStart, yStart, EquipmentSlot.HEAD);
+            return armor(parent.inventory.getContainerSize() - 2, xStart, yStart, EquipmentSlot.HEAD);
         }
 
         public ContainerPlayerArmorInventoryBuilder chestplate(int xStart, int yStart)
         {
-            return armor(parent.inventory.size() - 3, xStart, yStart, EquipmentSlot.CHEST);
+            return armor(parent.inventory.getContainerSize() - 3, xStart, yStart, EquipmentSlot.CHEST);
         }
 
         public ContainerPlayerArmorInventoryBuilder leggings(int xStart, int yStart)
         {
-            return armor(parent.inventory.size() - 4, xStart, yStart, EquipmentSlot.LEGS);
+            return armor(parent.inventory.getContainerSize() - 4, xStart, yStart, EquipmentSlot.LEGS);
         }
 
         public ContainerPlayerArmorInventoryBuilder boots(int xStart, int yStart)
         {
-            return armor(parent.inventory.size() - 5, xStart, yStart, EquipmentSlot.FEET);
+            return armor(parent.inventory.getContainerSize() - 5, xStart, yStart, EquipmentSlot.FEET);
         }
 
         public ContainerPlayerArmorInventoryBuilder complete(int xStart, int yStart)

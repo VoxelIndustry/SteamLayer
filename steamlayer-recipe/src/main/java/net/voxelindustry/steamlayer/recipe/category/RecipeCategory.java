@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.recipe.category;
 
 import lombok.Getter;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
 import net.voxelindustry.steamlayer.recipe.RecipeManager;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;

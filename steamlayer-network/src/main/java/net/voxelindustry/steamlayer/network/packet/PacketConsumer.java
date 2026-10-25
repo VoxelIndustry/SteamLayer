@@ -1,11 +1,11 @@
 package net.voxelindustry.steamlayer.network.packet;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.thread.ThreadExecutor;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.util.thread.BlockableEventLoop;
+import net.minecraft.world.entity.player.Player;
 
 @FunctionalInterface
 public interface PacketConsumer
 {
-    void accept(PacketByteBuf buffer, PlayerEntity player, ThreadExecutor<? extends Runnable> threadExecutor);
+    void accept(RegistryFriendlyByteBuf buffer, Player player, BlockableEventLoop<? extends Runnable> threadExecutor);
 }

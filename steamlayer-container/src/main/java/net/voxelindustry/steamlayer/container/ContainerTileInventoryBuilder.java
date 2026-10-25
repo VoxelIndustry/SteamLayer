@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.container;
 
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.Direction;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.container.slot.FilteredSlot;
 import net.voxelindustry.steamlayer.container.slot.ListenerSlot;
 import net.voxelindustry.steamlayer.container.slot.SlotDisplay;
@@ -14,11 +14,11 @@ import java.util.function.Predicate;
 
 public class ContainerTileInventoryBuilder
 {
-    private final Inventory        inventory;
+    private final Container        inventory;
     private final ContainerBuilder parent;
     private final int              rangeStart;
 
-    ContainerTileInventoryBuilder(ContainerBuilder parent, Inventory inventory)
+    ContainerTileInventoryBuilder(ContainerBuilder parent, Container inventory)
     {
         this.inventory = inventory;
         this.parent = parent;
@@ -121,7 +121,7 @@ public class ContainerTileInventoryBuilder
     /**
      * Add a fuel-only slot to the slot list of the current {@code IInventory}
      * <p>
-     * The builtin filter will query {@link net.minecraft.block.entity.FurnaceBlockEntity#canUseAsFuel(ItemStack)} with
+     * The builtin filter will query the {@link net.minecraft.core.component.DataComponents#COOKING_FUEL} component with
      * the exception of allowing buckets for vanilla behavior compatibility.
      *
      * @param index the index this slot will use to communicate with the inventory.
@@ -171,7 +171,7 @@ public class ContainerTileInventoryBuilder
 
     private void setParentData()
     {
-        if (inventory.size() != 0)
+        if (inventory.getContainerSize() != 0)
             parent.tileInventoryRanges.add(Range.between(rangeStart, parent.slots.size() - 1));
         parent.inventories.add(inventory);
     }

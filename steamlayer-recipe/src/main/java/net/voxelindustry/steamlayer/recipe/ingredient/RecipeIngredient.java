@@ -1,7 +1,7 @@
 package net.voxelindustry.steamlayer.recipe.ingredient;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 
 public abstract class RecipeIngredient<T>
 {
@@ -33,5 +33,5 @@ public abstract class RecipeIngredient<T>
     //  I/O  //
     ///////////
 
-    public abstract void toBuffer(PacketByteBuf buffer);
+    public abstract void toBuffer(RegistryFriendlyByteBuf buffer);
 }

@@ -5,21 +5,24 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.gson.JsonObject;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeInput;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerVanillaRecipeBridge;
+
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +32,9 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 {
     private final SteamLayerRecipeType<? extends RecipeBase> recipeType;
 
-    private final Identifier identifier;
+    private Identifier identifier;
 
-    protected final Multimap<Class<?>, RecipeIngredient<?>> inputs  = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
+    protected final Multimap<Class<?>, RecipeIngredient<?>> inputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
     protected final Multimap<Class<?>, RecipeIngredient<?>> outputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
 
     protected RecipeCallback onCraft;
@@ -57,7 +60,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
     {
         if (hasInputType(clazz))
             return (List<RecipeIngredient<T>>) (Object) inputs.get(clazz);
-        return DefaultedList.of();
+        return NonNullList.create();
     }
 
     @SuppressWarnings("unchecked")
@@ -65,7 +68,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
     {
         if (hasOutputType(clazz))
             return (List<RecipeIngredient<T>>) (Object) outputs.get(clazz);
-        return DefaultedList.of();
+        return NonNullList.create();
     }
 
     public <T> T getRecipeInput(Class<T> clazz, int slot)
@@ -86,7 +89,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         return IngredientManager.getIngredientHandler(clazz).getEmpty();
     }
 
-    public void onCraft(World world, BlockPos pos, RecipeState state, LivingEntity crafter)
+    public void onCraft(Level world, BlockPos pos, RecipeState state, LivingEntity crafter)
     {
         if (onCraft != null)
             onCraft.run(world, pos, state, crafter);
@@ -109,10 +112,10 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         );
     }
 
-    public RecipeState createState(NbtCompound existingData)
+    public RecipeState createState(ValueInput existingData)
     {
-        RecipeState state = createState();
-        state.fromTag(existingData);
+        var state = createState();
+        state.load(existingData);
         return state;
     }
 
@@ -144,17 +147,23 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 
     public void fromJson(JsonObject json)
     {
-        RecipeSerializerHelper.ingredientMultimapFromJson(JsonHelper.getObject(json, "inputs"), inputs);
-        RecipeSerializerHelper.ingredientMultimapFromJson(JsonHelper.getObject(json, "outputs"), outputs);
+        RecipeSerializerHelper.ingredientMultimapFromJson(GsonHelper.getAsJsonObject(json, "inputs"), inputs);
+        RecipeSerializerHelper.ingredientMultimapFromJson(GsonHelper.getAsJsonObject(json, "outputs"), outputs);
     }
 
-    public void fromByteBuf(PacketByteBuf buffer)
+    public void toJson(JsonObject json)
+    {
+        json.add("inputs", RecipeSerializerHelper.ingredientMultimapToJson(inputs));
+        json.add("outputs", RecipeSerializerHelper.ingredientMultimapToJson(outputs));
+    }
+
+    public void fromByteBuf(RegistryFriendlyByteBuf buffer)
     {
         RecipeSerializerHelper.ingredientMultimapFromByteBuf(buffer, inputs);
         RecipeSerializerHelper.ingredientMultimapFromByteBuf(buffer, outputs);
     }
 
-    public void toByteBuf(PacketByteBuf buffer)
+    public void toByteBuf(RegistryFriendlyByteBuf buffer)
     {
         RecipeSerializerHelper.ingredientMultimapToByteBuf(buffer, inputs);
         RecipeSerializerHelper.ingredientMultimapToByteBuf(buffer, outputs);
@@ -164,7 +173,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
     @SuppressWarnings("unchecked")
     public RecipeSerializer<RecipeBase> getSerializer()
     {
-        return (RecipeSerializer<RecipeBase>) recipeType;
+        return (RecipeSerializer<RecipeBase>) recipeType.getSerializer();
     }
 
     @Override
@@ -174,9 +183,23 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         return (RecipeType<RecipeBase>) recipeType;
     }
 
-    @Override
     public Identifier getId()
     {
         return identifier;
+    }
+
+    /**
+     * Recipes decoded from datapacks do not know their identifier, it is assigned by SteamLayer once they are loaded.
+     */
+    @ApiStatus.Internal
+    public void setId(Identifier identifier)
+    {
+        this.identifier = identifier;
+    }
+
+    @Override
+    public ItemStack assemble(RecipeInput input)
+    {
+        return getRecipeOutput(ItemStack.class, 0).copy();
     }
 }

@@ -2,9 +2,10 @@ package net.voxelindustry.steamlayer.recipe.ingredient;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
 import net.voxelindustry.steamlayer.common.utils.ItemUtils;
 
 @RequiredArgsConstructor
@@ -16,33 +17,33 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     @Override
     public ItemStack accumulateMutator(ItemStack first, ItemStack second)
     {
-        first.increment(second.getCount());
+        first.grow(second.getCount());
         return first;
     }
 
     @Override
     public ItemStack accumulateCreate(ItemStack first, ItemStack second)
     {
-        return ItemUtils.copyWithSize(first, first.getCount() + second.getCount());
+        return first.copyWithCount(first.getCount() + second.getCount());
     }
 
     @Override
     public ItemStack subtractMutator(ItemStack first, ItemStack second)
     {
-        first.decrement(second.getCount());
+        first.shrink(second.getCount());
         return first;
     }
 
     @Override
     public ItemStack subtractCreate(ItemStack first, ItemStack second)
     {
-        return ItemUtils.copyWithSize(first, first.getCount() - second.getCount());
+        return first.copyWithCount(first.getCount() - second.getCount());
     }
 
     @Override
     public boolean canMerge(ItemStack first, ItemStack second)
     {
-        return ItemUtils.canMergeStacks(first, second);
+        return ItemUtils.canMerge(first, second);
     }
 
     @Override
@@ -58,14 +59,14 @@ public class ItemStackIngredientHandler implements IngredientHandler<ItemStack>
     }
 
     @Override
-    public NbtCompound toTag(ItemStack value, NbtCompound tag)
+    public void save(ItemStack value, ValueOutput output)
     {
-        return value.writeNbt(tag);
+        output.store("stack", ItemStack.OPTIONAL_CODEC, value);
     }
 
     @Override
-    public ItemStack fromTag(NbtCompound tag)
+    public ItemStack load(ValueInput input)
     {
-        return ItemStack.fromNbt(tag);
+        return input.read("stack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
     }
 }

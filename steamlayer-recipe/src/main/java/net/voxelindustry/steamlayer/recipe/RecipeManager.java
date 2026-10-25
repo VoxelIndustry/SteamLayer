@@ -1,15 +1,12 @@
 package net.voxelindustry.steamlayer.recipe;
 
-import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -26,8 +23,8 @@ public class RecipeManager
 
     public static <R extends RecipeBase> SteamLayerRecipeType<R> addRecipeType(SteamLayerRecipeType<R> type, Identifier identifier)
     {
-        Registry.register(Registry.RECIPE_SERIALIZER, identifier, type);
-        Registry.register(Registry.RECIPE_TYPE, identifier, type);
+        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, identifier, type.getSerializer());
+        Registry.register(BuiltInRegistries.RECIPE_TYPE, identifier, type);
         return type;
     }
 

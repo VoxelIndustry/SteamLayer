@@ -1,43 +1,48 @@
 package net.voxelindustry.steamlayer.recipe.vanilla;
 
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.world.World;
+import net.minecraft.world.item.crafting.PlacementInfo;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
+import net.minecraft.world.item.crafting.RecipeInput;
+import net.minecraft.world.level.Level;
 
-public interface SteamLayerVanillaRecipeBridge extends Recipe<Inventory>
+public interface SteamLayerVanillaRecipeBridge extends Recipe<RecipeInput>
 {
     @Deprecated
     @Override
-    default boolean matches(Inventory inv, World worldIn)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    @Override
-    default ItemStack craft(Inventory inv)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    @Override
-    default boolean fits(int width, int height)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    @Override
-    default ItemStack getOutput()
+    default boolean matches(RecipeInput input, Level level)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    default boolean isIgnoredInRecipeBook()
+    default boolean isSpecial()
     {
         return true;
+    }
+
+    @Override
+    default boolean showNotification()
+    {
+        return false;
+    }
+
+    @Override
+    default String group()
+    {
+        return "";
+    }
+
+    @Override
+    default PlacementInfo placementInfo()
+    {
+        return PlacementInfo.NOT_PLACEABLE;
+    }
+
+    @Override
+    default RecipeBookCategory recipeBookCategory()
+    {
+        return RecipeBookCategories.CRAFTING_MISC;
     }
 }

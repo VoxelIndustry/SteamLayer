@@ -3,9 +3,9 @@ package net.voxelindustry.steamlayer.recipe;
 import com.google.common.collect.Multimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.GsonHelper;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 
 import java.util.ArrayList;
@@ -19,21 +19,40 @@ public class RecipeSerializerHelper
     {
         json.entrySet().forEach(entry ->
         {
-            Class<?> typeClass = IngredientManager.getIngredientHandlerClass(new Identifier(entry.getKey()));
+            Class<?> typeClass = IngredientManager.getIngredientHandlerClass(Identifier.parse(entry.getKey()));
 
             JsonArray ingredients = entry.getValue().getAsJsonArray();
 
             ingredients.forEach(element ->
             {
                 JsonObject jsonObject = element.getAsJsonObject();
-                Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "identifier"));
+                Identifier identifier = Identifier.parse(GsonHelper.getAsString(jsonObject, "identifier"));
 
                 multimap.put(typeClass, IngredientManager.getIngredientInstanceFromJSON(identifier, jsonObject));
             });
         });
     }
 
-    public static void ingredientMultimapFromByteBuf(PacketByteBuf buffer, Multimap<Class<?>, RecipeIngredient<?>> multimap)
+    public static JsonObject ingredientMultimapToJson(Multimap<Class<?>, RecipeIngredient<?>> multimap)
+    {
+        var jsonObject = new JsonObject();
+        for (var entry : multimap.asMap().entrySet())
+        {
+            var ingredientArray = new JsonArray();
+
+            for (var ingredient : entry.getValue())
+            {
+                var ingredientObject = IngredientManager.getIngredientInstanceToJSON(ingredient.getIdentifier(), ingredient);
+                ingredientArray.add(ingredientObject);
+            }
+
+            jsonObject.add(IngredientManager.getIngredientHandlerIdentifier(entry.getKey()).toString(), ingredientArray);
+        }
+
+        return jsonObject;
+    }
+
+    public static void ingredientMultimapFromByteBuf(RegistryFriendlyByteBuf buffer, Multimap<Class<?>, RecipeIngredient<?>> multimap)
     {
         int typeCount = buffer.readInt();
 
@@ -53,7 +72,7 @@ public class RecipeSerializerHelper
         });
     }
 
-    public static void ingredientMultimapToByteBuf(PacketByteBuf buffer, Multimap<Class<?>, RecipeIngredient<?>> multimap)
+    public static void ingredientMultimapToByteBuf(RegistryFriendlyByteBuf buffer, Multimap<Class<?>, RecipeIngredient<?>> multimap)
     {
         Set<Class<?>> types = multimap.keySet();
 

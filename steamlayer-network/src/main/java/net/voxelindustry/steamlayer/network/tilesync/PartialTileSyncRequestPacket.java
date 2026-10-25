@@ -3,12 +3,12 @@ package net.voxelindustry.steamlayer.network.tilesync;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.voxelindustry.steamlayer.network.packet.Message;
 
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public class PartialTileSyncRequestPacket extends Message
     private Collection<Identifier> elements;
 
     @Override
-    public void read(PacketByteBuf buf)
+    public void read(RegistryFriendlyByteBuf buf)
     {
         pos = buf.readBlockPos();
         dimension = buf.readIdentifier();
@@ -36,7 +36,7 @@ public class PartialTileSyncRequestPacket extends Message
     }
 
     @Override
-    public void write(PacketByteBuf buf)
+    public void write(RegistryFriendlyByteBuf buf)
     {
         buf.writeBlockPos(pos);
         buf.writeIdentifier(dimension);
@@ -45,11 +45,11 @@ public class PartialTileSyncRequestPacket extends Message
     }
 
     @Override
-    public void handle(PlayerEntity player)
+    public void handle(Player player)
     {
-        World world = player.getEntityWorld();
+        Level world = player.level();
 
-        if (!world.getRegistryKey().getValue().equals(dimension) || !world.isChunkLoaded(pos))
+        if (!world.dimension().identifier().equals(dimension) || !world.hasChunkAt(pos))
             return;
 
         BlockEntity tile = world.getBlockEntity(pos);

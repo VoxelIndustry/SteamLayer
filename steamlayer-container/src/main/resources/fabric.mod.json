@@ -6,10 +6,15 @@
   "description": "Aggregate of shared libraries for the VoxelIndustry team",
   "version": "${version}",
   "custom": {
-    "modmenu:api": true,
-    "modmenu:parent": "steamlayer"
+    "modmenu": {
+      "badges": [ "library" ],
+      "parent": "steamlayer"
+    }
   },
   "depends": {
+    "minecraft": "~26.3",
+    "fabricloader": ">=0.20.1",
+    "java": ">=25",
     "fabric-api-base": "*",
     "steamlayer-network": "*",
     "steamlayer-inventory": "*"

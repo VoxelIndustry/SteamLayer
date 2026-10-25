@@ -2,8 +2,8 @@ package net.voxelindustry.steamlayer.container.sync;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NoArgsConstructor;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.entity.player.Player;
 import net.voxelindustry.steamlayer.common.container.ISyncedContainer;
 import net.voxelindustry.steamlayer.network.packet.Message;
 
@@ -24,7 +24,7 @@ public class ContainerSyncPacket extends Message
     }
 
     @Override
-    public void read(PacketByteBuf buf)
+    public void read(RegistryFriendlyByteBuf buf)
     {
         windowID = buf.readInt();
         syncID = buf.readInt();
@@ -33,7 +33,7 @@ public class ContainerSyncPacket extends Message
     }
 
     @Override
-    public void write(PacketByteBuf buf)
+    public void write(RegistryFriendlyByteBuf buf)
     {
         buf.writeInt(windowID);
         buf.writeInt(syncID);
@@ -42,9 +42,9 @@ public class ContainerSyncPacket extends Message
     }
 
     @Override
-    public void handle(PlayerEntity player)
+    public void handle(Player player)
     {
-        if (player.currentScreenHandler instanceof ISyncedContainer && player.currentScreenHandler.syncId == windowID)
-            ((ISyncedContainer) player.currentScreenHandler).updateProperty(syncID, bufferCopy);
+        if (player.containerMenu instanceof ISyncedContainer && player.containerMenu.containerId == windowID)
+            ((ISyncedContainer) player.containerMenu).updateProperty(syncID, bufferCopy);
     }
 }

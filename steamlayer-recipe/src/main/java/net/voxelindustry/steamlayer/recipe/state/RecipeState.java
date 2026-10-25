@@ -3,14 +3,16 @@ package net.voxelindustry.steamlayer.recipe.state;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.voxelindustry.steamlayer.common.utils.TagSerializable;
+import lombok.Getter;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.voxelindustry.steamlayer.recipe.IngredientManager;
 import net.voxelindustry.steamlayer.recipe.RecipeBase;
+import net.voxelindustry.steamlayer.recipe.category.RecipeCategory;
 import net.voxelindustry.steamlayer.recipe.ingredient.IngredientHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 import org.jetbrains.annotations.ApiStatus;
@@ -22,18 +24,19 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 
-public class RecipeState implements TagSerializable<NbtCompound>
+public class RecipeState
 {
     protected Multimap<Class<?>, RecipeIngredient<?>> inputs;
     protected Multimap<Class<?>, RecipeIngredient<?>> outputs;
 
     protected final Multimap<Class<?>, Object> consumedInputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
-    private final   Multimap<Class<?>, Object> leftInputs;
+    private final Multimap<Class<?>, Object> leftInputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
 
     private int recipeTime;
 
     private int currentTime;
 
+    @Getter
     private final RecipeBase recipe;
 
     public RecipeState(RecipeBase recipe, Multimap<Class<?>, RecipeIngredient<?>> inputs, Multimap<Class<?>, RecipeIngredient<?>> outputs, int recipeTime)
@@ -45,7 +48,6 @@ public class RecipeState implements TagSerializable<NbtCompound>
 
         this.recipeTime = recipeTime;
 
-        leftInputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
         inputs.forEach((typeClass, ingredient) -> leftInputs.put(typeClass, ingredient.getRaw()));
     }
 
@@ -54,25 +56,41 @@ public class RecipeState implements TagSerializable<NbtCompound>
         currentTime += amount;
     }
 
+    public int currentTime()
+    {
+        return currentTime;
+    }
+
+    public float completionDelta()
+    {
+        return currentTime / (float) recipeTime;
+    }
+
     public boolean isCompleted()
     {
-        boolean completed = true;
-
-        for (Class<?> typeClass : leftInputs.keySet())
+        for (var typeClass : leftInputs.keySet())
         {
             if (!isLeftInputTypeEmpty(typeClass))
             {
-                completed = false;
-                break;
+                return false;
             }
         }
 
-        return currentTime >= recipeTime && completed;
+        return currentTime >= recipeTime;
     }
 
-    public void complete(World world, BlockPos pos, LivingEntity crafter)
+    public void complete(Level world, BlockPos pos, LivingEntity crafter)
     {
         recipe.onCraft(world, pos, this, crafter);
+    }
+
+    public void reset()
+    {
+        leftInputs.clear();
+        consumedInputs.clear();
+
+        currentTime = 0;
+        inputs.forEach((typeClass, ingredient) -> leftInputs.put(typeClass, ingredient.getRaw()));
     }
 
     @SuppressWarnings("unchecked")
@@ -88,15 +106,15 @@ public class RecipeState implements TagSerializable<NbtCompound>
     // FIXME: Does not handle remainders
     public <T> void consumeSlotless(Class<T> typeClass, T input)
     {
-        List<RecipeIngredient<?>> ingredientsForType = (List<RecipeIngredient<?>>) inputs.get(typeClass);
+        var ingredientsForType = (List<RecipeIngredient<?>>) inputs.get(typeClass);
 
-        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-        List<T> leftInputsForType = (List<T>) leftInputs.get(typeClass);
+        var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
+        var leftInputsForType = (List<T>) leftInputs.get(typeClass);
 
         int index = 0;
-        for (RecipeIngredient<?> candidate : ingredientsForType)
+        for (var candidate : ingredientsForType)
         {
-            RecipeIngredient<T> candidateOfType = (RecipeIngredient<T>) candidate;
+            var candidateOfType = (RecipeIngredient<T>) candidate;
             if (candidateOfType.match(input))
             {
                 if (!ingredientHandler.isEmpty(leftInputsForType.get(index)))
@@ -116,17 +134,17 @@ public class RecipeState implements TagSerializable<NbtCompound>
         if (inputs.get(typeClass).size() <= slot || slot < 0)
             throw new IllegalArgumentException("Slot must be positive and less than the corresponding inputs type list size. slot=" + slot + ", listSize=" + inputs.get(typeClass).size() + ", type=" + typeClass.getSimpleName() + ", ingredient=" + ingredient);
 
-        Collection<Object> inputs = consumedInputs.get(typeClass);
+        var inputs = consumedInputs.get(typeClass);
 
-        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-        Optional<T> existingIngredient = (Optional<T>) inputs.stream().filter(object -> ingredientHandler.canMerge(ingredient, (T) object)).findFirst();
+        var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
+        var existingIngredient = (Optional<T>) inputs.stream().filter(object -> ingredientHandler.canMerge(ingredient, (T) object)).findFirst();
 
         if (existingIngredient.isPresent())
             ingredientHandler.accumulateMutator(existingIngredient.get(), ingredient);
         else
             consumedInputs.put(typeClass, ingredient);
 
-        List<T> leftInputsForType = (List<T>) leftInputs.get(typeClass);
+        var leftInputsForType = (List<T>) leftInputs.get(typeClass);
         leftInputsForType.set(slot, ingredientHandler.subtractMutator(leftInputsForType.get(slot), ingredient));
     }
 
@@ -139,7 +157,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
 
     public <T> T getIngredientLeft(Class<T> typeClass, int slot)
     {
-        List<T> ingredientsLeft = getIngredientsLeft(typeClass);
+        var ingredientsLeft = getIngredientsLeft(typeClass);
 
         if (ingredientsLeft.size() > slot)
             return ingredientsLeft.get(slot);
@@ -155,7 +173,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
 
     public <T> T getIngredientConsumed(Class<T> typeClass, int slot)
     {
-        List<T> ingredientsConsumed = getIngredientsConsumed(typeClass);
+        var ingredientsConsumed = getIngredientsConsumed(typeClass);
 
         if (ingredientsConsumed.size() > slot)
             return ingredientsConsumed.get(slot);
@@ -172,7 +190,7 @@ public class RecipeState implements TagSerializable<NbtCompound>
 
     public <T> T getInput(Class<T> typeClass, int slot)
     {
-        List<RecipeIngredient<T>> inputs = getInputs(typeClass);
+        var inputs = getInputs(typeClass);
 
         if (inputs.size() > slot)
             return inputs.get(slot).getRaw();
@@ -189,122 +207,109 @@ public class RecipeState implements TagSerializable<NbtCompound>
 
     public <T> T getOutput(Class<T> typeClass, int slot)
     {
-        List<RecipeIngredient<T>> outputs = getOutputs(typeClass);
+        var outputs = getOutputs(typeClass);
 
         if (outputs.size() > slot)
             return outputs.get(slot).getRaw();
         return IngredientManager.getIngredientHandler(typeClass).getEmpty();
     }
 
-    @Override
-    public NbtCompound toTag()
+    public void save(ValueOutput output)
     {
-        NbtCompound tag = new NbtCompound();
+        output.putString("recipeNamespace", recipe.getId().getNamespace());
+        output.putString("recipePath", recipe.getId().getPath());
 
-        tag.putInt("currentTime", currentTime);
-        tag.putInt("recipeTime", recipeTime);
+        output.putInt("currentTime", currentTime);
+        output.putInt("recipeTime", recipeTime);
 
-        tag.putInt("leftInputTypesCount", leftInputs.keySet().size());
+        output.putInt("leftInputTypesCount", leftInputs.keySet().size());
 
         int index = 0;
-        for (Class<?> typeClass : leftInputs.keySet())
+        for (var typeClass : leftInputs.keySet())
         {
-            String identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
-            tag.putString("leftInputType" + index, identifier);
+            var identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
+            output.putString("leftInputType" + index, identifier);
 
-            leftInputForTypeToTag(tag, typeClass, identifier);
+            saveInputsForType(output, leftInputs, "leftInputForType", typeClass, identifier);
             index++;
         }
 
-        tag.putInt("consumedInputTypesCount", consumedInputs.keySet().size());
+        output.putInt("consumedInputTypesCount", consumedInputs.keySet().size());
         index = 0;
-        for (Class<?> typeClass : consumedInputs.keySet())
+        for (var typeClass : consumedInputs.keySet())
         {
-            String identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
-            tag.putString("consumedInputType" + index, identifier);
+            var identifier = IngredientManager.getIngredientHandlerIdentifier(typeClass).toString();
+            output.putString("consumedInputType" + index, identifier);
 
-            consumedInputForTypeToTag(tag, typeClass, identifier);
-            index++;
-        }
-
-        return tag;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> void consumedInputForTypeToTag(NbtCompound tag, Class<T> typeClass, String identifier)
-    {
-        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-        Collection<T> consumedInputsForType = (Collection<T>) consumedInputs.get(typeClass);
-
-        tag.putInt("consumedInputForType" + identifier, consumedInputsForType.size());
-        int index = 0;
-        for (T input : consumedInputsForType)
-        {
-            tag.put("consumedInputForType" + identifier + index, ingredientHandler.toTag(input, new NbtCompound()));
+            saveInputsForType(output, consumedInputs, "consumedInputForType", typeClass, identifier);
             index++;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void leftInputForTypeToTag(NbtCompound tag, Class<T> typeClass, String identifier)
+    private <T> void saveInputsForType(ValueOutput output, Multimap<Class<?>, ?> inputs, String prefix, Class<T> typeClass, String identifier)
     {
-        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-        Collection<T> leftInputsForType = (Collection<T>) leftInputs.get(typeClass);
+        var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
+        var inputsForType = (Collection<T>) inputs.get(typeClass);
 
-        tag.putInt("leftInputForType" + identifier, leftInputsForType.size());
+        output.putInt(prefix + identifier, inputsForType.size());
         int index = 0;
-        for (T input : leftInputsForType)
+        for (T input : inputsForType)
         {
-            tag.put("leftInputForType" + identifier + index, ingredientHandler.toTag(input, new NbtCompound()));
+            ingredientHandler.save(input, output.child(prefix + identifier + index));
             index++;
         }
     }
 
-    @Override
-    public void fromTag(NbtCompound tag)
+    public static <RECIPE extends RecipeBase> RecipeState load(RecipeCategory<RECIPE> category, ValueInput input)
+    {
+        var recipeId = Identifier.tryBuild(input.getStringOr("recipeNamespace", ""), input.getStringOr("recipePath", ""));
+        var recipe = recipeId == null ? Optional.<RECIPE>empty() : category.getRecipe(recipeId);
+
+        if (recipe.isEmpty())
+            return null;
+
+        var state = recipe.get().createState();
+        state.load(input);
+        return state;
+    }
+
+    public void load(ValueInput input)
     {
         consumedInputs.clear();
         leftInputs.clear();
 
-        currentTime = tag.getInt("currentTime");
-        recipeTime = tag.getInt("recipeTime");
+        currentTime = input.getIntOr("currentTime", 0);
+        recipeTime = input.getIntOr("recipeTime", 0);
 
-        int leftInputTypesCount = tag.getInt("leftInputTypesCount");
+        var leftInputTypesCount = input.getIntOr("leftInputTypesCount", 0);
 
         for (int index = 0; index < leftInputTypesCount; index++)
         {
-            String identifier = tag.getString("leftInputType" + index);
-            Class<?> handlerType = IngredientManager.getIngredientHandlerClass(new Identifier(identifier));
+            var identifier = input.getStringOr("leftInputType" + index, "");
+            var handlerType = IngredientManager.getIngredientHandlerClass(Identifier.parse(identifier));
 
-            leftInputForTypeFromTag(tag, handlerType, identifier);
+            loadInputsForType(input, leftInputs, "leftInputForType", handlerType, identifier);
         }
 
-        int consumedInputTypesCount = tag.getInt("consumedInputTypesCount");
+        var consumedInputTypesCount = input.getIntOr("consumedInputTypesCount", 0);
 
         for (int index = 0; index < consumedInputTypesCount; index++)
         {
-            String identifier = tag.getString("consumedInputType" + index);
-            Class<?> handlerType = IngredientManager.getIngredientHandlerClass(new Identifier(identifier));
+            var identifier = input.getStringOr("consumedInputType" + index, "");
+            var handlerType = IngredientManager.getIngredientHandlerClass(Identifier.parse(identifier));
 
-            consumedInputForTypeFromTag(tag, handlerType, identifier);
+            loadInputsForType(input, consumedInputs, "consumedInputForType", handlerType, identifier);
         }
     }
 
-    private <T> void leftInputForTypeFromTag(NbtCompound tag, Class<T> typeClass, String identifier)
+    @SuppressWarnings("unchecked")
+    private <T> void loadInputsForType(ValueInput input, Multimap<Class<?>, ?> inputs, String prefix, Class<T> typeClass, String identifier)
     {
-        int leftInputForType = tag.getInt("leftInputForType" + identifier);
-        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
+        var count = input.getIntOr(prefix + identifier, 0);
+        var ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
 
-        for (int index = 0; index < leftInputForType; index++)
-            leftInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("leftInputForType" + identifier + index)));
-    }
-
-    private <T> void consumedInputForTypeFromTag(NbtCompound tag, Class<T> typeClass, String identifier)
-    {
-        int consumedInputForType = tag.getInt("consumedInputForType" + identifier);
-        IngredientHandler<T> ingredientHandler = IngredientManager.getIngredientHandler(typeClass);
-
-        for (int index = 0; index < consumedInputForType; index++)
-            consumedInputs.put(typeClass, ingredientHandler.fromTag(tag.getCompound("consumedInputForType" + identifier + index)));
+        for (int index = 0; index < count; index++)
+            ((Multimap<Class<?>, T>) inputs).put(typeClass, ingredientHandler.load(input.childOrEmpty(prefix + identifier + index)));
     }
 }

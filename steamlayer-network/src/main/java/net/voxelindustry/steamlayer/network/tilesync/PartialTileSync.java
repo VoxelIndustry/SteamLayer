@@ -2,11 +2,10 @@ package net.voxelindustry.steamlayer.network.tilesync;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import java.util.Optional;
 
 @Log4j2
@@ -21,28 +20,32 @@ public class PartialTileSync
 
     public void syncPart(PartialSyncedTile syncedTile, BlockEntity worldTile, Identifier identifier)
     {
-        if (worldTile.getWorld().isClient())
+        if (worldTile.getLevel().isClientSide())
             return;
 
         Optional<TileSyncElement<Object>> syncElementOpt = (Optional<TileSyncElement<Object>>) (Object) syncedTile.getSyncElement(identifier);
 
         syncElementOpt.flatMap(syncElement ->
+                syncElement.getCodec()
+                        .encodeStart(worldTile.getLevel().registryAccess().createSerializationContext(NbtOps.INSTANCE), syncElement)
+                        .resultOrPartial(error ->
+                        {
+                            throw new TileSyncException(worldTile.getClass(), worldTile, error);
+                        })).ifPresent(tag ->
         {
-            return syncElement.getCodec()
-                    .encodeStart(NbtOps.INSTANCE, syncElement)
-                    .resultOrPartial(log::error);
-        }).ifPresent(tag ->
-        {
-            new PartialTileSyncPacket(worldTile.getPos(), worldTile.getWorld().getRegistryKey().getValue(), (NbtCompound) tag, identifier)
+            new PartialTileSyncPacket(worldTile.getBlockPos(), worldTile.getLevel().dimension().identifier(), (CompoundTag) tag, identifier)
                     .sendToTracking(worldTile);
         });
     }
 
-    public void receiveSync(PartialSyncedTile tile, Identifier elementIdentifier, NbtCompound tag)
+    public void receiveSync(PartialSyncedTile tile, BlockEntity worldTile, Identifier elementIdentifier, CompoundTag tag)
     {
         tile.getSyncElementCodec(elementIdentifier)
-                .decode(NbtOps.INSTANCE, tag)
-                .resultOrPartial(log::error)
+                .decode(worldTile.getLevel().registryAccess().createSerializationContext(NbtOps.INSTANCE), tag)
+                .resultOrPartial(error ->
+                {
+                    throw new TileSyncException(worldTile.getClass(), worldTile, error);
+                })
                 .ifPresent(elementWithTag ->
                 {
                     tile.receiveSyncElement((TileSyncElement<?>) elementWithTag.getFirst());

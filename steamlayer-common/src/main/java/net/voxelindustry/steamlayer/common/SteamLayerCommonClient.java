@@ -9,6 +9,6 @@ public class SteamLayerCommonClient implements ClientModInitializer
     @Override
     public void onInitializeClient()
     {
-        ClientTickEvents.START_WORLD_TICK.register(world -> ClientTickCounter.instance().tick(world));
+        ClientTickEvents.START_LEVEL_TICK.register(world -> ClientTickCounter.instance().tick(world));
     }
 }

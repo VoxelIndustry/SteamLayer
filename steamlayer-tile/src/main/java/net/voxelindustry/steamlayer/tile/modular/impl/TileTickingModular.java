@@ -1,8 +1,8 @@
 package net.voxelindustry.steamlayer.tile.modular.impl;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.voxelindustry.steamlayer.tile.descriptor.TileDescriptor;
 import net.voxelindustry.steamlayer.tile.modular.ITickableModule;
 import net.voxelindustry.steamlayer.tile.modular.TileModule;

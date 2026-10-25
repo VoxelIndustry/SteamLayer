@@ -3,12 +3,12 @@ package net.voxelindustry.steamlayer.network.tilesync;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.voxelindustry.steamlayer.network.packet.Message;
 
 @Log4j2
@@ -16,13 +16,13 @@ import net.voxelindustry.steamlayer.network.packet.Message;
 @AllArgsConstructor
 public class PartialTileSyncPacket extends Message
 {
-    private BlockPos    pos;
-    private Identifier  dimension;
-    private NbtCompound tag;
-    private Identifier  elementIdentifier;
+    private BlockPos pos;
+    private Identifier dimension;
+    private CompoundTag tag;
+    private Identifier elementIdentifier;
 
     @Override
-    public void read(PacketByteBuf buf)
+    public void read(RegistryFriendlyByteBuf buf)
     {
         pos = buf.readBlockPos();
         dimension = buf.readIdentifier();
@@ -31,7 +31,7 @@ public class PartialTileSyncPacket extends Message
     }
 
     @Override
-    public void write(PacketByteBuf buf)
+    public void write(RegistryFriendlyByteBuf buf)
     {
         buf.writeBlockPos(pos);
         buf.writeIdentifier(dimension);
@@ -40,18 +40,19 @@ public class PartialTileSyncPacket extends Message
     }
 
     @Override
-    public void handle(PlayerEntity player)
+    public void handle(Player player)
     {
-        World world = player.getEntityWorld();
+        Level world = player.level();
 
-        if (!world.getRegistryKey().getValue().equals(dimension) || !world.isChunkLoaded(pos))
+        if (!world.dimension().identifier().equals(dimension) || !world.hasChunkAt(pos))
             return;
 
-        PartialSyncedTile tile = (PartialSyncedTile) world.getBlockEntity(pos);
+        var blockEntity = world.getBlockEntity(pos);
+        var tile = (PartialSyncedTile) blockEntity;
 
         if (tile == null)
             return;
 
-        PartialTileSync.receiveSync(tile, elementIdentifier, tag);
+        PartialTileSync.receiveSync(tile, blockEntity, elementIdentifier, tag);
     }
 }

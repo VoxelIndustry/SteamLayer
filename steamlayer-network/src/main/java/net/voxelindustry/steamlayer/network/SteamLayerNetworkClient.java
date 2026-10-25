@@ -13,7 +13,7 @@ public class SteamLayerNetworkClient implements ClientModInitializer
     @Override
     public void onInitializeClient()
     {
-        SteamLayerPacketHandler.registerClientBoundHandler(GENERIC_PACKET,
+        SteamLayerPacketHandlerClient.registerClientBoundHandler(GENERIC_PACKET,
                 (buffer, player, threadExecutor) ->
                 {
                     var message = new ClientGenericPacket().decode(buffer).getMessage();
@@ -21,7 +21,7 @@ public class SteamLayerNetworkClient implements ClientModInitializer
                             message.handle(MinecraftClient.getInstance().player));
                 });
 
-        SteamLayerPacketHandler.registerClientBoundHandler(CLIENT_ACTION_HOLDER,
+        SteamLayerPacketHandlerClient.registerClientBoundHandler(CLIENT_ACTION_HOLDER,
                 (buffer, player, threadExecutor) -> ClientActionHolderPacket.handleClient(ClientActionHolderPacket.decode(buffer), threadExecutor));
     }
 }

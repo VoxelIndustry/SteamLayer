@@ -89,6 +89,32 @@ public class ItemStackRecipeIngredient extends RecipeIngredient<ItemStack>
         return new ItemStackRecipeIngredient(getItemStackFromJson(json), strictTagComparing);
     }
 
+    public static JsonObject toJson(RecipeIngredient<?> ingredient)
+    {
+        var stackIngredient = ((ItemStackRecipeIngredient) ingredient);
+
+        var json = new JsonObject();
+
+        json.addProperty("identifier", ingredient.getIdentifier().toString());
+        if (stackIngredient.strictTagComparing)
+            json.addProperty("strictTagComparing", true);
+
+        var stack = stackIngredient.ingredient;
+
+        json.add("item", Registries.ITEM.getCodec().encodeStart(JsonOps.INSTANCE, stack.getItem()).get().left().get());
+
+        if (stack.getCount() > 1)
+            json.addProperty("quantity", stack.getCount());
+
+        if (stack.hasNbt())
+            json.add("nbt", NbtCompound.CODEC.encodeStart(JsonOps.INSTANCE, stack.getNbt()).getOrThrow(false, error ->
+            {
+                throw new RuntimeException(error);
+            }));
+
+        return json;
+    }
+
     public static ItemStack getItemStackFromJson(JsonObject json)
     {
         Identifier identifier = new Identifier(JsonHelper.getString(json, "item"));

@@ -33,7 +33,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 
     private final Identifier identifier;
 
-    protected final Multimap<Class<?>, RecipeIngredient<?>> inputs  = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
+    protected final Multimap<Class<?>, RecipeIngredient<?>> inputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
     protected final Multimap<Class<?>, RecipeIngredient<?>> outputs = Multimaps.newListMultimap(Maps.newIdentityHashMap(), ArrayList::new);
 
     protected RecipeCallback onCraft;
@@ -113,7 +113,7 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
 
     public RecipeState createState(NbtCompound existingData)
     {
-        RecipeState state = createState();
+        var state = createState();
         state.fromTag(existingData);
         return state;
     }
@@ -148,6 +148,12 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
     {
         RecipeSerializerHelper.ingredientMultimapFromJson(JsonHelper.getObject(json, "inputs"), inputs);
         RecipeSerializerHelper.ingredientMultimapFromJson(JsonHelper.getObject(json, "outputs"), outputs);
+    }
+
+    public void toJson(JsonObject json)
+    {
+        json.add("inputs", RecipeSerializerHelper.ingredientMultimapToJson(inputs));
+        json.add("outputs", RecipeSerializerHelper.ingredientMultimapToJson(outputs));
     }
 
     public void fromByteBuf(PacketByteBuf buffer)

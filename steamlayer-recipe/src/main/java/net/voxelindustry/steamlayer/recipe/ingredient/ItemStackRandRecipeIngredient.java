@@ -1,7 +1,9 @@
 package net.voxelindustry.steamlayer.recipe.ingredient;
 
 import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -70,5 +72,33 @@ public class ItemStackRandRecipeIngredient extends ItemStackRecipeIngredient
         Range<Integer> range = Range.between(JsonHelper.getInt(json, "min"), JsonHelper.getInt(json, "max"));
 
         return new ItemStackRandRecipeIngredient(getItemStackFromJson(json), range, strictTagComparing);
+    }
+
+    public static JsonObject toJson(RecipeIngredient<?> ingredient)
+    {
+        var stackIngredient = ((ItemStackRandRecipeIngredient) ingredient);
+
+        var json = new JsonObject();
+
+        if (stackIngredient.strictTagComparing)
+            json.addProperty("strictTagComparing", true);
+
+        var stack = stackIngredient.ingredient;
+
+        json.addProperty("item", stack.getItem().toString());
+
+        if (stack.getCount() > 1)
+            json.addProperty("quantity", stack.getCount());
+
+        json.addProperty("min", stackIngredient.range.getMinimum());
+        json.addProperty("max", stackIngredient.range.getMaximum());
+
+        if (stack.hasNbt())
+            json.add("nbt", NbtCompound.CODEC.encodeStart(JsonOps.INSTANCE, stack.getNbt()).getOrThrow(false, error ->
+            {
+                throw new RuntimeException(error);
+            }));
+
+        return json;
     }
 }

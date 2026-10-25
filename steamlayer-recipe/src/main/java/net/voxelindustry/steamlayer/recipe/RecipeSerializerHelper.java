@@ -33,6 +33,25 @@ public class RecipeSerializerHelper
         });
     }
 
+    public static JsonObject ingredientMultimapToJson(Multimap<Class<?>, RecipeIngredient<?>> multimap)
+    {
+        var jsonObject = new JsonObject();
+        for (var entry : multimap.asMap().entrySet())
+        {
+            var ingredientArray = new JsonArray();
+
+            for (var ingredient : entry.getValue())
+            {
+                var ingredientObject = IngredientManager.getIngredientInstanceToJSON(ingredient.getIdentifier(), ingredient);
+                ingredientArray.add(ingredientObject);
+            }
+
+            jsonObject.add(IngredientManager.getIngredientHandlerIdentifier(entry.getKey()).toString(), ingredientArray);
+        }
+
+        return jsonObject;
+    }
+
     public static void ingredientMultimapFromByteBuf(PacketByteBuf buffer, Multimap<Class<?>, RecipeIngredient<?>> multimap)
     {
         int typeCount = buffer.readInt();

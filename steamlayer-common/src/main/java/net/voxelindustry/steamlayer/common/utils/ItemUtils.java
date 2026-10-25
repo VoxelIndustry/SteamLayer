@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.ListCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.Registries;
@@ -28,7 +29,7 @@ public class ItemUtils
                                     .forGetter(stack -> Optional.ofNullable(stack.getNbt())))
                     .apply(instance, (item, count, nbt) ->
                     {
-                        var stack = new ItemStack(item.orElse(null), count);
+                        var stack = new ItemStack(item.orElse(Items.AIR), count);
                         stack.setNbt(nbt.orElse(null));
                         return stack;
                     }));

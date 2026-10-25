@@ -22,7 +22,7 @@ public class RecipeStateTest
                 .time(20)
                 .build();
 
-        RecipeState state = recipe.createState();
+        var state = recipe.createState();
 
         state.consumeSlotted(ItemStack.class, new ItemStack(Items.APPLE), 0);
 

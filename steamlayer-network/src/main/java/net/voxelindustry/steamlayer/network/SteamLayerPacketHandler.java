@@ -1,7 +1,6 @@
 package net.voxelindustry.steamlayer.network;
 
 import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.entity.BlockEntity;
@@ -48,11 +47,6 @@ public class SteamLayerPacketHandler
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
         packetBufferConsumer.accept(buf);
         return new CustomPayloadS2CPacket(identifier, buf);
-    }
-
-    public static void registerClientBoundHandler(Identifier identifier, PacketConsumer consumer)
-    {
-        ClientPlayNetworking.registerGlobalReceiver(identifier, (client, handler, packetByteBuf, responseSender) -> consumer.accept(packetByteBuf, client.player, client));
     }
 
     public static void sendToAll(Packet<?> packet, MinecraftServer server)

@@ -6,7 +6,9 @@
   "description": "Aggregate of shared libraries for the VoxelIndustry team",
   "version": "${version}",
   "custom": {
-    "modmenu:api": true
+    "modmenu": {
+      "badges": [ "library" ]
+    }
   },
   "authors": [
     {

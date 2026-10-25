@@ -6,8 +6,10 @@
   "description": "Aggregate of shared libraries for the VoxelIndustry team",
   "version": "${version}",
   "custom": {
-    "modmenu:api": true,
-    "modmenu:parent": "steamlayer"
+    "modmenu": {
+      "badges": [ "library" ],
+      "parent": "steamlayer"
+    }
   },
   "depends": {
     "fabric-api-base": "*",

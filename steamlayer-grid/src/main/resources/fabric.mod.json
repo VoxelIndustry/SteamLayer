@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "environment": "*",
+  "id": "steamlayer-grid",
+  "name": "SteamLayer (grids)",
+  "description": "Aggregate of shared libraries for the VoxelIndustry team",
+  "version": "${version}",
+  "custom": {
+    "modmenu": {
+      "badges": [ "library" ],
+      "parent": "steamlayer"
+    }
+  },
+  "depends": {
+    "minecraft": "~26.3",
+    "fabricloader": ">=0.20.1",
+    "java": ">=25",
+    "fabric-api-base": "*",
+    "steamlayer-tile": "*"
+  },
+  "entrypoints": {
+    "main": [
+      "net.voxelindustry.steamlayer.grid.SteamLayerGrid"
+    ]
+  },
+  "authors": [
+    {
+      "name": "Ourten",
+      "contact": {
+        "homepage": "https://github.com/Ourten"
+      }
+    }
+  ],
+  "contact": {
+    "homepage": "https://github.com/VoxelIndustry/SteamLayer",
+    "issues": "https://github.com/VoxelIndustry/SteamLayer",
+    "sources": "https://github.com/VoxelIndustry/SteamLayer"
+  },
+  "license": "Apache License 2.0"
+}

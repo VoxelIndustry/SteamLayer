@@ -1,10 +1,24 @@
-include 'common'
-include 'container'
-include 'inventory'
-include 'network'
-include 'tile'
-include 'grid'
-include 'multiblock'
-include 'recipe'
+pluginManagement {
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        gradlePluginPortal()
+    }
+}
 
-include 'core'
+include 'steamlayer-common'
+include 'steamlayer-container'
+include 'steamlayer-inventory'
+include 'steamlayer-network'
+include 'steamlayer-tile'
+include 'steamlayer-grid'
+/*
+include 'multiblock'
+*/
+include 'steamlayer-recipe'
+include 'steamlayer-math'
+include 'steamlayer-test'
+
+rootProject.name = 'steamlayer'

@@ -1,0 +1,87 @@
+package net.voxelindustry.steamlayer.network.action;
+
+import net.voxelindustry.steamlayer.common.utils.ItemUtils;
+import net.voxelindustry.steamlayer.network.packet.ServerActionHolderPacket;
+
+import static net.voxelindustry.steamlayer.network.SteamLayerClientPacketHandler.sendToServer;
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.SERVER_ACTION_HOLDER;
+import static net.voxelindustry.steamlayer.network.SteamLayerPacketHandler.createServerBoundPacket;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
+
+public class ServerActionBuilder
+{
+    private String actionKey;
+
+    private BlockEntity              tile;
+    private CompoundTag              payload;
+    private ServerActionHolderPacket packet;
+
+    public ServerActionBuilder(String actionKey)
+    {
+        this.actionKey = actionKey;
+        payload = new CompoundTag();
+    }
+
+    public ServerActionBuilder toTile(BlockEntity tile)
+    {
+        this.tile = tile;
+        packet = new ServerActionHolderPacket(this.tile, actionKey);
+        return this;
+    }
+
+    public ServerActionBuilder withInt(String key, Integer value)
+    {
+        payload.putInt(key, value);
+        return this;
+    }
+
+    public ServerActionBuilder withString(String key, String value)
+    {
+        payload.putString(key, value);
+        return this;
+    }
+
+    public ServerActionBuilder withFloat(String key, Float value)
+    {
+        payload.putFloat(key, value);
+        return this;
+    }
+
+    public ServerActionBuilder withDouble(String key, Double value)
+    {
+        payload.putDouble(key, value);
+        return this;
+    }
+
+    public ServerActionBuilder withBoolean(String key, Boolean value)
+    {
+        payload.putBoolean(key, value);
+        return this;
+    }
+
+    public ServerActionBuilder withItemStack(String key, ItemStack value)
+    {
+        if (tile == null)
+            throw new IllegalStateException("Action target is null! Use toTile(BlockEntity) before adding an ItemStack");
+        payload.put(key, ItemUtils.saveStack(value, tile.getLevel().registryAccess()));
+        return this;
+    }
+
+    public ServerActionBuilder then(IActionCallback callback)
+    {
+        ActionManager.getInstance().addCallback(packet.getActionID(), callback);
+        packet.setExpectAnswer(true);
+        return this;
+    }
+
+    public void send()
+    {
+        if (packet == null)
+            throw new RuntimeException("Action packet is null! Did you use setTile(BlockEntity) before sending?");
+        packet.setActionPayload(payload);
+        sendToServer(createServerBoundPacket(SERVER_ACTION_HOLDER, buffer -> ServerActionHolderPacket.encode(packet, buffer)));
+    }
+}

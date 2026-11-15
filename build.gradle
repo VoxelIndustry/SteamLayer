@@ -1,287 +1,215 @@
-buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-        maven { url = "http://files.minecraftforge.net/maven" }
-        maven {
-            url 'http://maven.ferenyr.info/artifactory/plugins-release'
-            credentials {
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-            }
-        }
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
-    }
-}
-
 plugins {
-    id "com.jfrog.artifactory" version "4.7.5"
+    id "net.fabricmc.fabric-loom" version "${loom_version}"
+    id "maven-publish"
 }
 
-subprojects {
+allprojects {
+    apply plugin: 'java-library'
     apply plugin: 'maven-publish'
-    apply plugin: 'net.minecraftforge.gradle'
+    apply plugin: 'net.fabricmc.fabric-loom'
 
     version = project.steamlayer_version
     group = "net.voxelindustry"
 
-    compileJava.options.encoding = 'UTF-8'
-    sourceCompatibility = targetCompatibility = "1.8"
-    compileJava {
-        sourceCompatibility = targetCompatibility = "1.8"
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 25
     }
 
-    def reobfFile = file("$buildDir/reobfJar/output.jar")
-    def reobfArtifact = artifacts.add('default', reobfFile) {
-        type 'jar'
-        builtBy 'reobfJar'
+    java {
+        withSourcesJar()
+
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
     }
 
     repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        mavenCentral()
     }
 
     dependencies {
-        minecraft "net.minecraftforge:forge:${project.forge_version}"
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        implementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
 
-        compileOnly 'org.projectlombok:lombok:1.18.10'
+        implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
 
-        testCompile 'org.assertj:assertj-core-java8:1.0.0m1'
-        testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.8.47'
+        compileOnly 'org.jetbrains:annotations:26.0.2'
+
+        compileOnly "org.projectlombok:lombok:${rootProject.lombok_version}"
+        annotationProcessor "org.projectlombok:lombok:${rootProject.lombok_version}"
+
+        testImplementation(platform('org.junit:junit-bom:5.13.4'))
+        testImplementation('org.junit.jupiter:junit-jupiter')
+        testImplementation('org.mockito:mockito-core:5.20.0')
+        testImplementation('org.mockito:mockito-junit-jupiter:5.20.0')
+        testImplementation('org.assertj:assertj-core:3.27.6')
+
+        testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+
+        testCompileOnly "org.projectlombok:lombok:${rootProject.lombok_version}"
+        testAnnotationProcessor "org.projectlombok:lombok:${rootProject.lombok_version}"
     }
 
-    minecraft {
-        mappings channel: 'snapshot', version: '20190719-1.14.3'
+    test {
+        useJUnitPlatform()
+        failOnNoDiscoveredTests = false
+    }
 
-        runs {
-            client {
-                workingDirectory project.file('run')
+    processResources {
+        inputs.property "version", project.version
 
-                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-                property 'forge.logging.console.level', 'debug'
-
-                mods {
-                    steamlayer {
-                        source sourceSets.main
-                    }
-                }
-            }
-
-            server {
-                workingDirectory project.file('run')
-
-                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-                property 'forge.logging.console.level', 'debug'
-
-                mods {
-                    steamlayer {
-                        source sourceSets.main
-                    }
-                }
-            }
-
-            data {
-                workingDirectory project.file('run')
-
-                property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-                property 'forge.logging.console.level', 'debug'
-
-                args '--mod', 'steamlayer', '--mod', '--output', file('src/generated/resources/')
-
-                mods {
-                    steamlayer {
-                        source sourceSets.main
-                    }
-                }
-            }
+        filesMatching("fabric.mod.json") {
+            expand "version": project.version
         }
-    }
-}
-
-project('common') {
-    archivesBaseName = "steamlayer-common"
-
-    dependencies {
-    }
-}
-
-project('inventory') {
-    archivesBaseName = "steamlayer-inventory"
-
-    dependencies {
-        compile project(':common')
-    }
-}
-
-project('network') {
-    archivesBaseName = "steamlayer-network"
-
-    dependencies {
-        compile project(':common')
-    }
-}
-
-project('container') {
-    archivesBaseName = "steamlayer-container"
-
-    dependencies {
-        compile project(':inventory')
-        compile project(':network')
-    }
-}
-
-project('tile') {
-    archivesBaseName = "steamlayer-tile"
-
-    dependencies {
-        compile project(':inventory')
-        compile project(':network')
-        compile 'org.hjson:hjson:3.0.0'
-    }
-}
-
-project('multiblock') {
-    archivesBaseName = "steamlayer-multiblock"
-
-    dependencies {
-        compile project(':tile')
-    }
-}
-
-project('grid') {
-    archivesBaseName = "steamlayer-grid"
-
-    dependencies {
-        compile project(':tile')
-    }
-}
-
-project('recipe') {
-    archivesBaseName = "steamlayer-recipe"
-
-    dependencies {
-        compile project(':common')
-    }
-}
-
-project('core') {
-    apply plugin: 'com.jfrog.artifactory'
-
-    archivesBaseName = "steamlayer-core"
-
-    dependencies {
-        compile project(':container')
-        compile project(':tile')
-        compile project(':grid')
-        compile project(':multiblock')
-        compile project(':recipe')
-    }
-
-    artifactory {
-        contextUrl = "${artifactory_contextUrl}"
-        publish {
-            repository {
-                repoKey = 'voxelindustry'
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-                maven = true
-            }
-            defaults {
-                publications('mavenJava')
-            }
-        }
-    }
-
-    task siblingBuild {
-        dependsOn(":common:build")
-        dependsOn(":container:build")
-        dependsOn(":grid:build")
-        dependsOn(":inventory:build")
-        dependsOn(":multiblock:build")
-        dependsOn(":network:build")
-        dependsOn(":recipe:build")
-        dependsOn(":tile:build")
-        dependsOn(":core:jar")
-    }
-
-    task allJar(type: Jar, dependsOn: siblingBuild) {
-        baseName = 'allJar'
-        from project(':common').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':container').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':grid').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':inventory').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':multiblock').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':network').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':recipe').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':tile').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-        from project(':core').configurations.archives.allArtifacts.files.collect {
-            zipTree(it)
-        }
-
-        manifest {
-            attributes([
-                    "Specification-Title"     : "steamlayer-core",
-                    "Specification-Vendor"    : "steamlayer-core",
-                    "Specification-Version"   : "1",
-                    "Implementation-Title"    : project.name,
-                    "Implementation-Version"  : "${version}",
-                    "Implementation-Vendor"   : "voxelindustry",
-                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-            ])
-        }
-    }
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives allJar
     }
 
     publishing {
         publications {
             mavenJava(MavenPublication) {
-                artifactId archivesBaseName
-                version "${project.steamlayer_version}"
-                groupId "net.voxelindustry"
+                from components.java
+            }
+        }
 
-                artifact source: allJar, extension: 'jar'
-                artifact source: sourcesJar, classifier: 'sources', extension: 'jar'
+        repositories {
+            // GitHub Actions gives GITHUB_ACTOR and GITHUB_TOKEN, a local publish reads gpr.user and gpr.key
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/VoxelIndustry/SteamLayer")
 
-                // Allows the maven pom file to be modified.
-                pom.withXml {
-                    // Go through all the dependencies.
-                    asNode().dependencies.dependency.each { dep ->
-                        println 'Deleting artifact ' + dep.artifactId.last().value().last() + ' from maven dependencies.'
-                        assert dep.parent().remove(dep)
+                credentials {
+                    username = rootProject.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+                    password = rootProject.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+                }
+            }
+            if (rootProject.hasProperty("gitea_token")) {
+                maven {
+                    name = "Gitea"
+                    url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
+
+                    credentials(HttpHeaderCredentials) {
+                        name = "Authorization"
+                        value = "token ${rootProject.property('gitea_token')}"
+                    }
+
+                    authentication {
+                        header(HttpHeaderAuthentication)
                     }
                 }
             }
+            mavenLocal()
         }
     }
 
-    artifactoryPublish.dependsOn build
+    tasks.publish.dependsOn build
+}
+
+base.archivesName = "steamlayer"
+
+subprojects {
+}
+
+project('steamlayer-common') {
+    base.archivesName = "steamlayer-common"
+
+    dependencies {
+    }
+}
+
+project('steamlayer-test') {
+    base.archivesName = "steamlayer-test"
+
+    dependencies {
+        implementation(platform('org.junit:junit-bom:5.13.4'))
+        implementation('org.junit.jupiter:junit-jupiter-api')
+        implementation('org.mockito:mockito-core:5.20.0')
+        implementation('org.mockito:mockito-junit-jupiter:5.20.0')
+        implementation('org.assertj:assertj-core:3.27.6')
+    }
+}
+
+project('steamlayer-inventory') {
+    base.archivesName = "steamlayer-inventory"
+
+    dependencies {
+        api project(':steamlayer-common')
+    }
+}
+
+project('steamlayer-network') {
+    base.archivesName = "steamlayer-network"
+
+    dependencies {
+        api project(':steamlayer-common')
+    }
+}
+
+project('steamlayer-container') {
+    base.archivesName = "steamlayer-container"
+
+    dependencies {
+        api project(':steamlayer-inventory')
+        api project(':steamlayer-network')
+    }
+}
+
+project('steamlayer-tile') {
+    base.archivesName = "steamlayer-tile"
+
+    dependencies {
+        api project(':steamlayer-inventory')
+        api project(':steamlayer-network')
+        implementation include('org.hjson:hjson:3.0.0')
+    }
+}
+
+/*project('multiblock') {
+    base.archivesName = "steamlayer-multiblock"
+
+    dependencies {
+        implementation project(':tile')
+    }
+}*/
+
+project('steamlayer-grid') {
+    base.archivesName = "steamlayer-grid"
+
+    dependencies {
+        api project(':steamlayer-tile')
+    }
+}
+
+project('steamlayer-recipe') {
+    base.archivesName = "steamlayer-recipe"
+
+    dependencies {
+        api project(':steamlayer-common')
+
+        testImplementation project(':steamlayer-test')
+        testImplementation "net.fabricmc:fabric-loader-junit:${rootProject.loader_version}"
+    }
+}
+
+project('steamlayer-math') {
+    base.archivesName = "steamlayer-math"
+
+    dependencies {
+        api project(':steamlayer-common')
+
+        testImplementation project(':steamlayer-test')
+        testImplementation "net.fabricmc:fabric-loader-junit:${rootProject.loader_version}"
+    }
 }
 
 subprojects.each { subproject -> evaluationDependsOn(subproject.path) }
+subprojects.each { jar.dependsOn("${it.path}:jar") }
+
+dependencies {
+    subprojects.each {
+        api it
+        include it
+    }
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "environment": "*",
+  "id": "steamlayer-tile",
+  "name": "SteamLayer (tiles)",
+  "description": "Aggregate of shared libraries for the VoxelIndustry team",
+  "version": "${version}",
+  "custom": {
+    "modmenu": {
+      "badges": [ "library" ],
+      "parent": "steamlayer"
+    }
+  },
+  "depends": {
+    "minecraft": "~26.3",
+    "fabricloader": ">=0.20.1",
+    "java": ">=25",
+    "fabric-api-base": "*",
+    "steamlayer-inventory": "*",
+    "steamlayer-network": "*"
+  },
+  "entrypoints": {
+    "main": [
+      "net.voxelindustry.steamlayer.tile.SteamLayerTile"
+    ],
+    "client": [
+      "net.voxelindustry.steamlayer.tile.SteamLayerTileClient"
+    ]
+  },
+  "authors": [
+    {
+      "name": "Ourten",
+      "contact": {
+        "homepage": "https://github.com/Ourten"
+      }
+    }
+  ],
+  "contact": {
+    "homepage": "https://github.com/VoxelIndustry/SteamLayer",
+    "issues": "https://github.com/VoxelIndustry/SteamLayer",
+    "sources": "https://github.com/VoxelIndustry/SteamLayer"
+  },
+  "license": "Apache License 2.0"
+}

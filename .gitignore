@@ -143,3 +143,5 @@ fabric.properties
 
 */out/*
 */logs*
+
+classes/

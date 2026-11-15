@@ -75,17 +75,29 @@ allprojects {
         }
 
         repositories {
+            // GitHub Actions gives GITHUB_ACTOR and GITHUB_TOKEN, a local publish reads gpr.user and gpr.key
             maven {
-                name = "Gitea"
-                url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/VoxelIndustry/SteamLayer")
 
-                credentials(HttpHeaderCredentials) {
-                    name = "Authorization"
-                    value = "token ${gitea_token}"
+                credentials {
+                    username = rootProject.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+                    password = rootProject.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
                 }
+            }
+            if (rootProject.hasProperty("gitea_token")) {
+                maven {
+                    name = "Gitea"
+                    url = uri("https://git.ferenyr.fr/api/packages/VoidxelIndustries/maven")
 
-                authentication {
-                    header(HttpHeaderAuthentication)
+                    credentials(HttpHeaderCredentials) {
+                        name = "Authorization"
+                        value = "token ${rootProject.property('gitea_token')}"
+                    }
+
+                    authentication {
+                        header(HttpHeaderAuthentication)
+                    }
                 }
             }
             mavenLocal()

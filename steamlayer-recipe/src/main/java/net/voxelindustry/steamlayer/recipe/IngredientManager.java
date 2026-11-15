@@ -10,6 +10,8 @@ import net.voxelindustry.steamlayer.recipe.ingredient.IngredientHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackIngredientHandler;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRandRecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackRecipeIngredient;
+import net.voxelindustry.steamlayer.recipe.ingredient.ItemStackTransformIngredient;
+import net.voxelindustry.steamlayer.recipe.ingredient.ItemTagRecipeIngredient;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
 
 import java.util.HashMap;
@@ -41,6 +43,22 @@ public class IngredientManager
 
         INGREDIENT_INSTANCE_TO_JSON.put(ItemStackRecipeIngredient.ITEMSTACK_INGREDIENT, ItemStackRecipeIngredient::toJson);
         INGREDIENT_INSTANCE_TO_JSON.put(ItemStackRandRecipeIngredient.ITEMSTACK_RAND_INGREDIENT, ItemStackRandRecipeIngredient::toJson);
+
+        addIngredientInstance(ItemTagRecipeIngredient.ITEMTAG_INGREDIENT, ItemTagRecipeIngredient::fromBuffer, ItemTagRecipeIngredient::fromJson, ItemTagRecipeIngredient::toJson);
+        addIngredientInstance(ItemStackTransformIngredient.ITEMSTACK_TRANSFORM_INGREDIENT, ItemStackTransformIngredient::fromBuffer, ItemStackTransformIngredient::fromJson, ItemStackTransformIngredient::toJson);
+    }
+
+    /**
+     * Registers how a kind of ingredient is read from and written to recipe JSON and the network.
+     */
+    public static void addIngredientInstance(Identifier identifier,
+                                             Function<RegistryFriendlyByteBuf, RecipeIngredient<?>> fromBuffer,
+                                             Function<JsonObject, RecipeIngredient<?>> fromJson,
+                                             Function<RecipeIngredient<?>, JsonObject> toJson)
+    {
+        INGREDIENT_INSTANCE_FROM_BUFFER.put(identifier, fromBuffer);
+        INGREDIENT_INSTANCE_FROM_JSON.put(identifier, fromJson);
+        INGREDIENT_INSTANCE_TO_JSON.put(identifier, toJson);
     }
 
     public static <T> IngredientHandler<T> addIngredientHandler(Class<T> ingredientType, IngredientHandler<T> ingredientHandler)

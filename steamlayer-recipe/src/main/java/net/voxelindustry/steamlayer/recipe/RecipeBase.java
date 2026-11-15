@@ -18,6 +18,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.voxelindustry.steamlayer.recipe.ingredient.RecipeIngredient;
+import net.voxelindustry.steamlayer.recipe.ingredient.TransformingIngredient;
 import net.voxelindustry.steamlayer.recipe.state.RecipeState;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerRecipeType;
 import net.voxelindustry.steamlayer.recipe.vanilla.SteamLayerVanillaRecipeBridge;
@@ -87,6 +88,38 @@ public abstract class RecipeBase implements SteamLayerVanillaRecipeBridge
         if (recipeOutputs.size() > slot)
             return recipeOutputs.get(slot).getRaw();
         return IngredientManager.getIngredientHandler(clazz).getEmpty();
+    }
+
+    /**
+     * The output in a slot, made from the actual inputs when it transforms one of them.
+     *
+     * @param inputs the actual inputs of the same type, in recipe order
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getRecipeOutput(Class<T> clazz, int slot, List<T> inputs)
+    {
+        List<RecipeIngredient<T>> recipeOutputs = getRecipeOutputs(clazz);
+
+        if (recipeOutputs.size() <= slot)
+            return IngredientManager.getIngredientHandler(clazz).getEmpty();
+
+        var output = recipeOutputs.get(slot);
+        if (output instanceof TransformingIngredient<?> transforming)
+        {
+            var sourceSlot = transforming.getSourceSlot();
+            if (sourceSlot >= inputs.size())
+                return IngredientManager.getIngredientHandler(clazz).getEmpty();
+            return ((TransformingIngredient<T>) transforming).transform(inputs.get(sourceSlot));
+        }
+        return output.getRaw();
+    }
+
+    /**
+     * Whether any output is made from an input, rather than given as is.
+     */
+    public boolean hasTransformingOutput()
+    {
+        return outputs.values().stream().anyMatch(TransformingIngredient.class::isInstance);
     }
 
     public void onCraft(Level world, BlockPos pos, RecipeState state, LivingEntity crafter)

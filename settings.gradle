@@ -20,3 +20,5 @@ include 'multiblock'
 include 'steamlayer-recipe'
 include 'steamlayer-math'
 include 'steamlayer-test'
+
+rootProject.name = 'SteamLayer'

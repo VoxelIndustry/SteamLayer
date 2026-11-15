@@ -21,4 +21,4 @@ include 'steamlayer-recipe'
 include 'steamlayer-math'
 include 'steamlayer-test'
 
-rootProject.name = 'SteamLayer'
+rootProject.name = 'steamlayer'
